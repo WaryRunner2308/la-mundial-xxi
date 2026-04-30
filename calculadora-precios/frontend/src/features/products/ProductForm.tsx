@@ -3,6 +3,8 @@ import { useProductStore } from '../../store/productStore';
 import { useCurrencyStore } from '../../store/currencyStore';
 import { formatAmountWithCurrency } from '../../utils/format';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
+import { uploadProductImage, deleteProductImage } from '../../lib/supabase';
+import { uploadImage, deleteImage } from '../../lib/supabase';
 
 type Currency = 'Bs' | 'USD';
 
@@ -78,7 +80,7 @@ function calculateLive(
   });
 }
 
-function imageToBase64(file: File, maxWidth = 800): Promise<string> {
+function imageToBase64(file: File, maxWidth = 300): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -105,7 +107,8 @@ function imageToBase64(file: File, maxWidth = 800): Promise<string> {
         }
 
         ctx.drawImage(img, 0, 0, width, height);
-        const base64 = canvas.toDataURL('image/png');
+        // JPEG con calidad 0.7 para reducir tamaño
+        const base64 = canvas.toDataURL('image/jpeg', 0.7);
         resolve(base64);
       };
       img.onerror = reject;
