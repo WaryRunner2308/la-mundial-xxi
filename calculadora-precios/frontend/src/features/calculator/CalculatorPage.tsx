@@ -90,35 +90,36 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">Calculadora de Precios</h1>
-          <div className="flex items-center mt-1">
-            <p className="text-sm md:text-base text-gray-500">
-              {rate > 0 ? `Tasa: 1 USD = ${rate.toFixed(2)} Bs` : '⚠️ Tasa no configurada'}
-            </p>
-            {rate > 0 && (
-              <button
-                onClick={onEditRate}
-                className="ml-2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition"
-                title="Editar tasa"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                  <path d="m15 5 4 4" />
-                </svg>
-              </button>
-            )}
-          </div>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
+          Calculadora de Precios
+        </h1>
+        <div className="flex items-center mt-2">
+          <p className="text-sm md:text-base text-gray-500">
+            {rate > 0 ? `Tasa: 1 USD = ${rate.toFixed(2)} Bs` : '⚠️ Tasa no configurada'}
+          </p>
+          {rate > 0 && (
+            <button
+              onClick={onEditRate}
+              className="ml-2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+              title="Editar tasa"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                <path d="m15 5 4 4" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Datos del Producto - Primer panel (mobile arriba) */}
+        {/* Panel de Entrada - Izquierda en desktop, arriba en mobile */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Datos del Producto</h2>
           <div className="space-y-6">
-            {/* Costo */}
+            {/* Costo con selector de moneda integrado */}
             <div>
               <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-2">
                 Costo *
@@ -134,13 +135,13 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                   value={formData.cost}
                   onChange={handleInputChange}
                   required
-                  className="flex-1 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none text-base md:text-lg bg-white"
+                  className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg"
                 />
                 <select
                   name="currency"
                   value={formData.currency}
                   onChange={handleInputChange}
-                  className="w-32 md:w-40 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer"
+                  className="w-20 md:w-32 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer shrink-0"
                 >
                   <option value="Bs">Bs</option>
                   <option value="USD">$</option>
@@ -184,7 +185,7 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
           </div>
         </div>
 
-        {/* Resultados - Segundo panel (mobile abajo) */}
+        {/* Panel de Resultados - Derecha en desktop, abajo en mobile */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Resultados</h2>
           {results && rate > 0 ? (
