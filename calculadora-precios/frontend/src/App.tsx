@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { supabase } from '@/lib/supabase';
 
@@ -145,125 +145,123 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
-      <div className="flex min-h-screen bg-gray-50">
-        {/* Mobile header with hamburger */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-            aria-label="Abrir menú"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" x2="20" y1="12" y2="12" />
-              <line x1="4" x2="20" y1="6" y2="6" />
-              <line x1="4" x2="20" y1="18" y2="18" />
-            </svg>
-          </button>
-          <span className="ml-3 text-lg font-semibold text-gray-900">La Mundial</span>
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Mobile header with hamburger */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          aria-label="Abrir menú"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" x2="20" y1="12" y2="12" />
+            <line x1="4" x2="20" y1="6" y2="6" />
+            <line x1="4" x2="20" y1="18" y2="18" />
+          </svg>
+        </button>
+        <span className="ml-3 text-lg font-semibold text-gray-900">La Mundial</span>
+      </div>
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-50
+        w-64 bg-white border-r shadow-sm flex flex-col h-screen
+        transform transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <div className="flex-shrink-0 flex items-center px-4 py-4 md:py-6 border-b">
+          <span className="text-lg md:text-xl font-semibold text-gray-900">La Mundial</span>
         </div>
 
-        {/* Mobile overlay */}
-        {sidebarOpen && (
-          <div
-            className="lg:hidden fixed inset-0 bg-black/50 z-40"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+        <nav className="px-2 md:px-4 py-2 flex-shrink-0 flex-1 overflow-y-auto">
+          <NavLink
+            to="/products"
+            className={({ isActive }) =>
+              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              }`
+            }
+          >
+            Productos
+          </NavLink>
+          <NavLink
+            to="/calculator"
+            className={({ isActive }) =>
+              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              }`
+            }
+          >
+            Calculadora
+          </NavLink>
+          <NavLink
+            to="/merma"
+            className={({ isActive }) =>
+              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              }`
+            }
+          >
+            Merma
+          </NavLink>
+        </nav>
 
-        {/* Sidebar */}
-        <aside className={`
-          fixed lg:static inset-y-0 left-0 z-50
-          w-64 bg-white border-r shadow-sm flex flex-col h-screen
-          transform transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}>
-          <div className="flex-shrink-0 flex items-center px-4 py-4 md:py-6 border-b">
-            <span className="text-lg md:text-xl font-semibold text-gray-900">La Mundial</span>
+        {/* Logo centered */}
+        <div className="flex-grow flex items-center justify-center px-4 py-4 lg:py-8">
+          <img
+            src="/logo.png"
+            alt="La Mundial XXI"
+            className="w-full max-w-[200px] object-contain lg:hidden"
+          />
+          <img
+            src="/logo.png"
+            alt="La Mundial XXI"
+            className="w-full max-w-[180px] object-contain hidden lg:block"
+          />
+        </div>
+
+        <div className="h-10 flex-shrink-0"></div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 p-4 md:p-6 overflow-y-auto lg:pt-6 pt-16">
+        {supabaseError && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            ⚠️ {supabaseError}
           </div>
-
-          <nav className="px-2 md:px-4 py-2 flex-shrink-0 flex-1 overflow-y-auto">
-            <NavLink
-              to="/products"
-              className={({ isActive }) =>
-                `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                }`
-              }
-            >
-              Productos
-            </NavLink>
-            <NavLink
-              to="/calculator"
-              className={({ isActive }) =>
-                `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                }`
-              }
-            >
-              Calculadora
-            </NavLink>
-            <NavLink
-              to="/merma"
-              className={({ isActive }) =>
-                `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                }`
-              }
-            >
-              Merma
-            </NavLink>
-          </nav>
-
-          {/* Logo centered */}
-          <div className="flex-grow flex items-center justify-center px-4 py-4 lg:py-8">
-            <img
-              src="/logo.png"
-              alt="La Mundial XXI"
-              className="w-full max-w-[200px] object-contain lg:hidden"
-            />
-            <img
-              src="/logo.png"
-              alt="La Mundial XXI"
-              className="w-full max-w-[180px] object-contain hidden lg:block"
-            />
-          </div>
-
-          <div className="h-10 flex-shrink-0"></div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto lg:pt-6 pt-16">
-          {supabaseError && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              ⚠️ {supabaseError}
-            </div>
-          )}
-          <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
-              <Route path="/products" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
-              <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
-              <Route path="/merma" element={<MermaPage />} />
-            </Routes>
-          </ErrorBoundary>
-        </main>
-
-        {/* Modals */}
-        {showWelcome && (
-          <RateModal
-            rate={rate}
-            setRate={handleRateSave}
-            onClose={() => setShowWelcome(false)}
-          />
         )}
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
+            <Route path="/products" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
+            <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
+            <Route path="/merma" element={<MermaPage />} />
+          </Routes>
+        </ErrorBoundary>
+      </main>
 
-        {showEditRate && (
-          <RateModal
-            rate={rate}
-            setRate={handleRateSave}
-            onClose={() => setShowEditRate(false)}
-          />
-        )}
-      </div>
-    </BrowserRouter>
+      {/* Modals */}
+      {showWelcome && (
+        <RateModal
+          rate={rate}
+          setRate={handleRateSave}
+          onClose={() => setShowWelcome(false)}
+        />
+      )}
+
+      {showEditRate && (
+        <RateModal
+          rate={rate}
+          setRate={handleRateSave}
+          onClose={() => setShowEditRate(false)}
+        />
+      )}
+    </div>
   );
 }
 
