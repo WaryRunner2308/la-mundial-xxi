@@ -5,7 +5,6 @@ import { formatAmountWithCurrency } from '../../utils/format';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import { uploadProductImage, deleteProductImage } from '../../lib/supabase';
 import { validateDecimalInput } from '../../utils/validateDecimal';
-import { uploadImage, deleteImage } from '../../lib/supabase';
 
 type Currency = 'Bs' | 'USD';
 
@@ -81,43 +80,6 @@ function calculateLive(
   });
 }
 
-function imageToBase64(file: File, maxWidth = 300): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      const img = new Image();
-      img.src = reader.result as string;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('No se pudo crear el contexto del canvas'));
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-        // JPEG con calidad 0.7 para reducir tamaño
-        const base64 = canvas.toDataURL('image/jpeg', 0.7);
-        resolve(base64);
-      };
-      img.onerror = reject;
-    };
-    reader.onerror = reject;
-  });
-}
-
 export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductFormProps) {
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -182,7 +144,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     if (file) {
       setIsUploading(true);
       try {
-        const base64 = await imageToBase64(file, 800);
+        const base64 = await imageToBase64(file, 300);
         setFormData(prev => ({ ...prev, photoPreview: base64 }));
       } catch (error) {
         console.error('Error al procesar imagen:', error);
@@ -240,9 +202,6 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           profitPercentage: profit,
           exemptFromVAT: !formData.aplicarIVA,
           photoUrl: formData.photoPreview || '',
-          priceWithoutVAT: parseFloat(priceBase.toFixed(2)),
-          priceWithVAT: parseFloat(priceWithVAT.toFixed(2)),
-          utility: parseFloat(utility.toFixed(2)),
         });
       } else {
         await addProduct({
@@ -263,79 +222,120 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     }
   };
 
+  function imageToBase64(file: File, maxWidth = 300): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const img = new Image();
+        img.src = reader.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('No se pudo crear el contexto del canvas'));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const base64 = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(base64);
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  }
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleCancel}>
-      <div className="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl p-6 md:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-800">
             {productToEdit ? 'Editar Producto' : 'Agregar Producto Nuevo'}
           </h2>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Nombre del Producto *
-              </label>
+          {/* Nombre */}
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              Nombre del Producto *
+            </label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+              autoComplete="off"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
+            />
+          </div>
+
+          {/* Costo con selector de moneda */}
+          <div>
+            <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-2">
+              Costo *
+            </label>
+            <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
               <input
-                id="name"
-                name="name"
-                type="text"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                autoComplete="off"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-              />
-            </div>
-            <div>
-              <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-2">
-                Costo *
-              </label>
-              <div className="flex">
-                <input
-                  id="cost"
-                  name="cost"
-                  type="text"
-                  inputMode="decimal"
-                  pattern="[0-9]*"
-                  autoComplete="off"
-                  value={formData.cost}
-                  onChange={handleInputChange}
-                  required
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
-                />
-                <select
-                  name="currency"
-                  value={formData.currency}
-                  onChange={handleInputChange}
-                  className="w-40 px-4 py-3 border border-gray-300 rounded-r-lg bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition text-base font-medium cursor-pointer"
-                >
-                  <option value="Bs">Bolívares (Bs)</option>
-                  <option value="USD">Dólares ($)</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label htmlFor="profitPercentage" className="block text-sm font-medium text-gray-700 mb-2">
-                % de Ganancia *
-              </label>
-              <input
-                id="profitPercentage"
-                name="profitPercentage"
+                id="cost"
+                name="cost"
                 type="text"
                 inputMode="decimal"
                 pattern="[0-9]*"
                 autoComplete="off"
-                value={formData.profitPercentage}
+                value={formData.cost}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base"
               />
+              <select
+                name="currency"
+                value={formData.currency}
+                onChange={handleInputChange}
+                className="w-20 md:w-32 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer shrink-0"
+              >
+                <option value="Bs">Bs</option>
+                <option value="USD">$</option>
+              </select>
             </div>
           </div>
+
+          {/* % Ganancia */}
+          <div>
+            <label htmlFor="profitPercentage" className="block text-sm font-medium text-gray-700 mb-2">
+              % Ganancia *
+            </label>
+            <input
+              id="profitPercentage"
+              name="profitPercentage"
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*"
+              autoComplete="off"
+              value={formData.profitPercentage}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
+            />
+          </div>
+
+          {/* IVA Checkbox */}
           <div className="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-50">
             <input
               id="aplicarIVA"
@@ -346,9 +346,11 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
             <label htmlFor="aplicarIVA" className="ml-3 text-sm font-medium text-gray-700 cursor-pointer flex-1">
-              ¿Producto con IVA (16%)?
+              Aplicar IVA (16%)
             </label>
           </div>
+
+          {/* Foto del Producto */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Foto del Producto (opcional)
@@ -378,6 +380,8 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               </div>
             )}
           </div>
+
+          {/* Cálculo en Vivo */}
           {liveResults && rate > 0 && (
             <div className="p-6 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl border shadow-sm">
               <h4 className="text-lg font-semibold mb-4 text-emerald-800">📊 Cálculo en Vivo</h4>
@@ -407,6 +411,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               </div>
             </div>
           )}
+
           {liveResults && rate === 0 && (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-700">
@@ -414,6 +419,8 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               </p>
             </div>
           )}
+
+          {/* Botones */}
           <div className="flex gap-4 pt-4">
             <button
               type="button"
@@ -432,6 +439,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
         </form>
       </div>
 
+      {/* Modal de confirmación */}
       <ConfirmationModal
         isOpen={showConfirm}
         title="Confirmar cancelación"
