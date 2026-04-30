@@ -1,0 +1,24 @@
+/* App.css - Estilos básicos para La Mundial */
+/* Nota: La aplicación usa principalmente Tailwind CSS */
+
+/* Estilos globales opcionales */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Estilos específicos para la aplicación (si se necesitan) */
+.app-container {
+  min-height: 100vh;
+}
+
+/* Puedes agregar estilos personalizados aquí si es necesario */

@@ -1,0 +1,41 @@
+{
+  "name": "calculadora-precios",
+  "version": "0.0.0",
+  "description": "Calculadora de precios para La Mundial - Aplicación de escritorio con Electron",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "concurrently \"npm --prefix frontend run dev\" \"electron .\"",
+    "dev:electron": "npx electron .",
+    "build": "npm --prefix frontend run build && electron-builder",
+    "package": "npm --prefix frontend run build && electron-builder --dir"
+  },
+  "keywords": [
+    "calculadora",
+    "precios",
+    "electron",
+    "react",
+    "typescript"
+  ],
+  "author": "Jose Andrade",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.lamundial.calculadora",
+    "productName": "Calculadora de Precios La Mundial",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "frontend/dist/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  }
+}
