@@ -6,7 +6,7 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   root: './',
-  base: './',
+  base: '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -18,7 +18,7 @@ export default defineConfig({
     strictPort: true
   },
   build: {
-    outDir: '../frontend/dist',
+    outDir: 'dist',
     emptyOutDir: true,
     sourcemap: true
   }
