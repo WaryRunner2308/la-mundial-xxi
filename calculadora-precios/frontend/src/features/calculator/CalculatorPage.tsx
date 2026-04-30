@@ -89,7 +89,7 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
   }, [rate]);
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">Calculadora de Precios</h1>
@@ -113,16 +113,17 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
         </div>
       </div>
 
-      <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
-        {/* Panel de Entrada */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm order-2 lg:order-1">
-          <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4 md:mb-6">Datos del Producto</h2>
-          <div className="space-y-4 md:space-y-6">
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Datos del Producto - Primer panel (mobile arriba) */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-gray-800 mb-6">Datos del Producto</h2>
+          <div className="space-y-6">
+            {/* Costo */}
             <div>
               <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-2">
                 Costo *
               </label>
-              <div className="flex">
+              <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
                 <input
                   id="cost"
                   name="cost"
@@ -133,13 +134,13 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                   value={formData.cost}
                   onChange={handleInputChange}
                   required
-                  className="flex-1 px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base md:text-lg"
+                  className="flex-1 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none text-base md:text-lg bg-white"
                 />
                 <select
                   name="currency"
                   value={formData.currency}
                   onChange={handleInputChange}
-                  className="w-32 md:w-40 px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-r-lg bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition text-sm md:text-base font-medium cursor-pointer"
+                  className="w-32 md:w-40 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer"
                 >
                   <option value="Bs">Bs</option>
                   <option value="USD">$</option>
@@ -147,6 +148,7 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
               </div>
             </div>
 
+            {/* % Ganancia */}
             <div>
               <label htmlFor="profitPercentage" className="block text-sm font-medium text-gray-700 mb-2">
                 % Ganancia *
@@ -161,59 +163,63 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                 value={formData.profitPercentage}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base md:text-lg"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base md:text-lg"
               />
             </div>
 
-            <div className="flex items-center p-3 md:p-4 border border-gray-200 rounded-lg bg-gray-50">
+            {/* IVA Checkbox */}
+            <div className="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-50">
               <input
                 id="aplicarIVA"
                 name="aplicarIVA"
                 type="checkbox"
                 checked={formData.aplicarIVA}
                 onChange={handleCheckboxChange}
-                className="w-4 h-4 md:w-5 md:h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
-              <label htmlFor="aplicarIVA" className="ml-3 text-xs md:text-sm font-medium text-gray-700 cursor-pointer flex-1">
+              <label htmlFor="aplicarIVA" className="ml-3 text-sm font-medium text-gray-700 cursor-pointer flex-1">
                 Aplicar IVA (16%)
               </label>
             </div>
           </div>
         </div>
 
-        {/* Panel de Resultados */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm order-1 lg:order-2">
-          <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4 md:mb-6">Resultados</h2>
+        {/* Resultados - Segundo panel (mobile abajo) */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-gray-800 mb-6">Resultados</h2>
           {results && rate > 0 ? (
-            <div className="space-y-3 md:space-y-4">
-              <div className="p-4 md:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-100">
-                <span className="block text-gray-600 mb-1 md:mb-2 text-sm md:text-lg">Precio Final</span>
-                <span className="block font-bold text-2xl md:text-4xl text-blue-600 mb-1">
+            <div className="space-y-4">
+              {/* Precio Final */}
+              <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-100">
+                <span className="block text-gray-600 mb-2 text-lg">Precio Final</span>
+                <span className="block font-bold text-4xl text-blue-600 mb-1">
                   {formatAmountWithCurrency(results.priceWithVAT, results.currency)}
                 </span>
                 {rate > 0 && results.priceWithVATConverted !== undefined && (
-                  <span className="block text-xs md:text-sm text-gray-500">
+                  <span className="block text-sm text-gray-500">
                     {formatAmountWithCurrency(results.priceWithVATConverted, results.currency === 'Bs' ? 'USD' : 'Bs')}
                   </span>
                 )}
               </div>
-              <div className="p-4 md:p-6 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-100">
-                <span className="block text-gray-600 mb-1 md:mb-2 text-sm md:text-lg">Ganancia</span>
-                <span className="block font-bold text-2xl md:text-4xl text-emerald-600 mb-1">
+
+              {/* Ganancia */}
+              <div className="p-6 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-100">
+                <span className="block text-gray-600 mb-2 text-lg">Ganancia</span>
+                <span className="block font-bold text-4xl text-emerald-600 mb-1">
                   {formatAmountWithCurrency(results.utility, results.currency)}
                 </span>
                 {rate > 0 && results.utilityConverted !== undefined && (
-                  <span className="block text-xs md:text-sm text-gray-500">
+                  <span className="block text-sm text-gray-500">
                     {formatAmountWithCurrency(results.utilityConverted, results.currency === 'Bs' ? 'USD' : 'Bs')}
                   </span>
                 )}
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-48 md:h-64 text-gray-400">
+            <div className="flex items-center justify-center h-64 text-gray-400">
               <div className="text-center">
-                <div className="text-4xl md:text-5xl mb-3">🧮</div>
-                <p className="text-sm md:text-base">Ingresa datos para ver resultados</p>
+                <div className="text-5xl mb-3">🧮</div>
+                <p className="text-base">Ingresa datos para ver resultados</p>
               </div>
             </div>
           )}
