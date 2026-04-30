@@ -37,7 +37,7 @@ export const useProductStore = create<ProductStore>()((set, get) => ({
       name: product.name,
       category: '',
       cost_usd: costUSD,
-      original_currency: product.currency,
+      original_currency: product.currency === 'Bs' ? 'bs' : 'usd',
       profit_percentage: product.profitPercentage,
       exempt_from_vat: product.exemptFromVAT,
       photo_url: product.photoUrl || null,
@@ -106,11 +106,12 @@ export const useProductStore = create<ProductStore>()((set, get) => ({
     }
 
     const dbUpdate: any = {};
-    if (updates.name !== undefined) dbUpdate.name = updates.name;
-    if (updatedCostUSD !== undefined) dbUpdate.cost_usd = updatedCostUSD;
-    if (updates.profitPercentage !== undefined) dbUpdate.profit_percentage = updates.profitPercentage;
-    if (updates.exemptFromVAT !== undefined) dbUpdate.exempt_from_vat = updates.exemptFromVAT;
-    if (updates.photoUrl !== undefined) dbUpdate.photo_url = updates.photoUrl || null;
+     if (updates.name !== undefined) dbUpdate.name = updates.name;
+     if (updatedCostUSD !== undefined) dbUpdate.cost_usd = updatedCostUSD;
+     if (updates.profitPercentage !== undefined) dbUpdate.profit_percentage = updates.profitPercentage;
+     if (updates.exemptFromVAT !== undefined) dbUpdate.exempt_from_vat = updates.exemptFromVAT;
+     if (updates.photoUrl !== undefined) dbUpdate.photo_url = updates.photoUrl || null;
+     if (updates.originalCurrency !== undefined) dbUpdate.original_currency = updates.originalCurrency === 'Bs' ? 'bs' : 'usd';
 
     const { error } = await supabase.from('products').update(dbUpdate).eq('id', id);
     if (error) {
@@ -141,7 +142,7 @@ export const useProductStore = create<ProductStore>()((set, get) => ({
       name: item.name,
       category: item.category || '',
       costUSD: item.cost_usd,
-      originalCurrency: item.original_currency,
+      originalCurrency: (item.original_currency === 'bs' ? 'Bs' : item.original_currency === 'usd' ? 'USD' : 'Bs') as Currency,
       profitPercentage: item.profit_percentage,
       exemptFromVAT: item.exempt_from_vat,
       photoUrl: item.photo_url || '',
