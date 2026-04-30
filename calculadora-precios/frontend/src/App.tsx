@@ -1,34 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { useCurrencyStore } from '@/store/currencyStore';
-import { formatAmountWithCurrency } from '@/utils/format';
 import { supabase } from '@/lib/supabase';
 
 import { ProductsPage } from '@/features/products/ProductList';
 import { MermaPage } from '@/features/merma/MermaPage';
 import { useProductStore } from '@/store/productStore';
-import { CalculatorPage } from '@/features/calculator/CalculatorPage';
-
-type Currency = 'Bs' | 'USD';
-
-function CalculatorPage({ onEditRate }: { onEditRate: () => void }) {
-  const rate = useCurrencyStore((state) => state.rate);
-  const [formData, setFormData] = useState<CalcFormData>({
-    cost: '',
-    currency: 'Bs',
-    profitPercentage: '',
-    aplicarIVA: false,
-  });
-  const [results, setResults] = useState<CalcResults | null>(null);
-
-  const calculate = (data: CalcFormData) => {
-    const cost = parseFloat(data.cost) || 0;
-    const profit = parseFloat(data.profitPercentage) || 0;
-
-    if (cost <= 0 || profit < 0 || profit >= 100) {
-      setResults(null);
-      return;
-    }
 
     const divisor = 1 - (profit / 100);
     const priceBase = cost / divisor;
