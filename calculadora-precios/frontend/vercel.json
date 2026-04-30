@@ -11,6 +11,10 @@
   ],
   "routes": [
     {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
@@ -18,5 +22,25 @@
   "env": {
     "VITE_SUPABASE_URL": "https://psnljpznbpjtvitfskir.supabase.co",
     "VITE_SUPABASE_ANON_KEY": "sb_publishable_UDtPVDUNOOfpYG5TB2sbNQ_sksp4W65"
-  }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }
