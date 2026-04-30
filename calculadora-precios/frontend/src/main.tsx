@@ -1,8 +1,9 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 
-// Global error handler to show errors instead of white screen
+// Global error handler
 window.addEventListener('error', (event) => {
   console.error('Global error captured:', event.error)
 })
@@ -20,6 +21,8 @@ const root = createRoot(container)
 
 root.render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 )
