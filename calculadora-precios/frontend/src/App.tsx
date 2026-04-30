@@ -79,15 +79,15 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
           <div className="mb-4 md:mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">Tasa de Cambio</label>
             <input
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*"
+              autoComplete="off"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Ej: 40.50"
               className="w-full px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base md:text-lg text-center"
               autoFocus
-              autoComplete="off"
             />
           </div>
           <button
