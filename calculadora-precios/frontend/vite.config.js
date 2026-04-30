@@ -18,7 +18,7 @@ export default defineConfig({
     strictPort: true
   },
   build: {
-    outDir: '../frontend/dist',
+    outDir: 'dist',
     emptyOutDir: true,
     sourcemap: true
   }
