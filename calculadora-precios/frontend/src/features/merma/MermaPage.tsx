@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { validateDecimalInput } from '@/utils/validateDecimal';
 
 export function MermaPage() {
   const [kilosFactura, setKilosFactura] = useState<string>('');
@@ -32,34 +33,34 @@ export function MermaPage() {
               <label htmlFor="kilosFactura" className="block text-sm font-medium text-gray-700 mb-2">
                 Kilos en Factura
               </label>
-              <input
-                id="kilosFactura"
-                name="kilosFactura"
-                type="number"
-                step="0.01"
-                min="0"
-                value={kilosFactura}
-                onChange={(e) => setKilosFactura(e.target.value)}
-                autoComplete="off"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
-              />
+               <input
+                 id="kilosFactura"
+                 name="kilosFactura"
+                 type="text"
+                 inputMode="decimal"
+                 pattern="[0-9]*"
+                 autoComplete="off"
+                 value={kilosFactura}
+                 onChange={(e) => setKilosFactura(validateDecimalInput(e.target.value))}
+                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
+               />
             </div>
 
             <div>
               <label htmlFor="kilosLlegaron" className="block text-sm font-medium text-gray-700 mb-2">
                 Kilos que Llegaron
               </label>
-              <input
-                id="kilosLlegaron"
-                name="kilosLlegaron"
-                type="number"
-                step="0.01"
-                min="0"
-                value={kilosLlegaron}
-                onChange={(e) => setKilosLlegaron(e.target.value)}
-                autoComplete="off"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
-              />
+               <input
+                 id="kilosLlegaron"
+                 name="kilosLlegaron"
+                 type="text"
+                 inputMode="decimal"
+                 pattern="[0-9]*"
+                 autoComplete="off"
+                 value={kilosLlegaron}
+                 onChange={(e) => setKilosLlegaron(validateDecimalInput(e.target.value))}
+                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
+               />
             </div>
           </div>
         </div>

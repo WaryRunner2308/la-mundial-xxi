@@ -4,6 +4,7 @@ import { useCurrencyStore } from '../../store/currencyStore';
 import { formatAmountWithCurrency } from '../../utils/format';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import { uploadProductImage, deleteProductImage } from '../../lib/supabase';
+import { validateDecimalInput } from '../../utils/validateDecimal';
 import { uploadImage, deleteImage } from '../../lib/supabase';
 
 type Currency = 'Bs' | 'USD';
@@ -164,7 +165,8 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const newData = { ...formData, [name]: value };
+    const cleanedValue = name === 'cost' || name === 'profitPercentage' ? validateDecimalInput(value) : value;
+    const newData = { ...formData, [name]: cleanedValue };
     setFormData(newData);
     calculateLive(newData, rate, setLiveResults);
   };
@@ -296,13 +298,13 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
                 <input
                   id="cost"
                   name="cost"
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*"
+                  autoComplete="off"
                   value={formData.cost}
                   onChange={handleInputChange}
                   required
-                  autoComplete="off"
                   className="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
                 />
                 <select
@@ -323,14 +325,13 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               <input
                 id="profitPercentage"
                 name="profitPercentage"
-                type="number"
-                step="0.01"
-                min="0"
-                max="99.99"
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]*"
+                autoComplete="off"
                 value={formData.profitPercentage}
                 onChange={handleInputChange}
                 required
-                autoComplete="off"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
               />
             </div>
