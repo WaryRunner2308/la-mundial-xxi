@@ -23,7 +23,7 @@ interface CalculatorPageProps {
   onEditRate: () => void;
 }
 
-export export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
+export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
   const rate = useCurrencyStore((state) => state.rate);
   const [formData, setFormData] = useState<CalcFormData>({
     cost: '',
