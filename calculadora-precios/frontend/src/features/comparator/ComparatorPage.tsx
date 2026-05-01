@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useProductStore } from '../../store/productStore';
 import { useProviderStore } from '../../store/providerStore';
 import { ProductPriceComparison } from '../../types/provider';
+import { SecureInput } from '../../components/ui/SecureInput';
 
 export function ComparatorPage() {
   const { products } = useProductStore();
@@ -10,7 +11,6 @@ export function ComparatorPage() {
   const [selectedProduct, setSelectedProduct] = useState<ProductPriceComparison | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isFocused, setIsFocused] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   // Generar un nombre aleatorio único para el input (cada vez que el componente se monta)
@@ -130,58 +130,35 @@ export function ComparatorPage() {
         </p>
       </div>
 
-      {/* Buscador */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
-        <label htmlFor={randomInputName} className="block text-sm font-medium text-gray-700 mb-2">
-          Buscar Producto
-        </label>
-        {/* Formulario fantasma desactivado */}
-        <div className="relative">
-          <input
-            id={randomInputName}
-            name={randomInputName}
-            type="text"
-            readOnly={!isFocused}
-            onFocus={(e) => {
-              setIsFocused(true);
-              // Eliminar readOnly después de un breve retraso para romper detección
-              setTimeout(() => {
-                e.target.readOnly = false;
-                e.target.focus();
-              }, 50);
-            }}
-            onBlur={() => {
-              setIsFocused(false);
-              setHighlightedIndex(-1);
-            }}
-            onKeyDown={handleKeyDown}
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setHighlightedIndex(-1);
-            }}
-            placeholder="Ej: Malta 1.5L"
-            autoComplete="new-password"
-            autoCorrect="off"
-            spellCheck="false"
-            role="searchbox"
-            inputMode="search"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
-          />
-          {searchTerm && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedProduct(null);
-                setIsFocused(false);
-              }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              ✕
-            </button>
-          )}
-        </div>
+       {/* Buscador */}
+       <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
+         <label htmlFor={randomInputName} className="block text-sm font-medium text-gray-700 mb-2">
+           Buscar Producto
+         </label>
+         <div className="relative">
+           <SecureInput
+             id={randomInputName}
+             value={searchTerm}
+             onChange={setSearchTerm}
+             onKeyDown={handleKeyDown}
+             placeholder="Ej: Malta 1.5L"
+             inputMode="search"
+             editable
+             displayClassName="border-0 rounded-none focus:ring-0 focus:border-none pr-8"
+           />
+           {searchTerm && (
+             <button
+               type="button"
+               onClick={() => {
+                 setSearchTerm('');
+                 setSelectedProduct(null);
+               }}
+               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
+             >
+               ✕
+             </button>
+           )}
+         </div>
 
         {/* Sugerencias */}
         {searchTerm && filteredProducts.length > 0 && (
