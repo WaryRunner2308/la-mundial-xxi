@@ -74,11 +74,12 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
     const { name, value } = e.target;
     const newData = { ...formData };
 
-    // Mapear nombres de campo a propiedades de CalcFormData
     if (name === 'calc_cost_field') {
       newData.cost = value;
     } else if (name === 'calc_profit_field') {
       newData.profitPercentage = value;
+    } else if (name === 'calc_currency_field') {
+      newData.currency = value as Currency;
     } else {
       newData[name] = value;
     }
@@ -153,7 +154,7 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                     className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg"
                   />
                 <select
-                  name="currency"
+                  name="calc_currency_field"
                   value={formData.currency}
                   onChange={handleInputChange}
                   className="w-20 md:w-32 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer shrink-0"

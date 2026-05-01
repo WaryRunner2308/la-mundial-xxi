@@ -162,23 +162,39 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     const { name, value } = e.target;
     let newData: FormData;
 
-    if (name === 'providerId') {
+    // Mapeo de nombres de campo a propiedades de FormData
+    const fieldMap: Record<string, keyof FormData> = {
+      'product_name_field': 'name',
+      'product_cost_field': 'cost',
+      'profit_perc_field': 'profitPercentage',
+      'units_bulk_field': 'unitsPerBulk',
+      'currency_select_field': 'currency',
+      'provider_select_field': 'providerId',
+      'packageType': 'packageType',
+    };
+
+    const formField = fieldMap[name];
+
+    if (formField === undefined) {
+      // Campo no reconocido, ignorar
+      return;
+    }
+
+    if (formField === 'providerId') {
       newData = { ...formData, providerId: value ? parseInt(value, 10) : undefined };
-    } else if (name === 'units_bulk_field') {
+    } else if (formField === 'unitsPerBulk') {
       const cleaned = value.replace(/[^0-9]/g, '');
       newData = { ...formData, unitsPerBulk: cleaned };
-    } else if (name === 'packageType') {
+    } else if (formField === 'packageType') {
       newData = value === 'unit'
         ? { ...formData, packageType: 'unit', unitsPerBulk: '' }
         : { ...formData, packageType: 'bulk' };
     } else {
-      // Mapear nombres de campo a propiedades de FormData
-      const fieldMap: Record<string, keyof FormData> = {
-        'product_cost_field': 'cost',
-        'profit_perc_field': 'profitPercentage',
-      };
-      const formField = fieldMap[name] || name;
-      const cleanedValue = formField === 'cost' || formField === 'profitPercentage' ? validateDecimalInput(value) : value;
+      // Campo de texto (name, cost, profitPercentage, currency)
+      let cleanedValue = value;
+      if (formField === 'cost' || formField === 'profitPercentage') {
+        cleanedValue = validateDecimalInput(value);
+      }
       newData = { ...formData, [formField]: cleanedValue };
     }
 
@@ -330,13 +346,16 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               Nombre del Producto *
             </label>
             <input
-              id="name"
-              name="name"
+              id="product_name_field"
+              name="product_name_field"
               type="text"
               value={formData.name}
               onChange={handleInputChange}
-              required
-              autoComplete="off"
+              autoComplete="new-password"
+              autoCorrect="off"
+              spellCheck="false"
+              autoCapitalize="none"
+              placeholder="Ej: Malta 1.5L"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
             />
           </div>
@@ -361,12 +380,12 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
                   required={false}
                   className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base"
                 />
-              <select
-                name="currency"
-                value={formData.currency}
-                onChange={handleInputChange}
-                className="w-20 md:w-32 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer shrink-0"
-              >
+               <select
+                 name="currency_select_field"
+                 value={formData.currency}
+                 onChange={handleInputChange}
+                 className="w-20 md:w-32 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer shrink-0"
+               >
                 <option value="Bs">Bs</option>
                 <option value="USD">$</option>
               </select>
@@ -460,13 +479,13 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
             <label htmlFor="providerId" className="block text-sm font-medium text-gray-700 mb-2">
               Proveedor
             </label>
-            <select
-              id="providerId"
-              name="providerId"
-              value={formData.providerId ?? ''}
-                   onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base bg-white"
-            >
+             <select
+               id="provider_select_field"
+               name="provider_select_field"
+               value={formData.providerId ?? ''}
+               onChange={handleInputChange}
+               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base bg-white"
+             >
               <option value="">Seleccionar proveedor</option>
               {providers.map((provider) => (
                 <option key={provider.id} value={provider.id}>
@@ -498,7 +517,8 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
             </label>
             <input
               type="file"
-              id="photo"
+              id="product_photo_field"
+              name="product_photo_field"
               accept="image/*"
               onChange={handlePhotoChange}
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
