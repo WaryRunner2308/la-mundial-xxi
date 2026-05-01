@@ -5,16 +5,23 @@ import { Select } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 
+interface Results {
+  priceWithoutVAT: number;
+  priceWithVAT: number;
+  utility: number;
+  marginUsed: number;
+}
+
 export function Calculator() {
   const [formData, setFormData] = useState({
     cost: '',
     profitPercentage: '',
     exemptFromVAT: false,
-  });
+  } as const);
 
-  const [results, setResults] = useState(null);
+  const [results, setResults] = useState<Results | null>(null);
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -37,9 +44,9 @@ export function Calculator() {
     // Formula: priceWithoutVAT = cost / (1 - profitPercentage/100)
     const profitFactor = profitPercentage / 100;
     const divisor = 1 - profitFactor;
-    let priceWithoutVAT;
+    let priceWithoutVAT: number;
     if (divisor <= 0) {
-      priceWithoutVAT = cost; // fallback to avoid division by zero or negative
+      priceWithoutVAT = cost;
     } else {
       priceWithoutVAT = cost / divisor;
     }

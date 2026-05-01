@@ -3,7 +3,7 @@ import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { supabase } from '@/lib/supabase';
 import { parseNumericInput } from '@/utils/validateDecimal';
-import { SecureEditableInput } from '@/components/ui/SecureInput';
+import { SecureInput } from '@/components/ui/SecureInput';
 
 import { ProductsPage } from '@/features/products/ProductList';
 import { MermaPage } from '@/features/merma/MermaPage';
@@ -83,11 +83,12 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
         <div className="space-y-6">
           <div>
             <span className="block text-sm font-medium text-gray-700 mb-2">Tasa de Cambio</span>
-            <SecureEditableInput
+            <SecureInput
               value={inputValue}
               onChange={setInputValue}
               placeholder="Ej: 40.50"
               inputMode="decimal"
+              editable
             />
           </div>
           <button

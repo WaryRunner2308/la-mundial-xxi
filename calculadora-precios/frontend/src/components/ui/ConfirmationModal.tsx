@@ -20,20 +20,23 @@ export function ConfirmationModal({
   onCancel,
 }: ConfirmationModalProps) {
   useEffect(() => {
-    if (isOpen) {
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fade-in {
-          animation: fadeIn 0.2s ease-out;
-        }
-      `;
-      document.head.appendChild(style);
-      return () => document.head.removeChild(style);
-    }
+    if (!isOpen) return;
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.2s ease-out;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
+    };
   }, [isOpen]);
 
    if (!isOpen) return null;

@@ -88,7 +88,7 @@ export function ComparatorPage() {
               profit_percentage: p.profitPercentage,
               exempt_from_vat: p.exemptFromVAT,
               photo_url: p.photoUrl,
-              updated_at: p.updatedAt,
+              updated_at: p.updatedAt ?? undefined,
               provider_name: provider?.name || 'Desconocido',
             };
           })

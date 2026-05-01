@@ -1,5 +1,5 @@
 import React from 'react';
-import { useProductStore } from '../../store/productStore';
+import { useProductStore, Product } from '../../store/productStore';
 import { useCurrencyStore } from '../../store/currencyStore';
 import { useProviderStore } from '../../store/providerStore';
 import { ProductForm } from './ProductForm';
@@ -21,7 +21,7 @@ interface ProductWithDynamicPrices {
   utilityUSD: number;
 }
 
-function useProductsWithDynamicPrices(products: ReturnType<typeof useProductStore>['products']) {
+function useProductsWithDynamicPrices(products: Product[]) {
   const rate = useCurrencyStore((state) => state.rate);
 
   return React.useMemo(() => {

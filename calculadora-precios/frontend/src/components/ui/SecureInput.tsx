@@ -23,7 +23,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         // Nombre único por montaje para derrotar autocompletado
         const fieldName = useRef<string>(`field_${Math.random().toString(36).substring(2, 15)}`);
 
-        useImperativeHandle(ref, () => containerRef.current as HTMLDivElement);
+        useImperativeHandle(ref, () => containerRef.current!);
 
         useEffect(() => {
             if (autoFocus && inputRef.current) {
