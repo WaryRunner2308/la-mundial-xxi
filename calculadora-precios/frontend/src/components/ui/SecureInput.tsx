@@ -63,47 +63,37 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
 
         // Prevent default browser autocomplete behaviors
         return (
-            <div
-                ref={containerRef}
-                onClick={handleContainerClick}
-                className={`w-full relative ${className}`}
-            >
-                {label && (
-                    <span className="block text-sm font-medium text-gray-700 mb-2">
-                        {label}
-                    </span>
-                )}
-                <div className="relative">
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        // Unique autocomplete value prevents Chrome from matching history
-                        autoComplete={`new-${fieldId}`}
-                        inputMode={inputMode}
-                        // Additional prevention
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
-                        // Random name each render
-                        name={fieldId}
-                        id={fieldId}
-                        value={value}
-                        onChange={handleInputChange}
-                        onFocus={handleInputFocus}
-                        onBlur={handleInputBlur}
-                        placeholder={placeholder}
-                        // Hide the actual input but keep it functional
-                        className="absolute opacity-0 pointer-events-none w-px h-px overflow-hidden"
-                        style={{
-                            position: 'absolute',
-                            left: '-9999px',
-                            top: 0,
-                            width: '1px',
-                            height: '1px',
-                            opacity: 0,
-                            pointerEvents: 'none'
-                        }}
-                    />
+            <>
+                {/* Hidden input that captures all input events - 1px at top-left to trigger mobile keyboard */}
+                <input
+                    ref={inputRef}
+                    type="text"
+                    autoComplete="new-password"
+                    inputMode={inputMode === 'decimal' ? 'decimal' : inputMode}
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
+                    name={fieldId}
+                    id={fieldId}
+                    value={value}
+                    onChange={handleInputChange}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                    style={{
+                        position: 'absolute',
+                        left: '0',
+                        top: '0',
+                        width: '1px',
+                        height: '1px',
+                        opacity: 0,
+                        zIndex: 0,
+                        pointerEvents: 'auto',
+                    }}
+                    // Extra anti-autofill attributes
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    autoComplete="off"
+                />
                     {/* Visual display - controlled via CSS to prevent autocomplete */}
                     <div
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base min-h-[48px] bg-white"
@@ -206,7 +196,7 @@ export const SecureEditableInput = forwardRef<HTMLDivElement, SecureEditableInpu
 
         return (
             <>
-                {/* Hidden input that captures all input events */}
+                {/* Hidden input that captures all input events - positioned at 1px to trigger mobile keyboard */}
                 <input
                     ref={inputRef}
                     type="text"
@@ -219,19 +209,47 @@ export const SecureEditableInput = forwardRef<HTMLDivElement, SecureEditableInpu
                     id={fieldId}
                     value={value}
                     onChange={handleInputChange}
+                    onFocus={handleInputFocus}
                     onBlur={handleInputBlur}
-                    className="sr-only"
+                    placeholder={placeholder}
+                    // 1px visible input to trigger mobile keyboard, but positioned off-screen
+                    className="absolute opacity-0 w-[1px] h-[1px]"
                     style={{
                         position: 'absolute',
+                        left: '0',
+                        top: '0',
                         width: '1px',
                         height: '1px',
-                        padding: 0,
-                        margin: '-1px',
-                        overflow: 'hidden',
-                        clip: 'rect(0, 0, 0, 0)',
-                        whiteSpace: 'nowrap',
-                        border: 0
+                        opacity: 0,
+                        zIndex: -1,
                     }}
+                    // Prevent autofill completely
+                    autoComplete="new-password"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                />
+
+                {/* Visual display using contentEditable */}
+                <div
+                    ref={displayRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onFocus={handleFocus}
+                    onInput={(e) => {
+                        // Prevent direct input, let the hidden input handle it
+                        e.preventDefault();
+                        if (inputRef.current) {
+                            inputRef.current.focus();
+                        }
+                    }}
+                    className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base min-h-[48px] bg-white ${displayClassName}`}
+                    style={{
+                        outline: 'none',
+                        // Prevent any browser handling
+                        pointerEvents: 'auto',
+                        userSelect: 'text',
+                    }}
+                    {...(placeholder && !value ? { 'data-placeholder': placeholder } : {})}
                 />
 
                 {/* Visual display using contentEditable */}

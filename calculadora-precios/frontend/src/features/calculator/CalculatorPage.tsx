@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { formatAmountWithCurrency } from '@/utils/format';
 import { parseNumericInput } from '@/utils/validateDecimal';
+import { SecureEditableInput } from '@/components/ui/SecureInput';
 
 type Currency = 'Bs' | 'USD';
 
@@ -33,14 +34,6 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
     aplicarIVA: false,
   });
   const [results, setResults] = useState<CalcResults | null>(null);
-
-  // Refs para displays
-  const costDisplayRef = useRef<HTMLDivElement>(null);
-  const profitDisplayRef = useRef<HTMLDivElement>(null);
-
-  // Refs para inputs fantasma
-  const costInputRef = useRef<HTMLInputElement>(null);
-  const profitInputRef = useRef<HTMLInputElement>(null);
 
   const calculate = (data: CalcFormData) => {
     const cost = parseNumericInput(data.cost);
@@ -78,33 +71,14 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
     });
   };
 
-  // Handlers de inputs fantasma
-  const handleCostProxyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    value = value.replace(/[^0-9.,]/g, '');
-    const parts = value.split('.');
-    if (parts.length > 2) {
-      value = parts[0] + '.' + parts.slice(1).join('');
-    }
+  const handleCostChange = (value: string) => {
     setFormData(prev => ({ ...prev, cost: value }));
     calculate({ ...formData, cost: value });
-    if (costDisplayRef.current) {
-      costDisplayRef.current.textContent = value;
-    }
   };
 
-  const handleProfitProxyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    value = value.replace(/[^0-9.,]/g, '');
-    const parts = value.split('.');
-    if (parts.length > 2) {
-      value = parts[0] + '.' + parts.slice(1).join('');
-    }
+  const handleProfitChange = (value: string) => {
     setFormData(prev => ({ ...prev, profitPercentage: value }));
     calculate({ ...formData, profitPercentage: value });
-    if (profitDisplayRef.current) {
-      profitDisplayRef.current.textContent = value;
-    }
   };
 
   const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -116,27 +90,12 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.checked;
     setFormData(prev => ({ ...prev, aplicarIVA: newValue }));
-    calculate({ ...formData, aplicarIVA: newValue });
-  };
-
-  // Focus handlers - redirigen a inputs fantasma
-  const handleCostFocus = () => {
-    if (costInputRef.current) costInputRef.current.focus();
-  };
-
-  const handleProfitFocus = () => {
-    if (profitInputRef.current) profitInputRef.current.focus();
+    calculate({ ...prev, aplicarIVA: newValue });
   };
 
   useEffect(() => {
     calculate(formData);
   }, [rate]);
-
-  // Generate unique IDs to break Chrome's form history
-  const ts = Date.now();
-  const calcFormId = `calc_form_${ts}`;
-  const fieldCostId = `calc_ct_${Math.random().toString(36).substring(2)}`;
-  const fieldProfitId = `calc_pf_${Math.random().toString(36).substring(2)}`;
 
   return (
     <div className="space-y-6">
@@ -169,56 +128,21 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Datos del Producto</h2>
 
-          {/* INPUTS FANTASMA - Técnica anti-autocomplete avanzada */}
-          <div style={{ position: 'absolute', left: '-1000px', top: '-1000px', opacity: 0, height: 0, width: 0, overflow: 'hidden' }}>
-            <input
-              ref={costInputRef}
-              type="text"
-              name={fieldCostId}
-              inputMode="decimal"
-              data-1p-ignore
-              data-lpignore="true"
-              autoComplete="new-random-calc-cost"
-              readOnly
-              onFocus={(e) => { (e.target as HTMLInputElement).readOnly = false; }}
-              value={formData.cost}
-              onChange={handleCostProxyChange}
-              tabIndex={-1}
-              aria-hidden="true"
-              style={{ pointerEvents: 'none' }}
-            />
-            <input
-              ref={profitInputRef}
-              type="text"
-              name={fieldProfitId}
-              inputMode="decimal"
-              data-1p-ignore
-              data-lpignore="true"
-              autoComplete="new-random-calc-profit"
-              readOnly
-              onFocus={(e) => { (e.target as HTMLInputElement).readOnly = false; }}
-              value={formData.profitPercentage}
-              onChange={handleProfitProxyChange}
-              tabIndex={-1}
-              aria-hidden="true"
-              style={{ pointerEvents: 'none' }}
-            />
-          </div>
-
           {/* Costo con selector de moneda */}
           <div className="mb-6">
             <span className="block text-sm font-medium text-gray-700 mb-2">
               Costo *
             </span>
             <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-              <div
-                ref={costDisplayRef}
-                contentEditable={true}
-                onFocus={handleCostFocus}
-                className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg min-h-[48px]"
-                style={{ outline: 'none' }}
-                suppressContentEditableWarning
-              />
+              <div className="flex-1 min-w-0">
+                <SecureEditableInput
+                  value={formData.cost}
+                  onChange={handleCostChange}
+                  placeholder="0.00"
+                  inputMode="decimal"
+                  displayClassName="border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg min-h-[48px] flex-1"
+                />
+              </div>
               <select
                 value={formData.currency}
                 onChange={handleCurrencyChange}
@@ -235,13 +159,11 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
             <span className="block text-sm font-medium text-gray-700 mb-2">
               % Ganancia *
             </span>
-            <div
-              ref={profitDisplayRef}
-              contentEditable={true}
-              onFocus={handleProfitFocus}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base md:text-lg min-h-[48px]"
-              style={{ outline: 'none' }}
-              suppressContentEditableWarning
+            <SecureEditableInput
+              value={formData.profitPercentage}
+              onChange={handleProfitChange}
+              placeholder="Ej: 30"
+              inputMode="decimal"
             />
           </div>
 
