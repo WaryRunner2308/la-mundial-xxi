@@ -79,20 +79,23 @@ export function ComparatorPage() {
 
       {/* Buscador */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
-        <label htmlFor="productSearch" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="search_field_v2_primary" className="block text-sm font-medium text-gray-700 mb-2">
           Buscar Producto
         </label>
-        <div className="relative">
-          <input
-            id="productSearch"
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Ej: Malta 1.5L"
-            autoComplete="off"
-            autoComplete="new-password"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
-          />
+        <form autoComplete="off" onSubmit={(e) => e.preventDefault()}>
+          <div className="relative">
+            <input
+              id="search_field_v2_primary"
+              name="search_field_v2_primary"
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Ej: Malta 1.5L"
+              autoComplete="new-password"
+              autoCorrect="off"
+              spellCheck="false"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
+            />
           {searchTerm && (
             <button
               type="button"
@@ -106,6 +109,7 @@ export function ComparatorPage() {
             </button>
           )}
         </div>
+      </form>
 
         {/* Sugerencias */}
         {searchTerm && filteredProducts.length > 0 && (
