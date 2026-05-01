@@ -4,7 +4,7 @@ import { useCurrencyStore } from '../../store/currencyStore';
 import { useProviderStore } from '../../store/providerStore';
 import { formatAmountWithCurrency } from '../../utils/format';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
-import { uploadProductImage, deleteProductImage } from '../../lib/supabase';
+import { uploadProductImage } from '../../lib/supabase';
 import { validateDecimalInput, parseNumericInput } from '../../utils/validateDecimal';
 
 type Currency = 'Bs' | 'USD';
@@ -45,21 +45,21 @@ interface ProductFormProps {
   onSave?: () => void;
 }
 
+function getCostPerUnit(data: FormData): number {
+  let cost = parseNumericInput(data.cost);
+  if (data.packageType === 'bulk' && data.unitsPerBulk) {
+    const units = parseNumericInput(data.unitsPerBulk);
+    if (units > 0) cost = cost / units;
+  }
+  return cost;
+}
+
 function calculateLive(
   data: FormData,
   rate: number,
   setLiveResults: React.Dispatch<React.SetStateAction<LiveResults | null>>
 ) {
-  // Calcular costo unitario según tipo de empaque
-  let costPerUnit = parseNumericInput(data.cost);
-
-  if (data.packageType === 'bulk' && data.unitsPerBulk) {
-    const units = parseNumericInput(data.unitsPerBulk);
-    if (units > 0) {
-      costPerUnit = costPerUnit / units;
-    }
-  }
-
+  const costPerUnit = getCostPerUnit(data);
   const profit = parseNumericInput(data.profitPercentage);
 
   if (costPerUnit <= 0 || profit < 0 || profit >= 100) {
@@ -165,10 +165,14 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     if (name === 'providerId') {
       newData = { ...formData, providerId: value ? parseInt(value, 10) : undefined };
     } else if (name === 'unitsPerBulk') {
-      const cleaned = validateDecimalInput(value);
+      // Only allow positive integers
+      const cleaned = value.replace(/[^0-9]/g, '');
       newData = { ...formData, unitsPerBulk: cleaned };
     } else if (name === 'packageType') {
-      newData = { ...formData, packageType: value as 'unit' | 'bulk' };
+      // Clean unitsPerBulk when switching to unit
+      newData = value === 'unit'
+        ? { ...formData, packageType: 'unit', unitsPerBulk: '' }
+        : { ...formData, packageType: 'bulk' };
     } else {
       const cleanedValue = name === 'cost' || name === 'profitPercentage' ? validateDecimalInput(value) : value;
       newData = { ...formData, [name]: cleanedValue };
@@ -231,15 +235,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
       return;
     }
 
-    // Calcular costo unitario según tipo de empaque
-    let costPerUnit = parseNumericInput(formData.cost);
-    if (formData.packageType === 'bulk' && formData.unitsPerBulk) {
-      const units = parseNumericInput(formData.unitsPerBulk);
-      if (units > 0) {
-        costPerUnit = costPerUnit / units;
-      }
-    }
-
+    const costPerUnit = getCostPerUnit(formData);
     const profit = parseNumericInput(formData.profitPercentage);
     const divisor = 1 - (profit / 100);
     const priceBase = costPerUnit / divisor;
@@ -427,7 +423,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               {formData.cost && formData.unitsPerBulk && parseNumericInput(formData.unitsPerBulk) > 0 && (
                 <p className="mt-2 text-sm text-blue-600 font-medium">
                   💡 Costo unitario resultante: {formatAmountWithCurrency(
-                    parseNumericInput(formData.cost) / parseNumericInput(formData.unitsPerBulk),
+                    getCostPerUnit(formData),
                     formData.currency
                   )}
                 </p>
