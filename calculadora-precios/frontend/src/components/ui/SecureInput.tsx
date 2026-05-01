@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 
 interface SecureInputProps {
     value: string;
@@ -19,6 +19,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         const containerRef = useRef<HTMLDivElement>(null);
         const inputRef = useRef<HTMLInputElement>(null);
         const displayRef = useRef<HTMLDivElement>(null);
+        const [isFocused, setIsFocused] = useState(false);
 
         // Nombre único por montaje para derrotar autocompletado
         const fieldName = useRef<string>(`field_${Math.random().toString(36).substring(2, 15)}`);
@@ -31,8 +32,13 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
             }
         }, [autoFocus]);
 
-        const handleContainerClick = () => {
-            inputRef.current?.focus();
+        const handleContainerClick = (e: React.MouseEvent) => {
+            // Evitar que el clic en el div visible robe el foco
+            if (inputRef.current) {
+                e.preventDefault();
+                e.stopPropagation();
+                inputRef.current.focus();
+            }
         };
 
         const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,21 +56,27 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         };
 
         const handleInputFocus = () => {
+            setIsFocused(true);
             onFocus?.();
         };
 
         const handleInputBlur = () => {
+            setIsFocused(false);
             onBlur?.();
         };
 
         const handleDisplayFocus = () => {
-            inputRef.current?.focus();
+            if (inputRef.current) {
+                inputRef.current.focus();
+            }
             onFocus?.();
         };
 
         const handleDisplayInput = (e: React.FormEvent<HTMLDivElement>) => {
             e.preventDefault();
-            inputRef.current?.focus();
+            if (inputRef.current) {
+                inputRef.current.focus();
+            }
         };
 
         // Sincronizar valor visual
@@ -86,7 +98,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     </span>
                 )}
 
-                {/* Input invisible de 1px para capturar teclado */}
+                {/* Input invisible - captura TODOS los eventos de clic y teclado */}
                 <input
                     ref={inputRef}
                     type="text"
@@ -105,11 +117,14 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         position: 'absolute',
                         left: '0',
                         top: '0',
-                        width: '1px',
-                        height: '1px',
+                        width: '100%',
+                        height: '100%',
                         opacity: 0,
-                        zIndex: 0,
-                        pointerEvents: 'auto',
+                        zIndex: 9999,
+                        cursor: 'text',
+                        margin: 0,
+                        padding: 0,
+                        border: 'none',
                     }}
                     data-lpignore="true"
                     data-1p-ignore="true"
@@ -123,19 +138,38 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         suppressContentEditableWarning
                         onFocus={handleDisplayFocus}
                         onInput={handleDisplayInput}
-                        className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base min-h-[48px] bg-white ${displayClassName}`}
-                        style={{ outline: 'none', pointerEvents: 'auto', userSelect: 'text' }}
+                        className={`
+                            w-full px-4 py-3 border border-gray-300 rounded-lg
+                            focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                            outline-none transition text-base min-h-[48px] bg-white
+                            ${isFocused ? 'ring-2 ring-blue-500 border-blue-500' : ''}
+                            ${displayClassName}
+                        `}
+                        style={{
+                            outline: 'none',
+                            pointerEvents: 'auto',
+                            userSelect: 'text',
+                            position: 'relative',
+                            zIndex: 1,
+                        }}
                         {...(placeholder && !value ? { 'data-placeholder': placeholder } : {})}
                     />
                 ) : (
                     <div
-                        className={`w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-base min-h-[48px] flex items-center ${value ? 'text-gray-900' : 'text-gray-400'} ${displayClassName}`}
+                        className={`
+                            w-full px-4 py-3 border border-gray-300 rounded-lg bg-white
+                            text-base min-h-[48px] flex items-center
+                            ${value ? 'text-gray-900' : 'text-gray-400'}
+                            ${isFocused ? 'ring-2 ring-blue-500 border-blue-500' : ''}
+                            ${displayClassName}
+                        `}
+                        style={{ position: 'relative', zIndex: 1 }}
                     >
                         {value || placeholder}
                     </div>
                 )}
 
-                {/* CSS anti-autofill */}
+                {/* CSS anti-autofill + cursor emulado */}
                 <style>{`
                     input:-webkit-autofill,
                     input:-webkit-autofill:hover,
@@ -152,6 +186,16 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         content: attr(data-placeholder);
                         color: #9ca3af;
                         pointer-events: none;
+                    }
+                    .secure-input-focused::after {
+                        content: '|';
+                        animation: blink 1s step-end infinite;
+                        margin-left: 2px;
+                        color: #3b82f6;
+                    }
+                    @keyframes blink {
+                        0%, 100% { opacity: 1; }
+                        50% { opacity: 0; }
                     }
                 `}</style>
             </div>
