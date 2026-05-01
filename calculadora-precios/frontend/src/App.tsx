@@ -180,19 +180,19 @@ function App() {
       {/* Sidebar */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-64 bg-white border-r shadow-sm flex flex-col h-screen
+        w-64 bg-white border-r shadow-sm flex flex-col
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="flex-shrink-0 flex items-center px-4 py-4 md:py-6 border-b">
+        <div className="flex-shrink-0 flex items-center px-4 py-3 md:py-4 border-b">
           <span className="text-lg md:text-xl font-semibold text-gray-900">La Mundial</span>
         </div>
 
-        <nav className="px-2 md:px-4 py-2 flex-shrink-0 flex-1 overflow-y-auto">
+        <nav className="flex-shrink-0 px-2 md:px-3 py-2 space-y-0.5">
           <NavLink
             to="/products"
             className={({ isActive }) =>
-              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
               }`
             }
           >
@@ -201,7 +201,7 @@ function App() {
           <NavLink
             to="/providers"
             className={({ isActive }) =>
-              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
               }`
             }
           >
@@ -210,7 +210,7 @@ function App() {
           <NavLink
             to="/calculator"
             className={({ isActive }) =>
-              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
               }`
             }
           >
@@ -219,7 +219,7 @@ function App() {
           <NavLink
             to="/comparator"
             className={({ isActive }) =>
-              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
               }`
             }
           >
@@ -228,7 +228,7 @@ function App() {
           <NavLink
             to="/merma"
             className={({ isActive }) =>
-              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
               }`
             }
           >
@@ -236,8 +236,8 @@ function App() {
           </NavLink>
         </nav>
 
-        {/* Logo centered */}
-        <div className="flex-grow flex items-center justify-center px-4 py-4 lg:py-8">
+        {/* Logo centered - pushes to bottom with spacer */}
+        <div className="flex-grow flex items-center justify-center px-4 py-4 lg:py-6">
           <img
             src="/logo.png"
             alt="La Mundial XXI"
@@ -250,7 +250,7 @@ function App() {
           />
         </div>
 
-        <div className="h-10 flex-shrink-0"></div>
+        <div className="flex-shrink-0 h-4"></div>
       </aside>
 
       {/* Main Content */}
