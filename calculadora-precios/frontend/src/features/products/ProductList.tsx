@@ -1,8 +1,10 @@
 import React from 'react';
 import { useProductStore } from '../../store/productStore';
 import { useCurrencyStore } from '../../store/currencyStore';
+import { useProviderStore } from '../../store/providerStore';
 import { ProductForm } from './ProductForm';
 import { formatAmountWithCurrency } from '../../utils/format';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 type Currency = 'Bs' | 'USD';
 
@@ -39,6 +41,7 @@ function useProductsWithDynamicPrices(products: ReturnType<typeof useProductStor
 
 export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
   const { products, removeProduct } = useProductStore((state) => state);
+  const { providers } = useProviderStore();
   const rate = useCurrencyStore((state) => state.rate);
   const [showForm, setShowForm] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<{
@@ -50,8 +53,21 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
     exemptFromVAT: boolean;
     photoUrl: string;
   } | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const providerFilterId = searchParams.get('providerId');
 
-  const productsWithPrices = useProductsWithDynamicPrices(products);
+  // Filtrar productos si hay providerId en la URL
+  const filteredProducts = providerFilterId 
+    ? products.filter(p => p.providerId?.toString() === providerFilterId)
+    : products;
+
+  // Obtener nombre del proveedor para el encabezado
+  const currentProvider = providerFilterId 
+    ? providers.find(p => p.id.toString() === providerFilterId)
+    : null;
+
+  const productsWithPrices = useProductsWithDynamicPrices(filteredProducts);
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -105,10 +121,10 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
           </div>
           <div className="flex flex-col items-center md:items-end">
             <div className="text-5xl md:text-6xl font-black text-blue-600 leading-none">
-              {products.length}
+              {filteredProducts.length}
             </div>
             <p className="text-xs md:text-sm font-semibold text-gray-600 mt-1 uppercase tracking-widest">
-              Productos
+              {currentProvider ? `Productos de ${currentProvider.name}` : 'Productos'}
             </p>
           </div>
         </div>
@@ -117,11 +133,24 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
 
       {/* Tabla de Productos */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-        <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
+        <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <h2 className="text-lg md:text-xl font-bold text-gray-900">
             Lista de Productos
-            <span className="text-xs md:text-sm font-normal text-gray-500 ml-2">({products.length})</span>
+            <span className="text-xs md:text-sm font-normal text-gray-500 ml-2">
+              ({filteredProducts.length} de {products.length})
+            </span>
           </h2>
+          {currentProvider && (
+            <button
+              onClick={() => navigate('/products')}
+              className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              Limpiar Filtro
+            </button>
+          )}
         </div>
         <div className="overflow-x-auto -mx-4 md:mx-0">
           <table className="w-full min-w-[600px]">

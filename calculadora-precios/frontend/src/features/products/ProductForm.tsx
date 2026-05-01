@@ -291,7 +291,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
             {productToEdit ? 'Editar Producto' : 'Agregar Producto Nuevo'}
           </h2>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
           {/* Nombre */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -315,18 +315,19 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               Costo *
             </label>
             <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-              <input
-                id="cost"
-                name="cost"
-                type="text"
-                inputMode="decimal"
-                pattern="[0-9]*"
-                autoComplete="off"
-                value={formData.cost}
-                onChange={handleInputChange}
-                required
-                className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base"
-              />
+               <input
+                 id="cost"
+                 name="cost"
+                 type="text"
+                 inputMode="decimal"
+                 pattern="[0-9]*\.?[0-9]*"
+                 autoComplete="off"
+                 step="any"
+                 value={formData.cost}
+                 onChange={handleInputChange}
+                 required
+                 className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base"
+               />
               <select
                 name="currency"
                 value={formData.currency}
@@ -349,8 +350,9 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               name="profitPercentage"
               type="text"
               inputMode="decimal"
-              pattern="[0-9]*"
+              pattern="[0-9]*\.?[0-9]*"
               autoComplete="off"
+              step="any"
               value={formData.profitPercentage}
               onChange={handleInputChange}
               required

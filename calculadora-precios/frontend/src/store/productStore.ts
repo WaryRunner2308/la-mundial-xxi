@@ -40,15 +40,15 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     const rate = useCurrencyStore.getState().rate;
     const costUSD = rate > 0 ? (product.currency === 'Bs' ? product.cost / rate : product.cost) : 0;
 
-    const dbData: any = {
-      name: product.name,
-      category: '',
-      cost_usd: costUSD,
-      original_currency: product.currency === 'Bs' ? 'bs' : 'usd',
-      profit_percentage: product.profitPercentage,
-      exempt_from_vat: product.exemptFromVAT,
-      photo_url: product.photoUrl || null,
-    };
+     const dbData: any = {
+       name: product.name,
+       category: '',
+       cost_usd: costUSD,
+       original_currency: product.currency === 'Bs' ? 'Bs' : 'USD',
+       profit_percentage: product.profitPercentage,
+       exempt_from_vat: product.exemptFromVAT,
+       photo_url: product.photoUrl || null,
+     };
 
     if (product.providerId !== undefined) {
       dbData.provider_id = product.providerId;
@@ -115,7 +115,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     if (updates.profitPercentage !== undefined) dbUpdate.profit_percentage = updates.profitPercentage;
     if (updates.exemptFromVAT !== undefined) dbUpdate.exempt_from_vat = updates.exemptFromVAT;
     if (updates.photoUrl !== undefined) dbUpdate.photo_url = updates.photoUrl || null;
-    if (updates.originalCurrency !== undefined) dbUpdate.original_currency = updates.originalCurrency === 'Bs' ? 'bs' : 'usd';
+    if (updates.originalCurrency !== undefined) dbUpdate.original_currency = updates.originalCurrency === 'Bs' ? 'Bs' : 'USD';
     if (updates.providerId !== undefined) dbUpdate.provider_id = updates.providerId;
 
     const { error } = await supabase.from('products').update(dbUpdate).eq('id', id);

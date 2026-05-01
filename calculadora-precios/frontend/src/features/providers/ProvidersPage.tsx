@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useProviderStore } from '../../store/providerStore';
+import { useProductStore } from '@/store/productStore';
+import { useNavigate } from 'react-router-dom';
 import { ProviderForm } from '../providers/ProviderForm';
+import { ProviderProductsModal } from './ProviderProductsModal';
 
 export function ProvidersPage() {
   const { providers, loading, error, fetchProviders, deleteProvider } = useProviderStore();
   const [editingProvider, setEditingProvider] = useState<{ id: number; name: string } | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [selectedProviderForModal, setSelectedProviderForModal] = useState<number | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProviders().catch(() => {
@@ -101,10 +106,13 @@ export function ProvidersPage() {
                         {provider.name}
                       </span>
                     </td>
-                    <td className="p-4 align-middle text-gray-600 text-sm">
-                      {/* Contar productos de este proveedor */}
-                      <ProviderProductCount providerId={provider.id} />
-                    </td>
+                     <td className="p-4 align-middle text-gray-600 text-sm">
+                       {/* Contar productos de este proveedor */}
+                       <ProviderProductCount 
+                         providerId={provider.id} 
+                         onOpenModal={setSelectedProviderForModal} 
+                       />
+                     </td>
                     <td className="p-4 align-middle text-right space-x-2">
                       <button
                         onClick={() => handleEdit(provider)}
@@ -159,31 +167,45 @@ export function ProvidersPage() {
               <p className="text-gray-600 mb-6 text-sm">
                 Esto no eliminará los productos asociados, pero quedarán sin proveedor.
               </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setDeleteConfirm(null)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => handleDelete(deleteConfirm)}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+               <div className="flex gap-3">
+                 <button
+                   onClick={() => setDeleteConfirm(null)}
+                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                 >
+                   Cancelar
+                 </button>
+                 <button
+                   onClick={() => handleDelete(deleteConfirm)}
+                   className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+                 >
+                   Eliminar
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+
+      {/* Modal de Productos del Proveedor */}
+      <ProviderProductsModal
+        providerId={selectedProviderForModal}
+        onClose={() => setSelectedProviderForModal(null)}
+      />
     </div>
   );
 }
 
 // Componente para contar productos de un proveedor (evita re-renders innecesarios)
-function ProviderProductCount({ providerId }: { providerId: number }) {
+function ProviderProductCount({ providerId, onOpenModal }: { providerId: number; onOpenModal: (id: number) => void }) {
   const { products } = useProductStore();
   const count = products.filter((p) => p.providerId === providerId).length;
-  return <span className="text-sm">{count} producto(s)</span>;
+  return (
+    <button
+      onClick={() => onOpenModal(providerId)}
+      className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium transition-colors"
+      title="Ver productos de este proveedor"
+    >
+      {count} producto(s)
+    </button>
+  );
 }

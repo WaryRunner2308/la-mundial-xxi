@@ -125,18 +125,19 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                 Costo *
               </label>
               <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-                <input
-                  id="cost"
-                  name="cost"
-                  type="text"
-                  inputMode="decimal"
-                  pattern="[0-9]*"
-                  autoComplete="off"
-                  value={formData.cost}
-                  onChange={handleInputChange}
-                  required
-                  className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg"
-                />
+                 <input
+                   id="cost"
+                   name="cost"
+                   type="text"
+                   inputMode="decimal"
+                   pattern="[0-9]*\.?[0-9]*"
+                   autoComplete="off"
+                   step="any"
+                   value={formData.cost}
+                   onChange={handleInputChange}
+                   required
+                   className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg"
+                 />
                 <select
                   name="currency"
                   value={formData.currency}
@@ -159,8 +160,9 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                 name="profitPercentage"
                 type="text"
                 inputMode="decimal"
-                pattern="[0-9]*"
+                pattern="[0-9]*\.?[0-9]*"
                 autoComplete="off"
+                step="any"
                 value={formData.profitPercentage}
                 onChange={handleInputChange}
                 required
