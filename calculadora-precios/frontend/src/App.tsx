@@ -84,11 +84,15 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
             <input
               type="text"
               inputMode="decimal"
-              pattern="[0-9]*\.?[0-9]*"
-              autoComplete="off"
-              step="any"
+              pattern="[0-9,.]*"
+              autoComplete="new-password"
+              autoCorrect="off"
+              spellCheck="false"
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={(e) => {
+                const cleaned = validateDecimalInput(e.target.value);
+                setInputValue(cleaned);
+              }}
               placeholder="Ej: 40.50"
               className="w-full px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base md:text-lg text-center"
               autoFocus
