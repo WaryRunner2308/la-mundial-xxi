@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { formatAmountWithCurrency } from '@/utils/format';
-import { validateDecimalInput, parseNumericInput } from '@/utils/validateDecimal';
+import { parseNumericInput } from '@/utils/validateDecimal';
 
 type Currency = 'Bs' | 'USD';
 
@@ -34,9 +34,17 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
   });
   const [results, setResults] = useState<CalcResults | null>(null);
 
+  // Refs para displays
+  const costDisplayRef = useRef<HTMLDivElement>(null);
+  const profitDisplayRef = useRef<HTMLDivElement>(null);
+
+  // Refs para inputs fantasma
+  const costInputRef = useRef<HTMLInputElement>(null);
+  const profitInputRef = useRef<HTMLInputElement>(null);
+
   const calculate = (data: CalcFormData) => {
-  const cost = parseNumericInput(data.cost);
-  const profit = parseNumericInput(data.profitPercentage);
+    const cost = parseNumericInput(data.cost);
+    const profit = parseNumericInput(data.profitPercentage);
 
     if (cost <= 0 || profit < 0 || profit >= 100) {
       setResults(null);
@@ -70,33 +78,65 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
     });
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    const newData = { ...formData };
-
-    if (name === 'calc_cost_field') {
-      newData.cost = value;
-    } else if (name === 'calc_profit_field') {
-      newData.profitPercentage = value;
-    } else if (name === 'calc_currency_field') {
-      newData.currency = value as Currency;
-    } else {
-      newData[name] = value;
+  // Handlers de inputs fantasma
+  const handleCostProxyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    value = value.replace(/[^0-9.,]/g, '');
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      value = parts[0] + '.' + parts.slice(1).join('');
     }
+    setFormData(prev => ({ ...prev, cost: value }));
+    calculate({ ...formData, cost: value });
+    if (costDisplayRef.current) {
+      costDisplayRef.current.textContent = value;
+    }
+  };
 
-    setFormData(newData);
-    calculate(newData);
+  const handleProfitProxyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    value = value.replace(/[^0-9.,]/g, '');
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    setFormData(prev => ({ ...prev, profitPercentage: value }));
+    calculate({ ...formData, profitPercentage: value });
+    if (profitDisplayRef.current) {
+      profitDisplayRef.current.textContent = value;
+    }
+  };
+
+  const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newCurrency = e.target.value as Currency;
+    setFormData(prev => ({ ...prev, currency: newCurrency }));
+    calculate({ ...formData, currency: newCurrency });
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newData = { ...formData, aplicarIVA: e.target.checked };
-    setFormData(newData);
-    calculate(newData);
+    const newValue = e.target.checked;
+    setFormData(prev => ({ ...prev, aplicarIVA: newValue }));
+    calculate({ ...formData, aplicarIVA: newValue });
+  };
+
+  // Focus handlers - redirigen a inputs fantasma
+  const handleCostFocus = () => {
+    if (costInputRef.current) costInputRef.current.focus();
+  };
+
+  const handleProfitFocus = () => {
+    if (profitInputRef.current) profitInputRef.current.focus();
   };
 
   useEffect(() => {
     calculate(formData);
   }, [rate]);
+
+  // Generate unique IDs to break Chrome's form history
+  const ts = Date.now();
+  const calcFormId = `calc_form_${ts}`;
+  const fieldCostId = `calc_ct_${Math.random().toString(36).substring(2)}`;
+  const fieldProfitId = `calc_pf_${Math.random().toString(36).substring(2)}`;
 
   return (
     <div className="space-y-6">
@@ -125,88 +165,102 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Panel de Entrada - Izquierda en desktop, arriba en mobile */}
+        {/* Panel de Entrada */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Datos del Producto</h2>
-          <div className="space-y-6">
-            {/* Costo con selector de moneda integrado */}
-            <div>
-              <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-2">
-                Costo *
-              </label>
-              <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-                  <input
-                    id="calc_cost_field"
-                    name="calc_cost_field"
-                    type="text"
-                    inputMode="decimal"
-                    autoComplete="new-password"
-                    autoCorrect="off"
-                    spellCheck="false"
-                    autoCapitalize="none"
-                    value={formData.cost}
-                    onChange={(e) => {
-                      const newFormData = { ...formData, cost: e.target.value };
-                      setFormData(newFormData);
-                      calculate(newFormData);
-                    }}
-                    required={false}
-                    className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg"
-                  />
-                <select
-                  name="calc_currency_field"
-                  value={formData.currency}
-                  onChange={handleInputChange}
-                  className="w-20 md:w-32 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer shrink-0"
-                >
-                  <option value="Bs">Bs</option>
-                  <option value="USD">$</option>
-                </select>
-              </div>
-            </div>
 
-            {/* % Ganancia */}
-            <div>
-              <label htmlFor="profitPercentage" className="block text-sm font-medium text-gray-700 mb-2">
-                % Ganancia *
-              </label>
-              <input
-                id="calc_profit_field"
-                name="calc_profit_field"
-                type="text"
-                inputMode="decimal"
-                autoComplete="new-password"
-                autoCorrect="off"
-                spellCheck="false"
-                autoCapitalize="none"
-                value={formData.profitPercentage}
-                onChange={(e) => {
-                  const newFormData = { ...formData, profitPercentage: e.target.value };
-                  setFormData(newFormData);
-                  calculate(newFormData);
-                }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base md:text-lg"
-              />
-            </div>
+          {/* INPUTS FANTASMA - Técnica anti-autocomplete avanzada */}
+          <div style={{ position: 'absolute', left: '-1000px', top: '-1000px', opacity: 0, height: 0, width: 0, overflow: 'hidden' }}>
+            <input
+              ref={costInputRef}
+              type="text"
+              name={fieldCostId}
+              inputMode="decimal"
+              data-1p-ignore
+              data-lpignore="true"
+              autoComplete="new-random-calc-cost"
+              readOnly
+              onFocus={(e) => { (e.target as HTMLInputElement).readOnly = false; }}
+              value={formData.cost}
+              onChange={handleCostProxyChange}
+              tabIndex={-1}
+              aria-hidden="true"
+              style={{ pointerEvents: 'none' }}
+            />
+            <input
+              ref={profitInputRef}
+              type="text"
+              name={fieldProfitId}
+              inputMode="decimal"
+              data-1p-ignore
+              data-lpignore="true"
+              autoComplete="new-random-calc-profit"
+              readOnly
+              onFocus={(e) => { (e.target as HTMLInputElement).readOnly = false; }}
+              value={formData.profitPercentage}
+              onChange={handleProfitProxyChange}
+              tabIndex={-1}
+              aria-hidden="true"
+              style={{ pointerEvents: 'none' }}
+            />
+          </div>
 
-            {/* IVA Checkbox */}
-            <div className="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-50">
-              <input
-                id="aplicarIVA"
-                name="aplicarIVA"
-                type="checkbox"
-                checked={formData.aplicarIVA}
-                onChange={handleCheckboxChange}
-                className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          {/* Costo con selector de moneda */}
+          <div className="mb-6">
+            <span className="block text-sm font-medium text-gray-700 mb-2">
+              Costo *
+            </span>
+            <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+              <div
+                ref={costDisplayRef}
+                contentEditable={true}
+                onFocus={handleCostFocus}
+                className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg min-h-[48px]"
+                style={{ outline: 'none' }}
+                suppressContentEditableWarning
               />
-              <label htmlFor="aplicarIVA" className="ml-3 text-sm font-medium text-gray-700 cursor-pointer flex-1">
-                Aplicar IVA (16%)
-              </label>
+              <select
+                value={formData.currency}
+                onChange={handleCurrencyChange}
+                className="w-20 md:w-32 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer shrink-0"
+              >
+                <option value="Bs">Bs</option>
+                <option value="USD">$</option>
+              </select>
             </div>
+          </div>
+
+          {/* % Ganancia */}
+          <div className="mb-6">
+            <span className="block text-sm font-medium text-gray-700 mb-2">
+              % Ganancia *
+            </span>
+            <div
+              ref={profitDisplayRef}
+              contentEditable={true}
+              onFocus={handleProfitFocus}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base md:text-lg min-h-[48px]"
+              style={{ outline: 'none' }}
+              suppressContentEditableWarning
+            />
+          </div>
+
+          {/* IVA Checkbox */}
+          <div className="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <input
+              id="calc_aplicarIVA"
+              type="checkbox"
+              checked={formData.aplicarIVA}
+              onChange={handleCheckboxChange}
+              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span className="ml-3 text-sm font-medium text-gray-700 cursor-pointer flex-1" onClick={() => setFormData(prev => ({ ...prev, aplicarIVA: !prev.aplicarIVA }))}>
+              Aplicar IVA (16%)
+            </span>
           </div>
         </div>
 
-        {/* Panel de Resultados - Derecha en desktop, abajo en mobile */}
+        {/* Panel de Resultados */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Resultados</h2>
           {results && rate > 0 ? (

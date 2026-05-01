@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useProductStore } from '../../store/productStore';
 import { useCurrencyStore } from '../../store/currencyStore';
 import { useProviderStore } from '../../store/providerStore';
@@ -110,9 +110,22 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
   const [liveResults, setLiveResults] = useState<LiveResults | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // Refs para campos visuales (div contentEditable)
+  const nameDisplayRef = useRef<HTMLDivElement>(null);
+  const costDisplayRef = useRef<HTMLDivElement>(null);
+  const profitDisplayRef = useRef<HTMLDivElement>(null);
+  const unitsDisplayRef = useRef<HTMLDivElement>(null);
+
+  // Refs para inputs fantasma (proxy)
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const costInputRef = useRef<HTMLInputElement>(null);
+  const profitInputRef = useRef<HTMLInputElement>(null);
+  const unitsInputRef = useRef<HTMLInputElement>(null);
+
+  const rate = useCurrencyStore((state) => state.rate);
   const addProduct = useProductStore((state) => state.addProduct);
   const updateProduct = useProductStore((state) => state.updateProduct);
-  const rate = useCurrencyStore((state) => state.rate);
 
   const resetForm = () => {
     setFormData({
@@ -127,9 +140,18 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
       unitsPerBulk: '',
     });
     setLiveResults(null);
+    // Limpiar displays y inputs fantasma
+    if (nameDisplayRef.current) nameDisplayRef.current.textContent = '';
+    if (costDisplayRef.current) costDisplayRef.current.textContent = '';
+    if (profitDisplayRef.current) profitDisplayRef.current.textContent = '';
+    if (unitsDisplayRef.current) unitsDisplayRef.current.textContent = '';
+    if (nameInputRef.current) nameInputRef.current.value = '';
+    if (costInputRef.current) costInputRef.current.value = '';
+    if (profitInputRef.current) profitInputRef.current.value = '';
+    if (unitsInputRef.current) unitsInputRef.current.value = '';
   };
 
-  // Cargar proveedores al montar
+  // Cargar proveedores
   useEffect(() => {
     if (isOpen) {
       fetchProviders().catch(() => {
@@ -138,74 +160,132 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     }
   }, [isOpen, fetchProviders]);
 
-   useEffect(() => {
-     if (isOpen && productToEdit) {
-       const formDataToSet: FormData = {
-         name: productToEdit.name,
-         cost: productToEdit.cost.toString(),
-         currency: productToEdit.currency,
-         profitPercentage: productToEdit.profitPercentage.toString(),
-         aplicarIVA: !productToEdit.exemptFromVAT,
-         photoPreview: productToEdit.photoUrl || null,
-         providerId: productToEdit.providerId,
-         packageType: 'unit',
-         unitsPerBulk: '',
-       };
-       setFormData(formDataToSet);
-       calculateLive(formDataToSet, rate, setLiveResults);
-     } else if (isOpen) {
-       resetForm();
-     }
-   }, [isOpen, productToEdit, rate]);
+  // Cargar datos al editar
+  useEffect(() => {
+    if (isOpen && productToEdit) {
+      const name = productToEdit.name;
+      const cost = productToEdit.cost.toString();
+      const profit = productToEdit.profitPercentage.toString();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    let newData: FormData;
+      const formDataToSet: FormData = {
+        name,
+        cost,
+        currency: productToEdit.currency,
+        profitPercentage: profit,
+        aplicarIVA: !productToEdit.exemptFromVAT,
+        photoPreview: productToEdit.photoUrl || null,
+        providerId: productToEdit.providerId,
+        packageType: 'unit',
+        unitsPerBulk: '',
+      };
+      setFormData(formDataToSet);
+      calculateLive(formDataToSet, rate, setLiveResults);
 
-    // Mapeo de nombres de campo a propiedades de FormData
-    const fieldMap: Record<string, keyof FormData> = {
-      'product_name_field': 'name',
-      'product_cost_field': 'cost',
-      'profit_perc_field': 'profitPercentage',
-      'units_bulk_field': 'unitsPerBulk',
-      'currency_select_field': 'currency',
-      'provider_select_field': 'providerId',
-      'packageType': 'packageType',
-    };
-
-    const formField = fieldMap[name];
-
-    if (formField === undefined) {
-      // Campo no reconocido, ignorar
-      return;
+      // Actualizar displays e inputs fantasma
+      setTimeout(() => {
+        if (nameDisplayRef.current) nameDisplayRef.current.textContent = name;
+        if (costDisplayRef.current) costDisplayRef.current.textContent = cost;
+        if (profitDisplayRef.current) profitDisplayRef.current.textContent = profit;
+        if (nameInputRef.current) nameInputRef.current.value = name;
+        if (costInputRef.current) costInputRef.current.value = cost;
+        if (profitInputRef.current) profitInputRef.current.value = profit;
+      }, 0);
+    } else if (isOpen) {
+      resetForm();
     }
+  }, [isOpen, productToEdit, rate]);
 
-    if (formField === 'providerId') {
-      newData = { ...formData, providerId: value ? parseInt(value, 10) : undefined };
-    } else if (formField === 'unitsPerBulk') {
-      const cleaned = value.replace(/[^0-9]/g, '');
-      newData = { ...formData, unitsPerBulk: cleaned };
-    } else if (formField === 'packageType') {
-      newData = value === 'unit'
-        ? { ...formData, packageType: 'unit', unitsPerBulk: '' }
-        : { ...formData, packageType: 'bulk' };
+  // Handlers de inputs fantasma
+  const handleNameProxyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData(prev => ({ ...prev, name: value }));
+    calculateLive({ ...formData, name: value }, rate, setLiveResults);
+    if (nameDisplayRef.current) {
+      nameDisplayRef.current.textContent = value;
+    }
+  };
+
+  const handleCostProxyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    value = value.replace(/[^0-9.,]/g, '');
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    setFormData(prev => ({ ...prev, cost: value }));
+    calculateLive({ ...formData, cost: value }, rate, setLiveResults);
+    if (costDisplayRef.current) {
+      costDisplayRef.current.textContent = value;
+    }
+  };
+
+  const handleProfitProxyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    value = value.replace(/[^0-9.,]/g, '');
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    setFormData(prev => ({ ...prev, profitPercentage: value }));
+    calculateLive({ ...formData, profitPercentage: value }, rate, setLiveResults);
+    if (profitDisplayRef.current) {
+      profitDisplayRef.current.textContent = value;
+    }
+  };
+
+  const handleUnitsProxyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/[^0-9]/g, '');
+    setFormData(prev => ({ ...prev, unitsPerBulk: value }));
+    if (unitsDisplayRef.current) {
+      unitsDisplayRef.current.textContent = value;
+    }
+  };
+
+  // Focus handlers - redirigir foco al input fantasma
+  const handleNameFocus = () => {
+    if (nameInputRef.current) nameInputRef.current.focus();
+  };
+
+  const handleCostFocus = () => {
+    if (costInputRef.current) costInputRef.current.focus();
+  };
+
+  const handleProfitFocus = () => {
+    if (profitInputRef.current) profitInputRef.current.focus();
+  };
+
+  const handleUnitsFocus = () => {
+    if (unitsInputRef.current) unitsInputRef.current.focus();
+  };
+
+  const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newCurrency = e.target.value as Currency;
+    setFormData(prev => ({ ...prev, currency: newCurrency }));
+    calculateLive({ ...formData, currency: newCurrency }, rate, setLiveResults);
+  };
+
+  const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const providerId = e.target.value ? parseInt(e.target.value, 10) : undefined;
+    setFormData(prev => ({ ...prev, providerId }));
+  };
+
+  const handlePackageTypeChange = (value: 'unit' | 'bulk') => {
+    setFormData(prev => ({
+      ...prev,
+      packageType: value,
+      unitsPerBulk: value === 'unit' ? '' : prev.unitsPerBulk
+    }));
+    if (value === 'unit') {
+      calculateLive({ ...formData, packageType: 'unit', unitsPerBulk: '' }, rate, setLiveResults);
     } else {
-      // Campo de texto (name, cost, profitPercentage, currency)
-      let cleanedValue = value;
-      if (formField === 'cost' || formField === 'profitPercentage') {
-        cleanedValue = validateDecimalInput(value);
-      }
-      newData = { ...formData, [formField]: cleanedValue };
+      calculateLive({ ...formData, packageType: 'bulk' }, rate, setLiveResults);
     }
-
-    setFormData(newData);
-    calculateLive(newData, rate, setLiveResults);
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newData = { ...formData, aplicarIVA: e.target.checked };
-    setFormData(newData);
-    calculateLive(newData, rate, setLiveResults);
+    const newValue = e.target.checked;
+    setFormData(prev => ({ ...prev, aplicarIVA: newValue }));
+    calculateLive({ ...formData, aplicarIVA: newValue }, rate, setLiveResults);
   };
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -248,7 +328,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     setShowConfirm(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.cost || !formData.profitPercentage) {
       alert('Complete todos los campos requeridos');
@@ -331,285 +411,340 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
 
   if (!isOpen) return null;
 
+  // Timestamp único para inputs fantasma - cada render genera IDs nuevos
+  const ts = Date.now();
+  // Generate unique form ID to break Chrome's form history association
+  const formId = `prod_form_${ts}`;
+  const fieldNameId = `fld_nm_${Math.random().toString(36).substring(2)}`;
+  const fieldCostId = `fld_ct_${Math.random().toString(36).substring(2)}`;
+  const fieldProfitId = `fld_pf_${Math.random().toString(36).substring(2)}`;
+  const fieldUnitsId = `fld_ub_${Math.random().toString(36).substring(2)}`;
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleCancel}>
       <div className="bg-white rounded-2xl p-6 md:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+
+        {/* INPUTS FANTASMA - Técnica anti-autocomplete avanzada */}
+        {/* Usamos form="" para romper asociación con cualquier form */}
+        {/* data-1p-ignore para engañar a gestores de password */}
+        {/* disabled para evitar que Chrome indexe como campo de historial */}
+        <div style={{ position: 'absolute', left: '-1000px', top: '-1000px', opacity: 0, height: 0, width: 0, overflow: 'hidden' }} form={formId}>
+          <input
+            ref={nameInputRef}
+            type="text"
+            name={fieldNameId}
+            form={formId}
+            data-1p-ignore
+            data-lpignore="true"
+            autoComplete="new-random-field-name-nonsense"
+            readOnly
+            onFocus={(e) => { (e.target as HTMLInputElement).readOnly = false; }}
+            value={formData.name}
+            onChange={handleNameProxyChange}
+            tabIndex={-1}
+            aria-hidden="true"
+            style={{ pointerEvents: 'none' }}
+          />
+          <input
+            ref={costInputRef}
+            type="text"
+            name={fieldCostId}
+            form={formId}
+            inputMode="decimal"
+            data-1p-ignore
+            data-lpignore="true"
+            autoComplete="new-random-cost-nonsense"
+            readOnly
+            onFocus={(e) => { (e.target as HTMLInputElement).readOnly = false; }}
+            value={formData.cost}
+            onChange={handleCostProxyChange}
+            tabIndex={-1}
+            aria-hidden="true"
+            style={{ pointerEvents: 'none' }}
+          />
+          <input
+            ref={profitInputRef}
+            type="text"
+            name={fieldProfitId}
+            form={formId}
+            inputMode="decimal"
+            data-1p-ignore
+            data-lpignore="true"
+            autoComplete="new-random-profit-nonsense"
+            readOnly
+            onFocus={(e) => { (e.target as HTMLInputElement).readOnly = false; }}
+            value={formData.profitPercentage}
+            onChange={handleProfitProxyChange}
+            tabIndex={-1}
+            aria-hidden="true"
+            style={{ pointerEvents: 'none' }}
+          />
+          <input
+            ref={unitsInputRef}
+            type="text"
+            name={fieldUnitsId}
+            form={formId}
+            inputMode="numeric"
+            data-1p-ignore
+            data-lpignore="true"
+            autoComplete="new-random-units-nonsense"
+            readOnly
+            onFocus={(e) => { (e.target as HTMLInputElement).readOnly = false; }}
+            value={formData.unitsPerBulk}
+            onChange={handleUnitsProxyChange}
+            tabIndex={-1}
+            aria-hidden="true"
+            style={{ pointerEvents: 'none' }}
+          />
+        </div>
+
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-800">
             {productToEdit ? 'Editar Producto' : 'Agregar Producto Nuevo'}
           </h2>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off" noValidate>
-          {/* Nombre */}
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              Nombre del Producto *
-            </label>
-            <input
-              id="product_name_field"
-              name="product_name_field"
-              type="text"
-              value={formData.name}
-              onChange={handleInputChange}
-              autoComplete="new-password"
-              autoCorrect="off"
-              spellCheck="false"
-              autoCapitalize="none"
-              placeholder="Ej: Malta 1.5L"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
+
+        {/* Nombre */}
+        <div className="mb-6">
+          <span className="block text-sm font-medium text-gray-700 mb-2">
+            Nombre del Producto *
+          </span>
+          <div
+            ref={nameDisplayRef}
+            contentEditable={true}
+            onFocus={handleNameFocus}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base min-h-[48px]"
+            style={{ outline: 'none' }}
+            suppressContentEditableWarning
+          />
+        </div>
+
+        {/* Costo con selector de moneda */}
+        <div className="mb-6">
+          <span className="block text-sm font-medium text-gray-700 mb-2">
+            Costo *
+          </span>
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+            <div
+              ref={costDisplayRef}
+              contentEditable={true}
+              onFocus={handleCostFocus}
+              className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base min-h-[48px]"
+              style={{ outline: 'none' }}
+              suppressContentEditableWarning
             />
-          </div>
-
-          {/* Costo con selector de moneda */}
-          <div>
-            <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-2">
-              Costo *
-            </label>
-            <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-                <input
-                  id="product_cost_field"
-                  name="product_cost_field"
-                  type="text"
-                  inputMode="decimal"
-                  autoComplete="new-password"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  autoCapitalize="none"
-                  value={formData.cost}
-                  onChange={handleInputChange}
-                  required={false}
-                  className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base"
-                />
-               <select
-                 name="currency_select_field"
-                 value={formData.currency}
-                 onChange={handleInputChange}
-                 className="w-20 md:w-32 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer shrink-0"
-               >
-                <option value="Bs">Bs</option>
-                <option value="USD">$</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Selector de Tipo de Empaque */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tipo de empaque
-            </label>
-            <div className="flex gap-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="packageType"
-                  value="unit"
-                  checked={formData.packageType === 'unit'}
-                  onChange={handleInputChange}
-                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">Unidad</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="packageType"
-                  value="bulk"
-                  checked={formData.packageType === 'bulk'}
-                  onChange={handleInputChange}
-                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">Bulto</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Unidades por Bulto (condicional) */}
-          {formData.packageType === 'bulk' && (
-            <div>
-              <label htmlFor="unitsPerBulk" className="block text-sm font-medium text-gray-700 mb-2">
-                Unidades por bulto *
-              </label>
-              <input
-                id="units_bulk_field"
-                name="units_bulk_field"
-                type="text"
-                inputMode="numeric"
-                autoComplete="new-password"
-                autoCorrect="off"
-                spellCheck="false"
-                autoCapitalize="none"
-                value={formData.unitsPerBulk}
-                onChange={handleInputChange}
-                placeholder="Ej: 10"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
-              />
-              {formData.cost && formData.unitsPerBulk && parseNumericInput(formData.unitsPerBulk) > 0 && (
-                <p className="mt-2 text-sm text-blue-600 font-medium">
-                  💡 Costo unitario resultante: {formatAmountWithCurrency(
-                    getCostPerUnit(formData),
-                    formData.currency
-                  )}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* % Ganancia */}
-          <div>
-            <label htmlFor="profitPercentage" className="block text-sm font-medium text-gray-700 mb-2">
-              % Ganancia *
-            </label>
-            <input
-              id="profit_perc_field"
-              name="profit_perc_field"
-              type="text"
-              inputMode="decimal"
-              autoComplete="new-password"
-              autoCorrect="off"
-              spellCheck="false"
-              autoCapitalize="none"
-              value={formData.profitPercentage}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
-            />
-          </div>
-
-          {/* Proveedor */}
-          <div>
-            <label htmlFor="providerId" className="block text-sm font-medium text-gray-700 mb-2">
-              Proveedor
-            </label>
-             <select
-               id="provider_select_field"
-               name="provider_select_field"
-               value={formData.providerId ?? ''}
-               onChange={handleInputChange}
-               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base bg-white"
-             >
-              <option value="">Seleccionar proveedor</option>
-              {providers.map((provider) => (
-                <option key={provider.id} value={provider.id}>
-                  {provider.name}
-                </option>
-              ))}
+            <select
+              value={formData.currency}
+              onChange={handleCurrencyChange}
+              className="w-20 md:w-32 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer shrink-0"
+            >
+              <option value="Bs">Bs</option>
+              <option value="USD">$</option>
             </select>
           </div>
+        </div>
 
-          {/* IVA Checkbox */}
-          <div className="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <input
-              id="aplicarIVA"
-              name="aplicarIVA"
-              type="checkbox"
-              checked={formData.aplicarIVA}
-              onChange={handleCheckboxChange}
-              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <label htmlFor="aplicarIVA" className="ml-3 text-sm font-medium text-gray-700 cursor-pointer flex-1">
-              Aplicar IVA (16%)
+        {/* Selector de Tipo de Empaque */}
+        <div className="mb-6">
+          <span className="block text-sm font-medium text-gray-700 mb-2">
+            Tipo de empaque
+          </span>
+          <div className="flex gap-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="pkg_type"
+                value="unit"
+                checked={formData.packageType === 'unit'}
+                onChange={() => handlePackageTypeChange('unit')}
+                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">Unidad</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="pkg_type"
+                value="bulk"
+                checked={formData.packageType === 'bulk'}
+                onChange={() => handlePackageTypeChange('bulk')}
+                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">Bulto</span>
             </label>
           </div>
+        </div>
 
-          {/* Foto del Producto */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Foto del Producto (opcional)
-            </label>
-            <input
-              type="file"
-              id="product_photo_field"
-              name="product_photo_field"
-              accept="image/*"
-              onChange={handlePhotoChange}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-              autoComplete="off"
+        {/* Unidades por Bulto */}
+        {formData.packageType === 'bulk' && (
+          <div className="mb-6">
+            <span className="block text-sm font-medium text-gray-700 mb-2">
+              Unidades por bulto *
+            </span>
+            <div
+              ref={unitsDisplayRef}
+              contentEditable={true}
+              onFocus={handleUnitsFocus}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base min-h-[48px]"
+              style={{ outline: 'none' }}
+              suppressContentEditableWarning
             />
-            {isUploading && (
-              <p className="text-xs text-gray-500 mt-1">Procesando imagen...</p>
-            )}
-            {formData.photoPreview && (
-              <div className="mt-4 p-2 bg-gray-50 rounded-lg relative inline-block">
-                <img src={formData.photoPreview} alt="Preview" className="w-32 h-32 object-cover rounded-lg shadow-md" />
-                <button
-                  type="button"
-                  onClick={handleRemovePhoto}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md transition"
-                  title="Eliminar imagen"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Cálculo en Vivo */}
-          {liveResults && rate > 0 && (
-            <div className="p-6 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl border shadow-sm">
-              <h4 className="text-lg font-semibold mb-4 text-emerald-800">📊 Cálculo en Vivo</h4>
-              <div className="grid md:grid-cols-2 gap-4 text-sm">
-                <div className="text-center p-6 bg-white rounded-xl shadow-sm border-2 border-blue-100">
-                  <span className="block text-gray-600 mb-2 text-lg">Precio Final</span>
-                  <span className="block font-bold text-3xl text-blue-600">
-                    {formatAmountWithCurrency(liveResults.priceWithVAT, liveResults.currency)}
-                  </span>
-                  {rate > 0 && liveResults.priceWithVATConverted !== undefined && (
-                    <span className="block text-sm text-gray-500 mt-1">
-                      {formatAmountWithCurrency(liveResults.priceWithVATConverted, liveResults.currency === 'Bs' ? 'USD' : 'Bs')}
-                    </span>
-                  )}
-                </div>
-                <div className="text-center p-6 bg-white rounded-xl shadow-sm border-2 border-emerald-100">
-                  <span className="block text-gray-600 mb-2 text-lg">Ganancia</span>
-                  <span className="block font-bold text-3xl text-emerald-600">
-                    {formatAmountWithCurrency(liveResults.utility, liveResults.currency)}
-                  </span>
-                  {rate > 0 && liveResults.utilityConverted !== undefined && (
-                    <span className="block text-sm text-gray-500 mt-1">
-                      {formatAmountWithCurrency(liveResults.utilityConverted, liveResults.currency === 'Bs' ? 'USD' : 'Bs')}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {liveResults && rate === 0 && (
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-700">
-                ⚠️ La tasa de cambio no está configurada. Los valores se muestran solo en la moneda original.
+            {formData.cost && formData.unitsPerBulk && parseNumericInput(formData.unitsPerBulk) > 0 && (
+              <p className="mt-2 text-sm text-blue-600 font-medium">
+                💡 Costo unitario resultante: {formatAmountWithCurrency(
+                  getCostPerUnit(formData),
+                  formData.currency
+                )}
               </p>
+            )}
+          </div>
+        )}
+
+        {/* % Ganancia */}
+        <div className="mb-6">
+          <span className="block text-sm font-medium text-gray-700 mb-2">
+            % Ganancia *
+          </span>
+          <div
+            ref={profitDisplayRef}
+            contentEditable={true}
+            onFocus={handleProfitFocus}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base min-h-[48px]"
+            style={{ outline: 'none' }}
+            suppressContentEditableWarning
+          />
+        </div>
+
+        {/* Proveedor */}
+        <div className="mb-6">
+          <span className="block text-sm font-medium text-gray-700 mb-2">
+            Proveedor
+          </span>
+          <select
+            value={formData.providerId ?? ''}
+            onChange={handleProviderChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base bg-white"
+          >
+            <option value="">Seleccionar proveedor</option>
+            {providers.map((provider) => (
+              <option key={provider.id} value={provider.id}>
+                {provider.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* IVA Checkbox */}
+        <div className="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-50 mb-6">
+          <input
+            id="aplicarIVA"
+            type="checkbox"
+            checked={formData.aplicarIVA}
+            onChange={handleCheckboxChange}
+            className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <span className="ml-3 text-sm font-medium text-gray-700 cursor-pointer flex-1" onClick={() => setFormData(prev => ({ ...prev, aplicarIVA: !prev.aplicarIVA }))}>
+            Aplicar IVA (16%)
+          </span>
+        </div>
+
+        {/* Foto del Producto */}
+        <div className="mb-6">
+          <span className="block text-sm font-medium text-gray-700 mb-2">
+            Foto del Producto (opcional)
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+          />
+          {isUploading && (
+            <p className="text-xs text-gray-500 mt-1">Procesando imagen...</p>
+          )}
+          {formData.photoPreview && (
+            <div className="mt-4 p-2 bg-gray-50 rounded-lg relative inline-block">
+              <img src={formData.photoPreview} alt="Preview" className="w-32 h-32 object-cover rounded-lg shadow-md" />
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md transition"
+                title="Eliminar imagen"
+              >
+                ✕
+              </button>
             </div>
           )}
+        </div>
 
-          {/* Botones */}
-          <div className="flex gap-4 pt-4">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="flex-1 h-12 px-6 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="flex-1 h-12 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg shadow-lg text-white font-semibold transition"
-            >
-              {productToEdit ? '💾 Actualizar Producto' : '💾 Guardar Producto'}
-            </button>
+        {/* Cálculo en Vivo */}
+        {liveResults && rate > 0 && (
+          <div className="p-6 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl border shadow-sm mb-6">
+            <h4 className="text-lg font-semibold mb-4 text-emerald-800">📊 Cálculo en Vivo</h4>
+            <div className="grid md:grid-cols-2 gap-4 text-sm">
+              <div className="text-center p-6 bg-white rounded-xl shadow-sm border-2 border-blue-100">
+                <span className="block text-gray-600 mb-2 text-lg">Precio Final</span>
+                <span className="block font-bold text-3xl text-blue-600">
+                  {formatAmountWithCurrency(liveResults.priceWithVAT, liveResults.currency)}
+                </span>
+                {rate > 0 && liveResults.priceWithVATConverted !== undefined && (
+                  <span className="block text-sm text-gray-500 mt-1">
+                    {formatAmountWithCurrency(liveResults.priceWithVATConverted, liveResults.currency === 'Bs' ? 'USD' : 'Bs')}
+                  </span>
+                )}
+              </div>
+              <div className="text-center p-6 bg-white rounded-xl shadow-sm border-2 border-emerald-100">
+                <span className="block text-gray-600 mb-2 text-lg">Ganancia</span>
+                <span className="block font-bold text-3xl text-emerald-600">
+                  {formatAmountWithCurrency(liveResults.utility, liveResults.currency)}
+                </span>
+                {rate > 0 && liveResults.utilityConverted !== undefined && (
+                  <span className="block text-sm text-gray-500 mt-1">
+                    {formatAmountWithCurrency(liveResults.utilityConverted, liveResults.currency === 'Bs' ? 'USD' : 'Bs')}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-        </form>
-      </div>
+        )}
 
-      {/* Modal de confirmación */}
-      <ConfirmationModal
-        isOpen={showConfirm}
-        title="Confirmar cancelación"
-        message="¿Estás seguro de cancelar? Se perderán los datos ingresados."
-        confirmText="Sí, cancelar"
-        cancelText="Continuar editando"
-        onConfirm={handleConfirmCancel}
-        onCancel={handleContinueEdit}
-      />
+        {liveResults && rate === 0 && (
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-6">
+            <p className="text-sm text-yellow-700">
+              ⚠️ La tasa de cambio no está configurada. Los valores se muestran solo en la moneda original.
+            </p>
+          </div>
+        )}
+
+        {/* Botones */}
+        <div className="flex gap-4 pt-4">
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="flex-1 h-12 px-6 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="flex-1 h-12 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg shadow-lg text-white font-semibold transition"
+          >
+            {productToEdit ? '💾 Actualizar Producto' : '💾 Guardar Producto'}
+          </button>
+        </div>
+
+        {/* Modal de confirmación */}
+        <ConfirmationModal
+          isOpen={showConfirm}
+          title="Confirmar cancelación"
+          message="¿Estás seguro de cancelar? Se perderán los datos ingresados."
+          confirmText="Sí, cancelar"
+          cancelText="Continuar editando"
+          onConfirm={handleConfirmCancel}
+          onCancel={handleContinueEdit}
+        />
+      </div>
     </div>
   );
 }
