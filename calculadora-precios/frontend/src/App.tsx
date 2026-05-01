@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { supabase } from '@/lib/supabase';
@@ -60,9 +60,10 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: number) => void; onClose: () => void }) {
   const [inputValue, setInputValue] = useState(rate > 0 ? rate.toString() : '');
+  const modalRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.MouseEvent) => {
     e.preventDefault();
     const parsed = parseNumericInput(inputValue);
     if (parsed > 0) {
@@ -71,43 +72,107 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
     }
   };
 
+  // captura de teclado GLOBAL - sin input nativo
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const key = e.key;
+
+    // Permitir números
+    if (/^[0-9]$/.test(key)) {
+      e.preventDefault();
+      setInputValue(prev => prev + key);
+      return;
+    }
+
+    // Permitir punto decimal (solo uno)
+    if (key === '.' && !inputValue.includes('.')) {
+      e.preventDefault();
+      setInputValue(prev => prev + key);
+      return;
+    }
+
+    // Permitir coma como decimal
+    if (key === ',' && !inputValue.includes('.') && !inputValue.includes(',')) {
+      e.preventDefault();
+      setInputValue(prev => prev + '.');
+      return;
+    }
+
+    // Backspace - borrar último carácter
+    if (key === 'Backspace') {
+      e.preventDefault();
+      setInputValue(prev => prev.slice(0, -1));
+      return;
+    }
+
+    // Escape - cerrar modal
+    if (key === 'Escape') {
+      e.preventDefault();
+      onClose();
+      return;
+    }
+
+    // Enter -提交
+    if (key === 'Enter') {
+      e.preventDefault();
+      const parsed = parseNumericInput(inputValue);
+      if (parsed > 0) {
+        setRate(parsed);
+        onClose();
+      }
+    }
+  };
+
+  // hacer click en el modal para enfocar
+  const handleModalClick = () => {
+    setIsFocused(true);
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl">
+    <div
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4"
+      onClick={handleModalClick}
+    >
+      <div
+        ref={modalRef}
+        className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="text-center mb-4 md:mb-6">
           <h2 className="text-xl md:text-2xl font-bold text-gray-800">¡Bienvenido!</h2>
           <p className="text-gray-600 mt-2 text-sm md:text-base">¿Cuál es la tasa de cambio de hoy?</p>
           <p className="text-xs md:text-sm text-gray-500 mt-1">(1 USD = X Bs)</p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off" noValidate>
+
+        <div className="space-y-6">
           <div>
-            <label htmlFor="rate_input_field_v2" className="block text-sm font-medium text-gray-700 mb-2">
-              Tasa de Cambio
-            </label>
-            <input
-              id="rate_input_field_v2"
-              name="rate_input_field_v2"
-              type="text"
-              inputMode="decimal"
-              autoComplete="new-password"
-              autoCorrect="off"
-              spellCheck="false"
-              autoCapitalize="none"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              readOnly={!isFocused}
-              placeholder="Ej: 40.50"
-              className="w-full px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base md:text-lg text-center"
-            />
+            <span className="block text-sm font-medium text-gray-700 mb-2">Tasa de Cambio</span>
+            {/* Display Div - SIN Input, solo muestra el valor */}
+            <div
+              className={`w-full px-4 py-2 md:py-3 border-2 rounded-lg text-base md:text-lg text-center min-h-[48px] flex items-center justify-center bg-white transition-colors ${isFocused
+                  ? 'border-blue-500 ring-2 ring-blue-200'
+                  : 'border-gray-300 focus:border-blue-500'
+                }`}
+            >
+              <span className={inputValue ? 'text-gray-900 font-mono text-xl' : 'text-gray-400'}>
+                {inputValue || 'Ingrese la tasa'}
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-gray-500 text-center">
+              Escriba los números directamente con el teclado
+            </p>
           </div>
           <button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             className="w-full py-2 md:py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg shadow-lg transition text-sm md:text-base"
           >
             Continuar
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );
@@ -157,7 +222,7 @@ function App() {
 
   return (
     <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
-      {/* Mobile header with hamburger  */}
+      {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -264,16 +329,16 @@ function App() {
             ⚠️ {supabaseError}
           </div>
         )}
-         <ErrorBoundary>
-           <Routes>
-             <Route path="/" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
-             <Route path="/products" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
-             <Route path="/providers" element={<ProvidersPage />} />
-             <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
-             <Route path="/comparator" element={<ComparatorPage />} />
-             <Route path="/merma" element={<MermaPage />} />
-           </Routes>
-         </ErrorBoundary>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
+            <Route path="/products" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
+            <Route path="/providers" element={<ProvidersPage />} />
+            <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
+            <Route path="/comparator" element={<ComparatorPage />} />
+            <Route path="/merma" element={<MermaPage />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
 
       {/* Modals */}
