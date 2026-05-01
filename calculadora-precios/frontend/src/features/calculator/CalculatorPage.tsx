@@ -72,8 +72,17 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const cleanedValue = name === 'cost' || name === 'profitPercentage' ? validateDecimalInput(value) : value;
-    const newData = { ...formData, [name]: cleanedValue };
+    const newData = { ...formData };
+
+    // Mapear nombres de campo a propiedades de CalcFormData
+    if (name === 'calc_cost_field') {
+      newData.cost = value;
+    } else if (name === 'calc_profit_field') {
+      newData.profitPercentage = value;
+    } else {
+      newData[name] = value;
+    }
+
     setFormData(newData);
     calculate(newData);
   };
@@ -125,23 +134,24 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                 Costo *
               </label>
               <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-                 <input
-                   id="cost"
-                   name="cost"
-                   type="text"
-                 inputMode="decimal"
-                 autoComplete="new-password"
-                   autoCorrect="off"
-                   spellCheck="false"
-                   value={formData.cost}
-                  onChange={(e) => {
-                    const newFormData = { ...formData, cost: e.target.value };
-                    setFormData(newFormData);
-                    calculate(newFormData);
-                  }}
-                   required
-                   className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg"
-                 />
+                  <input
+                    id="calc_cost_field"
+                    name="calc_cost_field"
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="new-password"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    autoCapitalize="none"
+                    value={formData.cost}
+                    onChange={(e) => {
+                      const newFormData = { ...formData, cost: e.target.value };
+                      setFormData(newFormData);
+                      calculate(newFormData);
+                    }}
+                    required={false}
+                    className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg"
+                  />
                 <select
                   name="currency"
                   value={formData.currency}
@@ -160,20 +170,20 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                 % Ganancia *
               </label>
               <input
-                id="profitPercentage"
-                name="profitPercentage"
+                id="calc_profit_field"
+                name="calc_profit_field"
                 type="text"
-              inputMode="decimal"
-              autoComplete="new-password"
-              autoCorrect="off"
-              spellCheck="false"
+                inputMode="decimal"
+                autoComplete="new-password"
+                autoCorrect="off"
+                spellCheck="false"
+                autoCapitalize="none"
                 value={formData.profitPercentage}
                 onChange={(e) => {
                   const newFormData = { ...formData, profitPercentage: e.target.value };
                   setFormData(newFormData);
                   calculate(newFormData);
                 }}
-                required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base md:text-lg"
               />
             </div>
