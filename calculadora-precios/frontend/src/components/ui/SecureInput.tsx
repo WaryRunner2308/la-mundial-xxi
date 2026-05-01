@@ -20,7 +20,6 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         const containerRef = useRef<HTMLDivElement>(null);
         const inputRef = useRef<HTMLInputElement>(null);
         const displayRef = useRef<HTMLDivElement>(null);
-        const cursorRef = useRef<HTMLSpanElement>(null);
         const [isFocused, setIsFocused] = useState(false);
 
         // Nombre único por montaje para derrotar autocompletado
@@ -139,7 +138,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     data-1p-ignore="true"
                 />
 
-                {/* Elemento visible con cursor simulado */}
+                {/* Elemento visible con cursor integrado */}
                 {editable ? (
                     <div
                         ref={displayRef}
@@ -151,7 +150,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                             w-full px-4 py-3 border border-gray-300 rounded-lg
                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                             outline-none transition text-base min-h-[48px] bg-white
-                            flex items-center
+                            flex items-center justify-start
                             ${isFocused ? 'ring-2 ring-blue-500 border-blue-500' : ''}
                             ${displayClassName}
                         `}
@@ -164,15 +163,11 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         }}
                         {...(placeholder && !value ? { 'data-placeholder': placeholder } : {})}
                     >
-                        <span className="flex-1 whitespace-pre">{value}</span>
-                        {/* Cursor azul parpadeante - se muestra solo cuando está enfocado */}
+                        <span className="whitespace-pre">{value}</span>
                         {isFocused && (
                             <span
-                                ref={cursorRef}
-                                className="inline-block w-0.5 h-5 bg-blue-500 animate-pulse ml-0.5"
-                                style={{
-                                    flexShrink: 0,
-                                }}
+                                className="inline-block w-0.5 h-5 bg-blue-500 animate-pulse ml-0.5 flex-shrink-0"
+                                style={{ animation: 'blink 1s step-end infinite' }}
                             />
                         )}
                     </div>
@@ -180,27 +175,24 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     <div
                         className={`
                             w-full px-4 py-3 border border-gray-300 rounded-lg bg-white
-                            text-base min-h-[48px] flex items-center
+                            text-base min-h-[48px] flex items-center justify-start
                             ${value ? 'text-gray-900' : 'text-gray-400'}
                             ${isFocused ? 'ring-2 ring-blue-500 border-blue-500' : ''}
                             ${displayClassName}
                         `}
                         style={{ position: 'relative', zIndex: 1 }}
                     >
-                        <span className="flex-1">{value || placeholder}</span>
-                        {/* Cursor azul parpadeante para modo no-editable */}
+                        <span className="whitespace-pre">{value || placeholder}</span>
                         {isFocused && (
                             <span
-                                className="inline-block w-0.5 h-5 bg-blue-500 animate-pulse ml-0.5"
-                                style={{
-                                    flexShrink: 0,
-                                }}
+                                className="inline-block w-0.5 h-5 bg-blue-500 animate-pulse ml-0.5 flex-shrink-0"
+                                style={{ animation: 'blink 1s step-end infinite' }}
                             />
                         )}
                     </div>
                 )}
 
-                {/* CSS anti-autofill */}
+                {/* CSS anti-autofill + animación de blink para cursor */}
                 <style>{`
                     input:-webkit-autofill,
                     input:-webkit-autofill:hover,
@@ -217,6 +209,10 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         content: attr(data-placeholder);
                         color: #9ca3af;
                         pointer-events: none;
+                    }
+                    @keyframes blink {
+                        0%, 100% { opacity: 1; }
+                        50% { opacity: 0; }
                     }
                 `}</style>
             </div>
