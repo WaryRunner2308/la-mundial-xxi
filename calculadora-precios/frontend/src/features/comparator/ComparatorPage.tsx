@@ -10,6 +10,10 @@ export function ComparatorPage() {
   const [selectedProduct, setSelectedProduct] = useState<ProductPriceComparison | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Generar un nombre aleatorio único para el input (cada vez que el componente se monta)
+  const randomInputName = `search_input_${Math.random().toString(36).substring(7)}`;
 
   // Obtener productos únicos por nombre
   const uniqueProductNames = Array.from(new Set(products.map((p) => p.name))).sort();
@@ -79,29 +83,42 @@ export function ComparatorPage() {
 
       {/* Buscador */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
-        <label htmlFor="search_field_v2_primary" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor={randomInputName} className="block text-sm font-medium text-gray-700 mb-2">
           Buscar Producto
         </label>
-        <form autoComplete="off" onSubmit={(e) => e.preventDefault()}>
-          <div className="relative">
-            <input
-              id="search_field_v2_primary"
-              name="search_field_v2_primary"
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Ej: Malta 1.5L"
-              autoComplete="new-password"
-              autoCorrect="off"
-              spellCheck="false"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
-            />
+        {/* Formulario fantasma desactivado */}
+        <div className="relative">
+          <input
+            id={randomInputName}
+            name={randomInputName}
+            type="text"
+            readOnly={!isFocused}
+            onFocus={(e) => {
+              setIsFocused(true);
+              // Eliminar readOnly después de un breve retraso para romper detección
+              setTimeout(() => {
+                e.target.readOnly = false;
+                e.target.focus();
+              }, 50);
+            }}
+            onBlur={() => setIsFocused(false)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Ej: Malta 1.5L"
+            autoComplete="new-password"
+            autoCorrect="off"
+            spellCheck="false"
+            role="searchbox"
+            inputMode="search"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
+          />
           {searchTerm && (
             <button
               type="button"
               onClick={() => {
                 setSearchTerm('');
                 setSelectedProduct(null);
+                setIsFocused(false);
               }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
@@ -109,7 +126,6 @@ export function ComparatorPage() {
             </button>
           )}
         </div>
-      </form>
 
         {/* Sugerencias */}
         {searchTerm && filteredProducts.length > 0 && (
