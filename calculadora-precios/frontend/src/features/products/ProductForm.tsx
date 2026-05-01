@@ -6,7 +6,7 @@ import { formatAmountWithCurrency } from '../../utils/format';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import { uploadProductImage } from '../../lib/supabase';
 import { validateDecimalInput, parseNumericInput } from '../../utils/validateDecimal';
-import { SecureEditableInput } from '../../components/ui/SecureInput';
+import { SecureInput } from '../../components/ui/SecureInput';
 
 type Currency = 'Bs' | 'USD';
 
@@ -269,16 +269,15 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           providerId: formData.providerId,
         });
       } else {
-        await addProduct({
-          name: formData.name,
-          category: "",
-          cost: costPerUnit,
-          currency: formData.currency,
-          profitPercentage: profit,
-          exemptFromVAT: !formData.aplicarIVA,
-          photoUrl: formData.photoPreview || '',
-          providerId: formData.providerId,
-        });
+      await addProduct({
+        name: formData.name,
+        cost: costPerUnit,
+        currency: formData.currency,
+        profitPercentage: profit,
+        exemptFromVAT: !formData.aplicarIVA,
+        photoUrl: formData.photoPreview || '',
+        providerId: formData.providerId,
+      });
       }
       onSave?.();
       onClose();
@@ -351,11 +350,12 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           <span className="block text-sm font-medium text-gray-700 mb-2">
             Nombre del Producto *
           </span>
-          <SecureEditableInput
+          <SecureInput
             value={formData.name}
             onChange={handleNameChange}
             placeholder="Ej: Malta 1.5L"
             inputMode="text"
+            editable
           />
         </div>
 
@@ -366,13 +366,14 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           </span>
           <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
             <div className="flex-1 min-w-0">
-              <SecureEditableInput
-                value={formData.cost}
-                onChange={handleCostChange}
-                placeholder="0.00"
-                inputMode="decimal"
-                displayClassName="border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base min-h-[48px] flex-1"
-              />
+               <SecureInput
+                 value={formData.cost}
+                 onChange={handleCostChange}
+                 placeholder="0.00"
+                 inputMode="decimal"
+                 editable
+                 displayClassName="border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base min-h-[48px] flex-1"
+               />
             </div>
             <select
               value={formData.currency}
@@ -422,11 +423,12 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
             <span className="block text-sm font-medium text-gray-700 mb-2">
               Unidades por bulto *
             </span>
-            <SecureEditableInput
+            <SecureInput
               value={formData.unitsPerBulk}
               onChange={handleUnitsChange}
               placeholder="Ej: 10"
               inputMode="numeric"
+              editable
             />
             {formData.cost && formData.unitsPerBulk && parseNumericInput(formData.unitsPerBulk) > 0 && (
               <p className="mt-2 text-sm text-blue-600 font-medium">
@@ -444,12 +446,13 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           <span className="block text-sm font-medium text-gray-700 mb-2">
             % Ganancia *
           </span>
-          <SecureEditableInput
-            value={formData.profitPercentage}
-            onChange={handleProfitChange}
-            placeholder="Ej: 30"
-            inputMode="decimal"
-          />
+            <SecureInput
+              value={formData.profitPercentage}
+              onChange={handleProfitChange}
+              placeholder="Ej: 30"
+              inputMode="decimal"
+              editable
+            />
         </div>
 
         {/* Proveedor */}

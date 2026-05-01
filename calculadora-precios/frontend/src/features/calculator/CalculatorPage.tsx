@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { formatAmountWithCurrency } from '@/utils/format';
 import { parseNumericInput } from '@/utils/validateDecimal';
-import { SecureEditableInput } from '@/components/ui/SecureInput';
+import { SecureInput } from '@/components/ui/SecureInput';
 
 type Currency = 'Bs' | 'USD';
 
@@ -89,8 +89,9 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.checked;
-    setFormData(prev => ({ ...prev, aplicarIVA: newValue }));
-    calculate({ ...prev, aplicarIVA: newValue });
+    const newFormData = { ...formData, aplicarIVA: newValue };
+    setFormData(newFormData);
+    calculate(newFormData);
   };
 
   useEffect(() => {
@@ -135,13 +136,14 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
             </span>
             <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
               <div className="flex-1 min-w-0">
-                <SecureEditableInput
-                  value={formData.cost}
-                  onChange={handleCostChange}
-                  placeholder="0.00"
-                  inputMode="decimal"
-                  displayClassName="border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg min-h-[48px] flex-1"
-                />
+                 <SecureInput
+                   value={formData.cost}
+                   onChange={handleCostChange}
+                   placeholder="0.00"
+                   inputMode="decimal"
+                   editable
+                   displayClassName="border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg min-h-[48px] flex-1"
+                 />
               </div>
               <select
                 value={formData.currency}
@@ -159,11 +161,12 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
             <span className="block text-sm font-medium text-gray-700 mb-2">
               % Ganancia *
             </span>
-            <SecureEditableInput
+            <SecureInput
               value={formData.profitPercentage}
               onChange={handleProfitChange}
               placeholder="Ej: 30"
               inputMode="decimal"
+              editable
             />
           </div>
 

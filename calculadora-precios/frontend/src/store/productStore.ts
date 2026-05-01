@@ -6,7 +6,7 @@ import { Provider } from '../types/provider';
 
 type Currency = 'Bs' | 'USD';
 
-interface Product {
+export interface Product {
   id: number;
   name: string;
   category: string;
@@ -19,13 +19,23 @@ interface Product {
   updatedAt: string | null;
 }
 
+export interface ProductData {
+  name: string;
+  cost: number;
+  currency: Currency;
+  profitPercentage: number;
+  exemptFromVAT: boolean;
+  photoUrl: string;
+  providerId?: number;
+}
+
 interface ProductStore {
   products: Product[];
   loading: boolean;
   error: string | null;
-  addProduct: (product: { name: string; cost: number; currency: Currency; profitPercentage: number; exemptFromVAT: boolean; photoUrl: string; providerId?: number }) => Promise<void>;
+  addProduct: (product: ProductData) => Promise<void>;
   removeProduct: (id: number) => Promise<void>;
-  updateProduct: (id: number, updates: Partial<Omit<Product, 'id' | 'updatedAt'>>) => Promise<void>;
+  updateProduct: (id: number, updates: Partial<ProductData>) => Promise<void>;
   setProducts: (products: Product[]) => void;
   loadFromSupabase: () => Promise<void>;
 }
@@ -94,18 +104,21 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     set((s) => ({ products: s.products.filter((p) => p.id !== id) }));
   },
 
-  updateProduct: async (id, updates) => {
+  updateProduct: async (id: number, updates: Partial<ProductData>) => {
     console.log('🔵 [Supabase] Actualizando ID:', id);
     let updatedCostUSD: number | undefined;
 
-    if (updates.cost !== undefined || updates.originalCurrency !== undefined) {
+    // Si hay actualizaciones de cost o currency, convertir a costUSD
+    if (updates.cost !== undefined || updates.currency !== undefined) {
       const rate = useCurrencyStore.getState().rate;
       const existing = get().products.find((p) => p.id === id);
       if (!existing) return;
       const cost = updates.cost ?? existing.costUSD;
-      const currency = updates.originalCurrency || existing.originalCurrency;
+      const currency = updates.currency ?? existing.originalCurrency;
       if (rate > 0) {
         updatedCostUSD = currency === 'Bs' ? cost / rate : cost;
+      } else {
+        updatedCostUSD = cost;
       }
     }
 
@@ -115,7 +128,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     if (updates.profitPercentage !== undefined) dbUpdate.profit_percentage = updates.profitPercentage;
     if (updates.exemptFromVAT !== undefined) dbUpdate.exempt_from_vat = updates.exemptFromVAT;
     if (updates.photoUrl !== undefined) dbUpdate.photo_url = updates.photoUrl || null;
-    if (updates.originalCurrency !== undefined) dbUpdate.original_currency = updates.originalCurrency === 'Bs' ? 'Bs' : 'USD';
+    if (updates.currency !== undefined) dbUpdate.original_currency = updates.currency === 'Bs' ? 'Bs' : 'USD';
     if (updates.providerId !== undefined) dbUpdate.provider_id = updates.providerId;
 
     const { error } = await supabase.from('products').update(dbUpdate).eq('id', id);
@@ -126,7 +139,16 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
     set((s) => ({
       products: s.products.map((p) =>
-        p.id === id ? { ...p, ...updates, ...(updatedCostUSD !== undefined && { costUSD: updatedCostUSD }) } : p
+        p.id === id ? {
+          ...p,
+          name: updates.name ?? p.name,
+          profitPercentage: updates.profitPercentage ?? p.profitPercentage,
+          exemptFromVAT: updates.exemptFromVAT ?? p.exemptFromVAT,
+          photoUrl: updates.photoUrl ?? p.photoUrl,
+          providerId: updates.providerId ?? p.providerId,
+          costUSD: updatedCostUSD ?? p.costUSD,
+          originalCurrency: updates.currency ?? p.originalCurrency,
+        } : p
       ),
     }));
   },
