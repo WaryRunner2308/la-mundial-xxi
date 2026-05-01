@@ -379,11 +379,12 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               id="providerId"
               name="providerId"
               value={formData.providerId ?? ''}
-                  onChange={(e) => {
-                    const newFormData = { ...formData, profitPercentage: e.target.value };
-                    setFormData(newFormData);
-                    calculateLive(newFormData, rate, setLiveResults);
-                  }}
+                   onChange={(e) => {
+                     const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                     const newFormData = { ...formData, providerId: value };
+                     setFormData(newFormData);
+                     calculateLive(newFormData, rate, setLiveResults);
+                   }}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base bg-white"
             >
               <option value="">Seleccionar proveedor</option>
