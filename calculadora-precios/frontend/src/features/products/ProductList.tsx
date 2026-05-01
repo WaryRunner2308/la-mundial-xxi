@@ -6,6 +6,7 @@ import { ProductForm } from './ProductForm';
 import { formatAmountWithCurrency } from '../../utils/format';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
+import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 
 type Currency = 'Bs' | 'USD';
 
@@ -63,16 +64,33 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
   const providerFilterId = searchParams.get('providerId');
 
   // Filtrar productos si hay providerId en la URL
-  const filteredProducts = providerFilterId 
+  const filteredProducts = providerFilterId
     ? products.filter(p => p.providerId?.toString() === providerFilterId)
     : products;
 
   // Obtener nombre del proveedor para el encabezado
-  const currentProvider = providerFilterId 
+  const currentProvider = providerFilterId
     ? providers.find(p => p.id.toString() === providerFilterId)
     : null;
 
   const productsWithPrices = useProductsWithDynamicPrices(filteredProducts);
+
+  // Navegación por teclado en tabla de productos
+  const { highlightedIndex, handleKeyDown, setHighlightedIndex } = useKeyboardNavigation({
+    items: productsWithPrices,
+    onSelect: (product) => {
+      setEditingProduct({
+        id: product.id,
+        name: product.name,
+        cost: product.costUSD * (rate > 0 ? rate : 1),
+        currency: product.originalCurrency,
+        profitPercentage: product.profitPercentage,
+        exemptFromVAT: product.exemptFromVAT,
+        photoUrl: product.photoUrl,
+      });
+      setShowForm(true);
+    },
+  });
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -134,52 +152,85 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
           </div>
         </div>
         <div className="mt-4 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full"></div>
-      </div>
-
-      {/* Tabla de Productos */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-        <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <h2 className="text-lg md:text-xl font-bold text-gray-900">
-            Lista de Productos
-            <span className="text-xs md:text-sm font-normal text-gray-500 ml-2">
-              ({filteredProducts.length} de {products.length})
-            </span>
-          </h2>
-          {currentProvider && (
-            <button
-              onClick={() => navigate('/products')}
-              className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              Limpiar Filtro
-            </button>
-          )}
         </div>
-        <div className="overflow-x-auto -mx-4 md:mx-0">
-          <table className="w-full min-w-[600px]">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="h-12 px-4 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Foto</th>
-                <th className="h-12 px-4 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Nombre</th>
-                <th className="h-12 px-4 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Moneda</th>
-                <th className="h-12 px-4 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Costo</th>
-                <th className="h-12 px-4 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Precio Final</th>
-                <th className="h-12 px-4 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Ganancia</th>
-                <th className="h-12 px-4 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Margen</th>
-                <th className="h-12 px-4 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">IVA</th>
-                <th className="h-12 px-4 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {productsWithPrices.map((product) => {
-                const costBs = rate > 0 ? product.costUSD * rate : product.costUSD;
-                const priceWithVATBs = rate > 0 ? product.priceWithVATUSD * rate : product.priceWithVATUSD;
-                const utilityBs = rate > 0 ? product.utilityUSD * rate : product.utilityUSD;
 
-                return (
-                  <tr key={product.id} className="hover:bg-gray-50 transition">
+        {/* Tabla de Productos */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
+          {/* Header con controles */}
+          <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <h2 className="text-lg md:text-xl font-bold text-gray-900">
+              Lista de Productos
+              <span className="text-xs md:text-sm font-normal text-gray-500 ml-2">
+                ({filteredProducts.length} de {products.length})
+              </span>
+            </h2>
+            {currentProvider && (
+              <button
+                onClick={() => navigate('/products')}
+                className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Limpiar Filtro
+              </button>
+            )}
+          </div>
+
+          {/* Contenedor con navegación por teclado */}
+          <div
+            tabIndex={0}
+            onKeyDown={handleKeyDown}
+            onMouseLeave={() => setHighlightedIndex(-1)}
+            aria-label="Lista de productos"
+            role="grid"
+            className="outline-none"
+          >
+            <div className="overflow-x-auto -mx-4 md:mx-0">
+              <table className="w-full min-w-[600px]">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="h-12 px-4 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Foto</th>
+                    <th className="h-12 px-4 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Nombre</th>
+                    <th className="h-12 px-4 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Moneda</th>
+                    <th className="h-12 px-4 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Costo</th>
+                    <th className="h-12 px-4 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Precio Final</th>
+                    <th className="h-12 px-4 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Ganancia</th>
+                    <th className="h-12 px-4 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Margen</th>
+                    <th className="h-12 px-4 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">IVA</th>
+                    <th className="h-12 px-4 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {productsWithPrices.map((product, index) => {
+                    const costBs = rate > 0 ? product.costUSD * rate : product.costUSD;
+                    const priceWithVATBs = rate > 0 ? product.priceWithVATUSD * rate : product.priceWithVATUSD;
+                    const utilityBs = rate > 0 ? product.utilityUSD * rate : product.utilityUSD;
+                    const isHighlighted = highlightedIndex === index;
+
+                    return (
+                      <tr
+                        key={product.id}
+                        className={`
+                          hover:bg-gray-50 transition cursor-pointer
+                          ${isHighlighted ? 'bg-blue-100 border-l-4 border-l-blue-500' : ''}
+                        `}
+                        onClick={() => {
+                          setEditingProduct({
+                            id: product.id,
+                            name: product.name,
+                            cost: product.costUSD * (rate > 0 ? rate : 1),
+                            currency: product.originalCurrency,
+                            profitPercentage: product.profitPercentage,
+                            exemptFromVAT: product.exemptFromVAT,
+                            photoUrl: product.photoUrl,
+                          });
+                          setShowForm(true);
+                        }}
+                        onMouseEnter={() => setHighlightedIndex(index)}
+                        role="row"
+                        aria-selected={isHighlighted}
+                      >
                     <td className="p-3 md:p-6 align-middle">
                       {product.photoUrl ? (
                         <img src={product.photoUrl} className="w-10 h-10 md:w-12 md:h-12 object-cover rounded-lg" alt="" />
@@ -292,6 +343,7 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
             </tbody>
           </table>
         </div>
+          </div> {/* Cierre del contenedor con navegación por teclado */}
 
         {/* Empty State */}
         {productsWithPrices.length === 0 && (

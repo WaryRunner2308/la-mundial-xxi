@@ -3,6 +3,7 @@ import { useProductStore } from '../../store/productStore';
 import { useProviderStore } from '../../store/providerStore';
 import { ProductPriceComparison } from '../../types/provider';
 import { SecureInput } from '../../components/ui/SecureInput';
+import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 
 export function ComparatorPage() {
   const { products } = useProductStore();
@@ -11,7 +12,6 @@ export function ComparatorPage() {
   const [selectedProduct, setSelectedProduct] = useState<ProductPriceComparison | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   // Generar un nombre aleatorio único para el input (cada vez que el componente se monta)
   const randomInputName = `search_input_${Math.random().toString(36).substring(7)}`;
@@ -24,43 +24,23 @@ export function ComparatorPage() {
     name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Resetear índice resaltado cuando cambia la búsqueda
+  // Navegación por teclado en lista de sugerencias
+  const { highlightedIndex, handleKeyDown, setHighlightedIndex } = useKeyboardNavigation({
+    items: filteredProducts,
+    onSelect: (productName) => {
+      setSearchTerm(productName);
+      handleSelectProduct(productName);
+    },
+    onEscape: () => {
+      setSearchTerm('');
+      setSelectedProduct(null);
+    },
+  });
+
+  // Resetear índice resaltado cuando cambia la búsqueda (el hook ya lo hace, pero por si acaso)
   useEffect(() => {
-    setHighlightedIndex(-1);
-  }, [searchTerm]);
-
-  // Manejo de teclado (flechas y Enter)
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (filteredProducts.length === 0) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setHighlightedIndex(prev =>
-          prev < filteredProducts.length - 1 ? prev + 1 : prev
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setHighlightedIndex(prev => prev > 0 ? prev - 1 : 0);
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (highlightedIndex >= 0 && highlightedIndex < filteredProducts.length) {
-          const selectedName = filteredProducts[highlightedIndex];
-          setSearchTerm(selectedName);
-          handleSelectProduct(selectedName);
-          setHighlightedIndex(-1);
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        setSearchTerm('');
-        setSelectedProduct(null);
-        setHighlightedIndex(-1);
-        break;
-    }
-  };
+    // El hook maneja el reset automáticamente cuando items cambian
+  }, [filteredProducts]);
 
   // Al seleccionar un producto, agrupar por proveedor
   const handleSelectProduct = (productName: string) => {
@@ -160,31 +140,33 @@ export function ComparatorPage() {
            )}
          </div>
 
-        {/* Sugerencias */}
-        {searchTerm && filteredProducts.length > 0 && (
-          <ul 
-            className="mt-2 border border-gray-200 rounded-lg max-h-60 overflow-y-auto bg-white"
-            onMouseLeave={() => setHighlightedIndex(-1)}
-          >
-            {filteredProducts.map((productName, index) => (
-              <li
-                key={productName}
-                onClick={() => {
-                  setSearchTerm(productName);
-                  handleSelectProduct(productName);
-                }}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
-                  index === highlightedIndex
-                    ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'hover:bg-gray-50 text-gray-700'
-                }`}
-              >
-                {productName}
-              </li>
-            ))}
-          </ul>
-        )}
+         {/* Sugerencias */}
+         {searchTerm && filteredProducts.length > 0 && (
+           <ul
+             className="mt-2 border border-gray-200 rounded-lg max-h-60 overflow-y-auto bg-white"
+             role="listbox"
+           >
+             {filteredProducts.map((productName, index) => (
+               <li
+                 key={productName}
+                 onClick={() => {
+                   setSearchTerm(productName);
+                   handleSelectProduct(productName);
+                 }}
+                 onMouseEnter={() => setHighlightedIndex(index)}
+                 className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
+                   index === highlightedIndex
+                     ? 'bg-blue-50 text-blue-700 font-medium'
+                     : 'hover:bg-gray-50 text-gray-700'
+                 }`}
+                 role="option"
+                 aria-selected={index === highlightedIndex}
+               >
+                 {productName}
+               </li>
+             ))}
+           </ul>
+         )}
       </div>
 
       {/* Resultados */}
