@@ -33,15 +33,15 @@ export function MermaPage() {
               <label htmlFor="kilosFactura" className="block text-sm font-medium text-gray-700 mb-2">
                 Kilos en Factura
               </label>
-               <input
-                  id="kilosFactura"
-                  name="kilosFactura"
+                <input
+                  id="merma_kilos_factura"
+                  name="merma_kilos_factura"
                   type="text"
                   inputMode="decimal"
-                  pattern="[0-9,.]*"
                   autoComplete="new-password"
                   autoCorrect="off"
                   spellCheck="false"
+                  autoCapitalize="none"
                   value={kilosFactura}
                   onChange={(e) => setKilosFactura(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
