@@ -20,6 +20,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         const containerRef = useRef<HTMLDivElement>(null);
         const inputRef = useRef<HTMLInputElement>(null);
         const displayRef = useRef<HTMLDivElement>(null);
+        const cursorRef = useRef<HTMLSpanElement>(null);
         const [isFocused, setIsFocused] = useState(false);
 
         // Nombre único por montaje para derrotar autocompletado
@@ -30,20 +31,14 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         useEffect(() => {
             if (autoFocus && inputRef.current) {
                 inputRef.current.focus();
-                // Posicionar cursor al final
-                const len = value.length;
-                inputRef.current.setSelectionRange(len, len);
             }
-        }, [autoFocus, value]);
+        }, [autoFocus]);
 
         const handleContainerClick = (e: React.MouseEvent) => {
             if (inputRef.current) {
                 e.preventDefault();
                 e.stopPropagation();
                 inputRef.current.focus();
-                // Posicionar cursor al final
-                const len = value.length;
-                inputRef.current.setSelectionRange(len, len);
             }
         };
 
@@ -59,11 +54,6 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 newValue = newValue.replace(/[^0-9]/g, '');
             }
             onChange(newValue);
-            // Forzar cursor al final inmediatamente
-            if (inputRef.current) {
-                const len = newValue.length;
-                inputRef.current.setSelectionRange(len, len);
-            }
         };
 
         const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -75,11 +65,6 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
 
         const handleInputFocus = () => {
             setIsFocused(true);
-            // Asegurar cursor al final al enfocar
-            if (inputRef.current) {
-                const len = value.length;
-                inputRef.current.setSelectionRange(len, len);
-            }
             onFocus?.();
         };
 
@@ -121,7 +106,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     </span>
                 )}
 
-                {/* Input invisible - captura TODOS los eventos de clic y teclado */}
+                {/* Input invisible - captura TODOS los eventos */}
                 <input
                     ref={inputRef}
                     type="text"
@@ -145,18 +130,16 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         height: '100%',
                         opacity: 0,
                         zIndex: 9999,
-                        cursor: 'text',
                         margin: 0,
                         padding: 0,
                         border: 'none',
-                        color: 'transparent',
-                        caretColor: '#3b82f6',
+                        outline: 'none',
                     }}
                     data-lpignore="true"
                     data-1p-ignore="true"
                 />
 
-                {/* Elemento visible */}
+                {/* Elemento visible con cursor simulado */}
                 {editable ? (
                     <div
                         ref={displayRef}
@@ -168,6 +151,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                             w-full px-4 py-3 border border-gray-300 rounded-lg
                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                             outline-none transition text-base min-h-[48px] bg-white
+                            flex items-center
                             ${isFocused ? 'ring-2 ring-blue-500 border-blue-500' : ''}
                             ${displayClassName}
                         `}
@@ -179,7 +163,19 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                             zIndex: 1,
                         }}
                         {...(placeholder && !value ? { 'data-placeholder': placeholder } : {})}
-                    />
+                    >
+                        <span className="flex-1 whitespace-pre">{value}</span>
+                        {/* Cursor azul parpadeante - se muestra solo cuando está enfocado */}
+                        {isFocused && (
+                            <span
+                                ref={cursorRef}
+                                className="inline-block w-0.5 h-5 bg-blue-500 animate-pulse ml-0.5"
+                                style={{
+                                    flexShrink: 0,
+                                }}
+                            />
+                        )}
+                    </div>
                 ) : (
                     <div
                         className={`
@@ -191,7 +187,16 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         `}
                         style={{ position: 'relative', zIndex: 1 }}
                     >
-                        {value || placeholder}
+                        <span className="flex-1">{value || placeholder}</span>
+                        {/* Cursor azul parpadeante para modo no-editable */}
+                        {isFocused && (
+                            <span
+                                className="inline-block w-0.5 h-5 bg-blue-500 animate-pulse ml-0.5"
+                                style={{
+                                    flexShrink: 0,
+                                }}
+                            />
+                        )}
                     </div>
                 )}
 
