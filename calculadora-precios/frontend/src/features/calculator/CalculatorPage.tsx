@@ -130,11 +130,16 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                    name="cost"
                    type="text"
                    inputMode="decimal"
-                   pattern="[0-9]*\.?[0-9]*"
-                   autoComplete="off"
-                   step="any"
+                   pattern="[0-9,.]*"
+                   autoComplete="new-password"
+                   autoCorrect="off"
+                   spellCheck="false"
                    value={formData.cost}
-                   onChange={handleInputChange}
+                   onChange={(e) => {
+                     const cleaned = validateDecimalInput(e.target.value);
+                     setFormData(prev => ({ ...prev, cost: cleaned }));
+                     calculate({ ...prev, cost: cleaned });
+                   }}
                    required
                    className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg"
                  />
@@ -160,11 +165,16 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                 name="profitPercentage"
                 type="text"
                 inputMode="decimal"
-                pattern="[0-9]*\.?[0-9]*"
-                autoComplete="off"
-                step="any"
+                pattern="[0-9,.]*"
+                autoComplete="new-password"
+                autoCorrect="off"
+                spellCheck="false"
                 value={formData.profitPercentage}
-                onChange={handleInputChange}
+                onChange={(e) => {
+                  const cleaned = validateDecimalInput(e.target.value);
+                  setFormData(prev => ({ ...prev, profitPercentage: cleaned }));
+                  calculate({ ...prev, profitPercentage: cleaned });
+                }}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base md:text-lg"
               />

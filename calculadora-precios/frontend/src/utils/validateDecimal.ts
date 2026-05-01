@@ -1,21 +1,25 @@
 /**
- * Valida y formatea entradas decimales, permitiendo tanto punto como coma
- * Como separador decimal. Normaliza a punto.
+ * Limpia y normaliza entrada numérica para móviles
+ * - Convierte coma a punto
+ * - Elimina cualquier carácter no numérico (excepto un punto)
+ * - Mantiene solo un punto decimal
  */
 export function validateDecimalInput(value: string): string {
-  // Permitir solo dígitos, punto y coma
-  let cleaned = value.replace(/[^0-9.,]/g, '');
+  if (!value) return '';
 
-  // Reemplazar comas por puntos para normalizar
-  cleaned = cleaned.replace(/,/g, '.');
+  // Paso 1: Reemplazar coma por punto
+  let cleaned = value.replace(',', '.');
 
-  // Asegurar solo un punto decimal
+  // Paso 2: Eliminar todo excepto dígitos y punto
+  cleaned = cleaned.replace(/[^0-9.]/g, '');
+
+  // Paso 3: Asegurar un solo punto decimal
   const parts = cleaned.split('.');
   if (parts.length > 2) {
     cleaned = parts[0] + '.' + parts.slice(1).join('');
   }
 
-  // Limitar a 2 decimales
+  // Paso 4: Limitar a 2 decimales (opcional, ajusta según necesidad)
   if (parts.length === 2 && parts[1].length > 2) {
     cleaned = parts[0] + '.' + parts[1].substring(0, 2);
   }
@@ -24,12 +28,12 @@ export function validateDecimalInput(value: string): string {
 }
 
 /**
- * Parsea un string numérico (con punto o coma) a número
- * Ej: "12,5" → 12.5, "10.75" → 10.75
+ * Parsea string a número, normalizando coma→punto
  */
 export function parseNumericInput(value: string): number {
   if (!value || value.trim() === '') return 0;
-  const normalized = value.replace(',', '.');
+  // Limpieza agresiva antes de parsear
+  const normalized = value.replace(',', '.').replace(/[^0-9.]/g, '');
   const parsed = parseFloat(normalized);
   return isNaN(parsed) ? 0 : parsed;
 }
