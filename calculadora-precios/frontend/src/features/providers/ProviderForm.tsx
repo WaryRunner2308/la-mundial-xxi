@@ -72,14 +72,18 @@ export function ProviderForm({ isOpen, onClose, onSave, editingProvider }: Provi
               Nombre del Proveedor *
             </label>
             <input
-              id="providerName"
+              id="provider_name_field"
+              name="provider_name_field"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Polar, Coca-Cola, Luventa"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
               autoFocus
-              autoComplete="off"
+              autoComplete="new-password"
+              autoCorrect="off"
+              spellCheck="false"
+              autoCapitalize="none"
               disabled={loading}
             />
             {error && <p className="mt-2 text-sm text-red-600">{error}</p>}

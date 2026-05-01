@@ -87,6 +87,9 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
               autoComplete="new-password"
               autoCorrect="off"
               spellCheck="false"
+              autoCapitalize="none"
+              id="rate_input_field_v2"
+              name="rate_input_field_v2"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Ej: 40.50"

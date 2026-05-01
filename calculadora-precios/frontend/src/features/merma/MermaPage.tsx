@@ -52,14 +52,15 @@ export function MermaPage() {
               <label htmlFor="kilosLlegaron" className="block text-sm font-medium text-gray-700 mb-2">
                 Kilos que Llegaron
               </label>
-               <input
-                  id="kilosLlegaron"
-                  name="kilosLlegaron"
+                <input
+                  id="merma_kilos_llegaron"
+                  name="merma_kilos_llegaron"
                   type="text"
                   inputMode="decimal"
                   autoComplete="new-password"
                   autoCorrect="off"
                   spellCheck="false"
+                  autoCapitalize="none"
                   value={kilosLlegaron}
                   onChange={(e) => setKilosLlegaron(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"

@@ -164,18 +164,22 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
 
     if (name === 'providerId') {
       newData = { ...formData, providerId: value ? parseInt(value, 10) : undefined };
-    } else if (name === 'unitsPerBulk') {
-      // Only allow positive integers
+    } else if (name === 'units_bulk_field') {
       const cleaned = value.replace(/[^0-9]/g, '');
       newData = { ...formData, unitsPerBulk: cleaned };
     } else if (name === 'packageType') {
-      // Clean unitsPerBulk when switching to unit
       newData = value === 'unit'
         ? { ...formData, packageType: 'unit', unitsPerBulk: '' }
         : { ...formData, packageType: 'bulk' };
     } else {
-      const cleanedValue = name === 'cost' || name === 'profitPercentage' ? validateDecimalInput(value) : value;
-      newData = { ...formData, [name]: cleanedValue };
+      // Mapear nombres de campo a propiedades de FormData
+      const fieldMap: Record<string, keyof FormData> = {
+        'product_cost_field': 'cost',
+        'profit_perc_field': 'profitPercentage',
+      };
+      const formField = fieldMap[name] || name;
+      const cleanedValue = formField === 'cost' || formField === 'profitPercentage' ? validateDecimalInput(value) : value;
+      newData = { ...formData, [formField]: cleanedValue };
     }
 
     setFormData(newData);
@@ -343,19 +347,20 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               Costo *
             </label>
             <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-               <input
-                 id="cost"
-                 name="cost"
-                 type="text"
-                 inputMode="decimal"
-                 autoComplete="new-password"
-                 autoCorrect="off"
-                 spellCheck="false"
-                value={formData.cost}
-                onChange={handleInputChange}
-                 required={false}
-                 className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base"
-               />
+                <input
+                  id="product_cost_field"
+                  name="product_cost_field"
+                  type="text"
+                  inputMode="decimal"
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  autoCapitalize="none"
+                  value={formData.cost}
+                  onChange={handleInputChange}
+                  required={false}
+                  className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base"
+                />
               <select
                 name="currency"
                 value={formData.currency}
@@ -406,13 +411,14 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
                 Unidades por bulto *
               </label>
               <input
-                id="unitsPerBulk"
-                name="unitsPerBulk"
+                id="units_bulk_field"
+                name="units_bulk_field"
                 type="text"
                 inputMode="numeric"
                 autoComplete="new-password"
                 autoCorrect="off"
                 spellCheck="false"
+                autoCapitalize="none"
                 value={formData.unitsPerBulk}
                 onChange={handleInputChange}
                 placeholder="Ej: 10"
@@ -435,15 +441,16 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               % Ganancia *
             </label>
             <input
-              id="profitPercentage"
-              name="profitPercentage"
+              id="profit_perc_field"
+              name="profit_perc_field"
               type="text"
               inputMode="decimal"
               autoComplete="new-password"
               autoCorrect="off"
               spellCheck="false"
-                value={formData.profitPercentage}
-                onChange={handleInputChange}
+              autoCapitalize="none"
+              value={formData.profitPercentage}
+              onChange={handleInputChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
             />
           </div>
