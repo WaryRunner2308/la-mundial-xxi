@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useProductStore } from '../../store/productStore';
 import { useCurrencyStore } from '../../store/currencyStore';
+import { useProviderStore } from '../../store/providerStore';
 import { formatAmountWithCurrency } from '../../utils/format';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import { uploadProductImage, deleteProductImage } from '../../lib/supabase';
@@ -15,6 +16,7 @@ interface FormData {
   profitPercentage: string;
   aplicarIVA: boolean;
   photoPreview: string | null;
+  providerId?: number;
 }
 
 interface LiveResults {
@@ -36,6 +38,7 @@ interface ProductFormProps {
     profitPercentage: number;
     exemptFromVAT: boolean;
     photoUrl: string;
+    providerId?: number;
   } | null;
   onSave?: () => void;
 }
@@ -81,6 +84,7 @@ function calculateLive(
 }
 
 export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductFormProps) {
+  const { providers, fetchProviders } = useProviderStore();
   const [formData, setFormData] = useState<FormData>({
     name: '',
     cost: '',
@@ -88,6 +92,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     profitPercentage: '',
     aplicarIVA: false,
     photoPreview: null,
+    providerId: undefined,
   });
   const [liveResults, setLiveResults] = useState<LiveResults | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -104,9 +109,19 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
       profitPercentage: '',
       aplicarIVA: false,
       photoPreview: null,
+      providerId: undefined,
     });
     setLiveResults(null);
   };
+
+  // Cargar proveedores al montar
+  useEffect(() => {
+    if (isOpen) {
+      fetchProviders().catch(() => {
+        console.warn('No se pudieron cargar proveedores');
+      });
+    }
+  }, [isOpen, fetchProviders]);
 
   useEffect(() => {
     if (isOpen && productToEdit) {
@@ -117,6 +132,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
         profitPercentage: productToEdit.profitPercentage.toString(),
         aplicarIVA: !productToEdit.exemptFromVAT,
         photoPreview: productToEdit.photoUrl || null,
+        providerId: productToEdit.providerId,
       };
       setFormData(formDataToSet);
       calculateLive(formDataToSet, rate, setLiveResults);
@@ -127,8 +143,13 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const cleanedValue = name === 'cost' || name === 'profitPercentage' ? validateDecimalInput(value) : value;
-    const newData = { ...formData, [name]: cleanedValue };
+    let newData: FormData;
+    if (name === 'providerId') {
+      newData = { ...formData, providerId: value ? parseInt(value, 10) : undefined };
+    } else {
+      const cleanedValue = name === 'cost' || name === 'profitPercentage' ? validateDecimalInput(value) : value;
+      newData = { ...formData, [name]: cleanedValue };
+    }
     setFormData(newData);
     calculateLive(newData, rate, setLiveResults);
   };
@@ -202,6 +223,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           profitPercentage: profit,
           exemptFromVAT: !formData.aplicarIVA,
           photoUrl: formData.photoPreview || '',
+          providerId: formData.providerId,
         });
       } else {
         await addProduct({
@@ -212,6 +234,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           profitPercentage: profit,
           exemptFromVAT: !formData.aplicarIVA,
           photoUrl: formData.photoPreview || '',
+          providerId: formData.providerId,
         });
       }
       onSave?.();
@@ -333,6 +356,30 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
             />
+          </div>
+
+          {/* Proveedor */}
+          <div>
+            <label htmlFor="providerId" className="block text-sm font-medium text-gray-700 mb-2">
+              Proveedor
+            </label>
+            <select
+              id="providerId"
+              name="providerId"
+              value={formData.providerId ?? ''}
+              onChange={(e) => {
+                const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                setFormData(prev => ({ ...prev, providerId: value }));
+              }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base bg-white"
+            >
+              <option value="">Seleccionar proveedor</option>
+              {providers.map((provider) => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* IVA Checkbox */}
