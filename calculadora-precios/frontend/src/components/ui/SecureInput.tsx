@@ -5,6 +5,7 @@ interface SecureInputProps {
     onChange: (value: string) => void;
     onFocus?: () => void;
     onBlur?: () => void;
+    onSubmit?: () => void;
     placeholder?: string;
     inputMode?: 'text' | 'decimal' | 'numeric' | 'email' | 'tel';
     className?: string;
@@ -15,7 +16,7 @@ interface SecureInputProps {
 }
 
 export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
-    ({ value, onChange, onFocus, onBlur, placeholder, inputMode = 'text', className = '', label, autoFocus, editable = false, displayClassName = '' }, ref) => {
+    ({ value, onChange, onFocus, onBlur, onSubmit, placeholder, inputMode = 'text', className = '', label, autoFocus, editable = false, displayClassName = '' }, ref) => {
         const containerRef = useRef<HTMLDivElement>(null);
         const inputRef = useRef<HTMLInputElement>(null);
         const displayRef = useRef<HTMLDivElement>(null);
@@ -53,6 +54,13 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 newValue = newValue.replace(/[^0-9]/g, '');
             }
             onChange(newValue);
+        };
+
+        const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                onSubmit?.();
+            }
         };
 
         const handleInputFocus = () => {
@@ -111,6 +119,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     id={fieldName.current}
                     value={value}
                     onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
                     onFocus={handleInputFocus}
                     onBlur={handleInputBlur}
                     style={{

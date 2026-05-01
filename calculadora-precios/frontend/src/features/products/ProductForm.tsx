@@ -243,8 +243,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     setShowConfirm(false);
   };
 
-  const handleSubmit = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  const submitForm = async () => {
     if (!formData.name || !formData.cost || !formData.profitPercentage) {
       alert('Complete todos los campos requeridos');
       return;
@@ -269,15 +268,15 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           providerId: formData.providerId,
         });
       } else {
-      await addProduct({
-        name: formData.name,
-        cost: costPerUnit,
-        currency: formData.currency,
-        profitPercentage: profit,
-        exemptFromVAT: !formData.aplicarIVA,
-        photoUrl: formData.photoPreview || '',
-        providerId: formData.providerId,
-      });
+        await addProduct({
+          name: formData.name,
+          cost: costPerUnit,
+          currency: formData.currency,
+          profitPercentage: profit,
+          exemptFromVAT: !formData.aplicarIVA,
+          photoUrl: formData.photoPreview || '',
+          providerId: formData.providerId,
+        });
       }
       onSave?.();
       onClose();
@@ -285,6 +284,11 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
       console.error('❌ Error completo al guardar:', error);
       alert(`Error al guardar: ${error.message}\n\nRevisa la consola (F12) para detalles.`);
     }
+  };
+
+  const handleSubmit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    submitForm();
   };
 
   function imageToBase64(file: File, maxWidth = 300): Promise<string> {
@@ -353,6 +357,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           <SecureInput
             value={formData.name}
             onChange={handleNameChange}
+            onSubmit={submitForm}
             placeholder="Ej: Malta 1.5L"
             inputMode="text"
             editable
@@ -369,6 +374,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
                <SecureInput
                  value={formData.cost}
                  onChange={handleCostChange}
+                 onSubmit={submitForm}
                  placeholder="0.00"
                  inputMode="decimal"
                  editable
@@ -426,6 +432,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
             <SecureInput
               value={formData.unitsPerBulk}
               onChange={handleUnitsChange}
+              onSubmit={submitForm}
               placeholder="Ej: 10"
               inputMode="numeric"
               editable
@@ -449,6 +456,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
             <SecureInput
               value={formData.profitPercentage}
               onChange={handleProfitChange}
+              onSubmit={submitForm}
               placeholder="Ej: 30"
               inputMode="decimal"
               editable
