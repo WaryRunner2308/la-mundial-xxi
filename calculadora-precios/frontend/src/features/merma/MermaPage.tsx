@@ -57,7 +57,6 @@ export function MermaPage() {
                   name="kilosLlegaron"
                   type="text"
                   inputMode="decimal"
-                  pattern="[0-9,.]*"
                   autoComplete="new-password"
                   autoCorrect="off"
                   spellCheck="false"

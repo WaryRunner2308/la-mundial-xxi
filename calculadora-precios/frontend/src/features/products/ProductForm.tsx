@@ -319,7 +319,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
             {productToEdit ? 'Editar Producto' : 'Agregar Producto Nuevo'}
           </h2>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off" noValidate>
           {/* Nombre */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -348,13 +348,12 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
                  name="cost"
                  type="text"
                  inputMode="decimal"
-                 pattern="[0-9,.]*"
                  autoComplete="new-password"
                  autoCorrect="off"
                  spellCheck="false"
                 value={formData.cost}
                 onChange={handleInputChange}
-                 required
+                 required={false}
                  className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base"
                />
               <select
@@ -411,7 +410,6 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
                 name="unitsPerBulk"
                 type="text"
                 inputMode="numeric"
-                pattern="[0-9]*"
                 autoComplete="new-password"
                 autoCorrect="off"
                 spellCheck="false"
@@ -441,13 +439,11 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               name="profitPercentage"
               type="text"
               inputMode="decimal"
-              pattern="[0-9,.]*"
               autoComplete="new-password"
               autoCorrect="off"
               spellCheck="false"
                 value={formData.profitPercentage}
                 onChange={handleInputChange}
-              required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
             />
           </div>

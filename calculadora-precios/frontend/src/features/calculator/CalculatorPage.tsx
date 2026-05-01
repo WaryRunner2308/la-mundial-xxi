@@ -129,9 +129,8 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                    id="cost"
                    name="cost"
                    type="text"
-                   inputMode="decimal"
-                   pattern="[0-9,.]*"
-                   autoComplete="new-password"
+                 inputMode="decimal"
+                 autoComplete="new-password"
                    autoCorrect="off"
                    spellCheck="false"
                    value={formData.cost}
@@ -164,11 +163,10 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                 id="profitPercentage"
                 name="profitPercentage"
                 type="text"
-                inputMode="decimal"
-                pattern="[0-9,.]*"
-                autoComplete="new-password"
-                autoCorrect="off"
-                spellCheck="false"
+              inputMode="decimal"
+              autoComplete="new-password"
+              autoCorrect="off"
+              spellCheck="false"
                 value={formData.profitPercentage}
                 onChange={(e) => {
                   const newFormData = { ...formData, profitPercentage: e.target.value };

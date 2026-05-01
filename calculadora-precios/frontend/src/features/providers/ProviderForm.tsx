@@ -66,7 +66,7 @@ export function ProviderForm({ isOpen, onClose, onSave, editingProvider }: Provi
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off" noValidate>
           <div>
             <label htmlFor="providerName" className="block text-sm font-medium text-gray-700 mb-2">
               Nombre del Proveedor *
