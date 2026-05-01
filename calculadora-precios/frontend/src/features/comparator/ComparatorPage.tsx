@@ -144,7 +144,7 @@ export function ComparatorPage() {
              placeholder="Ej: Malta 1.5L"
              inputMode="search"
              editable
-             displayClassName="border-0 rounded-none focus:ring-0 focus:border-none pr-8"
+             displayClassName="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base pr-8"
            />
            {searchTerm && (
              <button
