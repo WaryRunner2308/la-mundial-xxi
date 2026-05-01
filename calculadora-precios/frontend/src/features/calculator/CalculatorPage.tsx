@@ -136,8 +136,7 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                    spellCheck="false"
                    value={formData.cost}
                   onChange={(e) => {
-                    const cleaned = validateDecimalInput(e.target.value);
-                    const newFormData = { ...formData, cost: cleaned };
+                    const newFormData = { ...formData, cost: e.target.value };
                     setFormData(newFormData);
                     calculate(newFormData);
                   }}
@@ -172,8 +171,7 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                 spellCheck="false"
                 value={formData.profitPercentage}
                 onChange={(e) => {
-                  const cleaned = validateDecimalInput(e.target.value);
-                  const newFormData = { ...formData, profitPercentage: cleaned };
+                  const newFormData = { ...formData, profitPercentage: e.target.value };
                   setFormData(newFormData);
                   calculate(newFormData);
                 }}

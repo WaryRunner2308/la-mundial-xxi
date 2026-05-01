@@ -43,7 +43,7 @@ export function MermaPage() {
                   autoCorrect="off"
                   spellCheck="false"
                   value={kilosFactura}
-                  onChange={(e) => setKilosFactura(validateDecimalInput(e.target.value))}
+                  onChange={(e) => setKilosFactura(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
                 />
             </div>
@@ -62,7 +62,7 @@ export function MermaPage() {
                   autoCorrect="off"
                   spellCheck="false"
                   value={kilosLlegaron}
-                  onChange={(e) => setKilosLlegaron(validateDecimalInput(e.target.value))}
+                  onChange={(e) => setKilosLlegaron(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
                 />
             </div>
