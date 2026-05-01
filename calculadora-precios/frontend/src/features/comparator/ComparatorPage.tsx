@@ -23,48 +23,56 @@ export function ComparatorPage() {
     name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Al seleccionar un producto, agrupar por proveedor
-  const handleSelectProduct = (productName: string) => {
-    setLoading(true);
-    setError(null);
+   // Al seleccionar un producto, agrupar por proveedor
+   const handleSelectProduct = (productName: string) => {
+     setLoading(true);
+     setError(null);
 
-    try {
-      const productVariants = products.filter((p) => p.name === productName);
-      const comparison: ProductPriceComparison = {
-        product: {
-          id: 0,
-          name: productName,
-          category: '',
-        },
-        prices: productVariants
-          .filter((p) => p.providerId !== undefined)
-          .map((p) => {
-            const provider = providers.find((prov) => prov.id === p.providerId);
-            return {
-              id: p.id,
-              product_id: p.id,
-              provider_id: p.providerId!,
-              cost_usd: p.costUSD,
-              profit_percentage: p.profitPercentage,
-              exempt_from_vat: p.exemptFromVAT,
-              photo_url: p.photoUrl,
-              updated_at: p.updatedAt,
-              provider_name: provider?.name || 'Desconocido',
-            };
-          })
-          .sort((a, b) => a.cost_usd - b.cost_usd), // Ordenar por precio ascendente
-      };
+     try {
+       const productVariants = products.filter((p) => p.name === productName);
+       const comparison: ProductPriceComparison = {
+         product: {
+           id: 0,
+           name: productName,
+           category: '',
+         },
+         prices: productVariants
+           .filter((p) => p.providerId !== undefined)
+           .map((p) => {
+             const provider = providers.find((prov) => prov.id === p.providerId);
+             return {
+               id: p.id,
+               product_id: p.id,
+               provider_id: p.providerId!,
+               cost_usd: p.costUSD,
+               profit_percentage: p.profitPercentage,
+               exempt_from_vat: p.exemptFromVAT,
+               photo_url: p.photoUrl,
+               updated_at: p.updatedAt,
+               provider_name: provider?.name || 'Desconocido',
+             };
+           })
+           .sort((a, b) => a.cost_usd - b.cost_usd), // Ordenar por precio ascendente
+       };
 
-      setSelectedProduct(comparison);
-    } catch (err: any) {
-      console.error('Error al cargar comparación:', err);
-      setError('Error al cargar datos del producto');
-    } finally {
-      setLoading(false);
-    }
-  };
+       setSelectedProduct(comparison);
+     } catch (err: any) {
+       console.error('Error al cargar comparación:', err);
+       setError('Error al cargar datos del producto');
+     } finally {
+       setLoading(false);
+     }
+   };
 
-  // Encontrar precio mínimo
+   // Limpiar resultados cuando el buscador esté vacío
+   useEffect(() => {
+     if (searchTerm === '') {
+       setSelectedProduct(null);
+       setError(null);
+     }
+   }, [searchTerm]);
+
+   // Encontrar precio mínimo
   const minPrice = selectedProduct?.prices.length
     ? Math.min(...selectedProduct.prices.map((p) => p.cost_usd))
     : null;
