@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { validateDecimalInput } from '@/utils/validateDecimal';
+import { validateDecimalInput, parseNumericInput } from '@/utils/validateDecimal';
 
 export function MermaPage() {
   const [kilosFactura, setKilosFactura] = useState<string>('');
   const [kilosLlegaron, setKilosLlegaron] = useState<string>('');
 
   const mermaPercentage = (() => {
-    const factura = parseFloat(kilosFactura) || 0;
-    const llegaron = parseFloat(kilosLlegaron) || 0;
+    const factura = parseNumericInput(kilosFactura);
+    const llegaron = parseNumericInput(kilosLlegaron);
 
     if (factura <= 0) return null;
 

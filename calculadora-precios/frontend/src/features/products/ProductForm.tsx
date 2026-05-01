@@ -5,7 +5,7 @@ import { useProviderStore } from '../../store/providerStore';
 import { formatAmountWithCurrency } from '../../utils/format';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import { uploadProductImage, deleteProductImage } from '../../lib/supabase';
-import { validateDecimalInput } from '../../utils/validateDecimal';
+import { validateDecimalInput, parseNumericInput } from '../../utils/validateDecimal';
 
 type Currency = 'Bs' | 'USD';
 
@@ -48,8 +48,8 @@ function calculateLive(
   rate: number,
   setLiveResults: React.Dispatch<React.SetStateAction<LiveResults | null>>
 ) {
-  const cost = parseFloat(data.cost) || 0;
-  const profit = parseFloat(data.profitPercentage) || 0;
+  const cost = parseNumericInput(data.cost);
+  const profit = parseNumericInput(data.profitPercentage);
 
   if (cost <= 0 || profit < 0 || profit >= 100) {
     setLiveResults(null);
@@ -207,8 +207,8 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
       return;
     }
 
-    const cost = parseFloat(formData.cost);
-    const profit = parseFloat(formData.profitPercentage);
+    const cost = parseNumericInput(formData.cost);
+    const profit = parseNumericInput(formData.profitPercentage);
     const divisor = 1 - (profit / 100);
     const priceBase = cost / divisor;
     const utility = priceBase - cost;
