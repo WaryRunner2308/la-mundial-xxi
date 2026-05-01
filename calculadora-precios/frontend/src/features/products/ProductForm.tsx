@@ -17,6 +17,8 @@ interface FormData {
   aplicarIVA: boolean;
   photoPreview: string | null;
   providerId?: number;
+  packageType: 'unit' | 'bulk';
+  unitsPerBulk: string;
 }
 
 interface LiveResults {
@@ -48,17 +50,26 @@ function calculateLive(
   rate: number,
   setLiveResults: React.Dispatch<React.SetStateAction<LiveResults | null>>
 ) {
-  const cost = parseNumericInput(data.cost);
+  // Calcular costo unitario según tipo de empaque
+  let costPerUnit = parseNumericInput(data.cost);
+
+  if (data.packageType === 'bulk' && data.unitsPerBulk) {
+    const units = parseNumericInput(data.unitsPerBulk);
+    if (units > 0) {
+      costPerUnit = costPerUnit / units;
+    }
+  }
+
   const profit = parseNumericInput(data.profitPercentage);
 
-  if (cost <= 0 || profit < 0 || profit >= 100) {
+  if (costPerUnit <= 0 || profit < 0 || profit >= 100) {
     setLiveResults(null);
     return;
   }
 
   const divisor = 1 - (profit / 100);
-  const priceBase = cost / divisor;
-  const utility = priceBase - cost;
+  const priceBase = costPerUnit / divisor;
+  const utility = priceBase - costPerUnit;
   const priceWithVAT = data.aplicarIVA ? priceBase * 1.16 : priceBase;
 
   let priceWithVATConverted = priceWithVAT;
@@ -93,6 +104,8 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     aplicarIVA: false,
     photoPreview: null,
     providerId: undefined,
+    packageType: 'unit',
+    unitsPerBulk: '',
   });
   const [liveResults, setLiveResults] = useState<LiveResults | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -110,6 +123,8 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
       aplicarIVA: false,
       photoPreview: null,
       providerId: undefined,
+      packageType: 'unit',
+      unitsPerBulk: '',
     });
     setLiveResults(null);
   };
@@ -123,33 +138,42 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     }
   }, [isOpen, fetchProviders]);
 
-  useEffect(() => {
-    if (isOpen && productToEdit) {
-      const formDataToSet: FormData = {
-        name: productToEdit.name,
-        cost: productToEdit.cost.toString(),
-        currency: productToEdit.currency,
-        profitPercentage: productToEdit.profitPercentage.toString(),
-        aplicarIVA: !productToEdit.exemptFromVAT,
-        photoPreview: productToEdit.photoUrl || null,
-        providerId: productToEdit.providerId,
-      };
-      setFormData(formDataToSet);
-      calculateLive(formDataToSet, rate, setLiveResults);
-    } else if (isOpen) {
-      resetForm();
-    }
-  }, [isOpen, productToEdit, rate]);
+   useEffect(() => {
+     if (isOpen && productToEdit) {
+       const formDataToSet: FormData = {
+         name: productToEdit.name,
+         cost: productToEdit.cost.toString(),
+         currency: productToEdit.currency,
+         profitPercentage: productToEdit.profitPercentage.toString(),
+         aplicarIVA: !productToEdit.exemptFromVAT,
+         photoPreview: productToEdit.photoUrl || null,
+         providerId: productToEdit.providerId,
+         packageType: 'unit',
+         unitsPerBulk: '',
+       };
+       setFormData(formDataToSet);
+       calculateLive(formDataToSet, rate, setLiveResults);
+     } else if (isOpen) {
+       resetForm();
+     }
+   }, [isOpen, productToEdit, rate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     let newData: FormData;
+
     if (name === 'providerId') {
       newData = { ...formData, providerId: value ? parseInt(value, 10) : undefined };
+    } else if (name === 'unitsPerBulk') {
+      const cleaned = validateDecimalInput(value);
+      newData = { ...formData, unitsPerBulk: cleaned };
+    } else if (name === 'packageType') {
+      newData = { ...formData, packageType: value as 'unit' | 'bulk' };
     } else {
       const cleanedValue = name === 'cost' || name === 'profitPercentage' ? validateDecimalInput(value) : value;
       newData = { ...formData, [name]: cleanedValue };
     }
+
     setFormData(newData);
     calculateLive(newData, rate, setLiveResults);
   };
@@ -207,18 +231,26 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
       return;
     }
 
-    const cost = parseNumericInput(formData.cost);
+    // Calcular costo unitario según tipo de empaque
+    let costPerUnit = parseNumericInput(formData.cost);
+    if (formData.packageType === 'bulk' && formData.unitsPerBulk) {
+      const units = parseNumericInput(formData.unitsPerBulk);
+      if (units > 0) {
+        costPerUnit = costPerUnit / units;
+      }
+    }
+
     const profit = parseNumericInput(formData.profitPercentage);
     const divisor = 1 - (profit / 100);
-    const priceBase = cost / divisor;
-    const utility = priceBase - cost;
+    const priceBase = costPerUnit / divisor;
+    const utility = priceBase - costPerUnit;
     const priceWithVAT = formData.aplicarIVA ? priceBase * 1.16 : priceBase;
 
     try {
       if (productToEdit) {
         await updateProduct(productToEdit.id, {
           name: formData.name,
-          cost: cost,
+          cost: costPerUnit,
           currency: formData.currency,
           profitPercentage: profit,
           exemptFromVAT: !formData.aplicarIVA,
@@ -229,7 +261,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
         await addProduct({
           name: formData.name,
           category: "",
-          cost: cost,
+          cost: costPerUnit,
           currency: formData.currency,
           profitPercentage: profit,
           exemptFromVAT: !formData.aplicarIVA,
@@ -340,6 +372,68 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               </select>
             </div>
           </div>
+
+          {/* Selector de Tipo de Empaque */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tipo de empaque
+            </label>
+            <div className="flex gap-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="packageType"
+                  value="unit"
+                  checked={formData.packageType === 'unit'}
+                  onChange={handleInputChange}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Unidad</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="packageType"
+                  value="bulk"
+                  checked={formData.packageType === 'bulk'}
+                  onChange={handleInputChange}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Bulto</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Unidades por Bulto (condicional) */}
+          {formData.packageType === 'bulk' && (
+            <div>
+              <label htmlFor="unitsPerBulk" className="block text-sm font-medium text-gray-700 mb-2">
+                Unidades por bulto *
+              </label>
+              <input
+                id="unitsPerBulk"
+                name="unitsPerBulk"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="new-password"
+                autoCorrect="off"
+                spellCheck="false"
+                value={formData.unitsPerBulk}
+                onChange={handleInputChange}
+                placeholder="Ej: 10"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
+              />
+              {formData.cost && formData.unitsPerBulk && parseNumericInput(formData.unitsPerBulk) > 0 && (
+                <p className="mt-2 text-sm text-blue-600 font-medium">
+                  💡 Costo unitario resultante: {formatAmountWithCurrency(
+                    parseNumericInput(formData.cost) / parseNumericInput(formData.unitsPerBulk),
+                    formData.currency
+                  )}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* % Ganancia */}
           <div>
