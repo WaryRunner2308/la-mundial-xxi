@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { supabase } from '@/lib/supabase';
+import { parseNumericInput } from '@/utils/validateDecimal';
 
 import { ProductsPage } from '@/features/products/ProductList';
 import { MermaPage } from '@/features/merma/MermaPage';
@@ -62,7 +63,7 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = parseFloat(inputValue);
+    const parsed = parseNumericInput(inputValue);
     if (parsed > 0) {
       setRate(parsed);
       onClose();

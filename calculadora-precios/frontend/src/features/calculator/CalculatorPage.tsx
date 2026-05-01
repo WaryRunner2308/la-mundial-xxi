@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { formatAmountWithCurrency } from '@/utils/format';
-import { validateDecimalInput } from '@/utils/validateDecimal';
+import { validateDecimalInput, parseNumericInput } from '@/utils/validateDecimal';
 
 type Currency = 'Bs' | 'USD';
 
@@ -35,8 +35,8 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
   const [results, setResults] = useState<CalcResults | null>(null);
 
   const calculate = (data: CalcFormData) => {
-    const cost = parseFloat(data.cost) || 0;
-    const profit = parseFloat(data.profitPercentage) || 0;
+  const cost = parseNumericInput(data.cost);
+  const profit = parseNumericInput(data.profitPercentage);
 
     if (cost <= 0 || profit < 0 || profit >= 100) {
       setResults(null);
