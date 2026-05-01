@@ -7,6 +7,10 @@ import { ProductsPage } from '@/features/products/ProductList';
 import { MermaPage } from '@/features/merma/MermaPage';
 import { useProductStore } from '@/store/productStore';
 import { CalculatorPage } from '@/features/calculator/CalculatorPage';
+import { ProvidersPage } from '@/features/providers/ProvidersPage';
+import { ComparatorPage } from '@/features/comparator/ComparatorPage';
+import { ProvidersPage } from '@/features/providers/ProvidersPage';
+import { ComparatorPage } from '@/features/comparator/ComparatorPage';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: { children: React.ReactNode }) {
@@ -192,6 +196,15 @@ function App() {
             Productos
           </NavLink>
           <NavLink
+            to="/providers"
+            className={({ isActive }) =>
+              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              }`
+            }
+          >
+            Proveedores
+          </NavLink>
+          <NavLink
             to="/calculator"
             className={({ isActive }) =>
               `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
@@ -199,6 +212,15 @@ function App() {
             }
           >
             Calculadora
+          </NavLink>
+          <NavLink
+            to="/comparator"
+            className={({ isActive }) =>
+              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 mb-1 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              }`
+            }
+          >
+            Comparador
           </NavLink>
           <NavLink
             to="/merma"
@@ -235,14 +257,16 @@ function App() {
             ⚠️ {supabaseError}
           </div>
         )}
-        <ErrorBoundary>
-          <Routes>
-            <Route path="/" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
-            <Route path="/products" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
-            <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
-            <Route path="/merma" element={<MermaPage />} />
-          </Routes>
-        </ErrorBoundary>
+         <ErrorBoundary>
+           <Routes>
+             <Route path="/" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
+             <Route path="/products" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
+             <Route path="/providers" element={<ProvidersPage />} />
+             <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
+             <Route path="/comparator" element={<ComparatorPage />} />
+             <Route path="/merma" element={<MermaPage />} />
+           </Routes>
+         </ErrorBoundary>
       </main>
 
       {/* Modals */}
