@@ -60,6 +60,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: number) => void; onClose: () => void }) {
   const [inputValue, setInputValue] = useState(rate > 0 ? rate.toString() : '');
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,23 +79,26 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
           <p className="text-gray-600 mt-2 text-sm md:text-base">¿Cuál es la tasa de cambio de hoy?</p>
           <p className="text-xs md:text-sm text-gray-500 mt-1">(1 USD = X Bs)</p>
         </div>
-        <form onSubmit={handleSubmit} autoComplete="off" noValidate>
-          <div className="mb-4 md:mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Tasa de Cambio</label>
+        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off" noValidate>
+          <div>
+            <label htmlFor="rate_input_field_v2" className="block text-sm font-medium text-gray-700 mb-2">
+              Tasa de Cambio
+            </label>
             <input
+              id="rate_input_field_v2"
+              name="rate_input_field_v2"
               type="text"
               inputMode="decimal"
               autoComplete="new-password"
               autoCorrect="off"
               spellCheck="false"
               autoCapitalize="none"
-              id="rate_input_field_v2"
-              name="rate_input_field_v2"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              readOnly={!isFocused}
               placeholder="Ej: 40.50"
               className="w-full px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base md:text-lg text-center"
-              autoFocus
             />
           </div>
           <button
