@@ -325,11 +325,12 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
                  autoCorrect="off"
                  spellCheck="false"
                  value={formData.cost}
-                 onChange={(e) => {
-                   const cleaned = validateDecimalInput(e.target.value);
-                   setFormData(prev => ({ ...prev, cost: cleaned }));
-                   calculateLive({ ...formData, cost: cleaned }, rate, setLiveResults);
-                 }}
+                  onChange={(e) => {
+                    const cleaned = validateDecimalInput(e.target.value);
+                    const newFormData = { ...formData, cost: cleaned };
+                    setFormData(newFormData);
+                    calculateLive(newFormData, rate, setLiveResults);
+                  }}
                  required
                  className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base"
                />
@@ -362,8 +363,9 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               value={formData.profitPercentage}
               onChange={(e) => {
                 const cleaned = validateDecimalInput(e.target.value);
-                setFormData(prev => ({ ...prev, profitPercentage: cleaned }));
-                calculateLive({ ...formData, profitPercentage: cleaned }, rate, setLiveResults);
+                const newFormData = { ...formData, profitPercentage: cleaned };
+                setFormData(newFormData);
+                calculateLive(newFormData, rate, setLiveResults);
               }}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
