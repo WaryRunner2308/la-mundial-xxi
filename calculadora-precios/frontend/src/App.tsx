@@ -62,13 +62,17 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: number) => void; onClose: () => void }) {
   const [inputValue, setInputValue] = useState(rate > 0 ? rate.toString() : '');
 
-  const handleSubmit = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     const parsed = parseNumericInput(inputValue);
     if (parsed > 0) {
       setRate(parsed);
       onClose();
     }
+  };
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    handleSubmit();
   };
 
   return (
@@ -86,6 +90,7 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
             <SecureInput
               value={inputValue}
               onChange={setInputValue}
+              onSubmit={handleSubmit}
               placeholder="Ej: 40.50"
               inputMode="decimal"
               editable
