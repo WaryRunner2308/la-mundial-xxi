@@ -30,15 +30,20 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         useEffect(() => {
             if (autoFocus && inputRef.current) {
                 inputRef.current.focus();
+                // Posicionar cursor al final
+                const len = value.length;
+                inputRef.current.setSelectionRange(len, len);
             }
-        }, [autoFocus]);
+        }, [autoFocus, value]);
 
         const handleContainerClick = (e: React.MouseEvent) => {
-            // Evitar que el clic en el div visible robe el foco
             if (inputRef.current) {
                 e.preventDefault();
                 e.stopPropagation();
                 inputRef.current.focus();
+                // Posicionar cursor al final
+                const len = value.length;
+                inputRef.current.setSelectionRange(len, len);
             }
         };
 
@@ -54,6 +59,11 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 newValue = newValue.replace(/[^0-9]/g, '');
             }
             onChange(newValue);
+            // Forzar cursor al final inmediatamente
+            if (inputRef.current) {
+                const len = newValue.length;
+                inputRef.current.setSelectionRange(len, len);
+            }
         };
 
         const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -65,6 +75,11 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
 
         const handleInputFocus = () => {
             setIsFocused(true);
+            // Asegurar cursor al final al enfocar
+            if (inputRef.current) {
+                const len = value.length;
+                inputRef.current.setSelectionRange(len, len);
+            }
             onFocus?.();
         };
 
@@ -134,6 +149,8 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         margin: 0,
                         padding: 0,
                         border: 'none',
+                        color: 'transparent',
+                        caretColor: '#3b82f6',
                     }}
                     data-lpignore="true"
                     data-1p-ignore="true"
@@ -178,7 +195,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     </div>
                 )}
 
-                {/* CSS anti-autofill + cursor emulado */}
+                {/* CSS anti-autofill */}
                 <style>{`
                     input:-webkit-autofill,
                     input:-webkit-autofill:hover,
@@ -195,16 +212,6 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         content: attr(data-placeholder);
                         color: #9ca3af;
                         pointer-events: none;
-                    }
-                    .secure-input-focused::after {
-                        content: '|';
-                        animation: blink 1s step-end infinite;
-                        margin-left: 2px;
-                        color: #3b82f6;
-                    }
-                    @keyframes blink {
-                        0%, 100% { opacity: 1; }
-                        50% { opacity: 0; }
                     }
                 `}</style>
             </div>
