@@ -149,7 +149,7 @@ function App() {
 
   return (
     <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
-      {/* Mobile header with hamburger */}
+      {/* Mobile header with hamburger  */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
