@@ -326,8 +326,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
                  spellCheck="false"
                  value={formData.cost}
                   onChange={(e) => {
-                    const cleaned = validateDecimalInput(e.target.value);
-                    const newFormData = { ...formData, cost: cleaned };
+                    const newFormData = { ...formData, cost: e.target.value };
                     setFormData(newFormData);
                     calculateLive(newFormData, rate, setLiveResults);
                   }}
@@ -361,12 +360,11 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               autoCorrect="off"
               spellCheck="false"
               value={formData.profitPercentage}
-              onChange={(e) => {
-                const cleaned = validateDecimalInput(e.target.value);
-                const newFormData = { ...formData, profitPercentage: cleaned };
-                setFormData(newFormData);
-                calculateLive(newFormData, rate, setLiveResults);
-              }}
+                  onChange={(e) => {
+                    const newFormData = { ...formData, cost: e.target.value };
+                    setFormData(newFormData);
+                    calculateLive(newFormData, rate, setLiveResults);
+                  }}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
             />
@@ -382,8 +380,9 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
               name="providerId"
               value={formData.providerId ?? ''}
               onChange={(e) => {
-                const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
-                setFormData(prev => ({ ...prev, providerId: value }));
+                const newFormData = { ...formData, profitPercentage: e.target.value };
+                setFormData(newFormData);
+                calculateLive(newFormData, rate, setLiveResults);
               }}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base bg-white"
             >
