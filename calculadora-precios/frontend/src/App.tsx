@@ -9,8 +9,6 @@ import { useProductStore } from '@/store/productStore';
 import { CalculatorPage } from '@/features/calculator/CalculatorPage';
 import { ProvidersPage } from '@/features/providers/ProvidersPage';
 import { ComparatorPage } from '@/features/comparator/ComparatorPage';
-import { ProvidersPage } from '@/features/providers/ProvidersPage';
-import { ComparatorPage } from '@/features/comparator/ComparatorPage';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: { children: React.ReactNode }) {
@@ -79,14 +77,15 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
           <p className="text-gray-600 mt-2 text-sm md:text-base">¿Cuál es la tasa de cambio de hoy?</p>
           <p className="text-xs md:text-sm text-gray-500 mt-1">(1 USD = X Bs)</p>
         </div>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="off">
           <div className="mb-4 md:mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">Tasa de Cambio</label>
             <input
               type="text"
               inputMode="decimal"
-              pattern="[0-9]*"
+              pattern="[0-9]*\.?[0-9]*"
               autoComplete="off"
+              step="any"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Ej: 40.50"

@@ -34,16 +34,17 @@ export function MermaPage() {
                 Kilos en Factura
               </label>
                <input
-                 id="kilosFactura"
-                 name="kilosFactura"
-                 type="text"
-                 inputMode="decimal"
-                 pattern="[0-9]*"
-                 autoComplete="off"
-                 value={kilosFactura}
-                 onChange={(e) => setKilosFactura(validateDecimalInput(e.target.value))}
-                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
-               />
+                  id="kilosFactura"
+                  name="kilosFactura"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  autoComplete="off"
+                  step="any"
+                  value={kilosFactura}
+                  onChange={(e) => setKilosFactura(validateDecimalInput(e.target.value))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
+                />
             </div>
 
             <div>
@@ -51,16 +52,17 @@ export function MermaPage() {
                 Kilos que Llegaron
               </label>
                <input
-                 id="kilosLlegaron"
-                 name="kilosLlegaron"
-                 type="text"
-                 inputMode="decimal"
-                 pattern="[0-9]*"
-                 autoComplete="off"
-                 value={kilosLlegaron}
-                 onChange={(e) => setKilosLlegaron(validateDecimalInput(e.target.value))}
-                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
-               />
+                  id="kilosLlegaron"
+                  name="kilosLlegaron"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  autoComplete="off"
+                  step="any"
+                  value={kilosLlegaron}
+                  onChange={(e) => setKilosLlegaron(validateDecimalInput(e.target.value))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
+                />
             </div>
           </div>
         </div>
