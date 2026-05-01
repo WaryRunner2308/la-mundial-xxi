@@ -89,6 +89,8 @@ export function ComparatorPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Ej: Malta 1.5L"
+            autoComplete="off"
+            autoComplete="new-password"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
           />
           {searchTerm && (
