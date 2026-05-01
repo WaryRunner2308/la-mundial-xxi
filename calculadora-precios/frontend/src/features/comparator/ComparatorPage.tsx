@@ -11,6 +11,7 @@ export function ComparatorPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   // Generar un nombre aleatorio único para el input (cada vez que el componente se monta)
   const randomInputName = `search_input_${Math.random().toString(36).substring(7)}`;
@@ -23,56 +24,96 @@ export function ComparatorPage() {
     name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-   // Al seleccionar un producto, agrupar por proveedor
-   const handleSelectProduct = (productName: string) => {
-     setLoading(true);
-     setError(null);
+  // Resetear índice resaltado cuando cambia la búsqueda
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [searchTerm]);
 
-     try {
-       const productVariants = products.filter((p) => p.name === productName);
-       const comparison: ProductPriceComparison = {
-         product: {
-           id: 0,
-           name: productName,
-           category: '',
-         },
-         prices: productVariants
-           .filter((p) => p.providerId !== undefined)
-           .map((p) => {
-             const provider = providers.find((prov) => prov.id === p.providerId);
-             return {
-               id: p.id,
-               product_id: p.id,
-               provider_id: p.providerId!,
-               cost_usd: p.costUSD,
-               profit_percentage: p.profitPercentage,
-               exempt_from_vat: p.exemptFromVAT,
-               photo_url: p.photoUrl,
-               updated_at: p.updatedAt,
-               provider_name: provider?.name || 'Desconocido',
-             };
-           })
-           .sort((a, b) => a.cost_usd - b.cost_usd), // Ordenar por precio ascendente
-       };
+  // Manejo de teclado (flechas y Enter)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (filteredProducts.length === 0) return;
 
-       setSelectedProduct(comparison);
-     } catch (err: any) {
-       console.error('Error al cargar comparación:', err);
-       setError('Error al cargar datos del producto');
-     } finally {
-       setLoading(false);
-     }
-   };
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev =>
+          prev < filteredProducts.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => prev > 0 ? prev - 1 : 0);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < filteredProducts.length) {
+          const selectedName = filteredProducts[highlightedIndex];
+          setSearchTerm(selectedName);
+          handleSelectProduct(selectedName);
+          setHighlightedIndex(-1);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setSearchTerm('');
+        setSelectedProduct(null);
+        setHighlightedIndex(-1);
+        break;
+    }
+  };
 
-   // Limpiar resultados cuando el buscador esté vacío
-   useEffect(() => {
-     if (searchTerm === '') {
-       setSelectedProduct(null);
-       setError(null);
-     }
-   }, [searchTerm]);
+  // Al seleccionar un producto, agrupar por proveedor
+  const handleSelectProduct = (productName: string) => {
+    setLoading(true);
+    setError(null);
+    setHighlightedIndex(-1);
 
-   // Encontrar precio mínimo
+    try {
+      const productVariants = products.filter((p) => p.name === productName);
+      const comparison: ProductPriceComparison = {
+        product: {
+          id: 0,
+          name: productName,
+          category: '',
+        },
+        prices: productVariants
+          .filter((p) => p.providerId !== undefined)
+          .map((p) => {
+            const provider = providers.find((prov) => prov.id === p.providerId);
+            return {
+              id: p.id,
+              product_id: p.id,
+              provider_id: p.providerId!,
+              cost_usd: p.costUSD,
+              profit_percentage: p.profitPercentage,
+              exempt_from_vat: p.exemptFromVAT,
+              photo_url: p.photoUrl,
+              updated_at: p.updatedAt,
+              provider_name: provider?.name || 'Desconocido',
+            };
+          })
+          .sort((a, b) => a.cost_usd - b.cost_usd), // Ordenar por precio ascendente
+      };
+
+      setSelectedProduct(comparison);
+    } catch (err: any) {
+      console.error('Error al cargar comparación:', err);
+      setError('Error al cargar datos del producto');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Limpiar resultados cuando el buscador esté vacío
+  useEffect(() => {
+    if (searchTerm === '') {
+      setSelectedProduct(null);
+      setError(null);
+      setHighlightedIndex(-1);
+    }
+  }, [searchTerm]);
+
+  // Encontrar precio mínimo
   const minPrice = selectedProduct?.prices.length
     ? Math.min(...selectedProduct.prices.map((p) => p.cost_usd))
     : null;
@@ -109,9 +150,16 @@ export function ComparatorPage() {
                 e.target.focus();
               }, 50);
             }}
-            onBlur={() => setIsFocused(false)}
+            onBlur={() => {
+              setIsFocused(false);
+              setHighlightedIndex(-1);
+            }}
+            onKeyDown={handleKeyDown}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setHighlightedIndex(-1);
+            }}
             placeholder="Ej: Malta 1.5L"
             autoComplete="new-password"
             autoCorrect="off"
@@ -137,15 +185,23 @@ export function ComparatorPage() {
 
         {/* Sugerencias */}
         {searchTerm && filteredProducts.length > 0 && (
-          <ul className="mt-2 border border-gray-200 rounded-lg max-h-60 overflow-y-auto bg-white">
-            {filteredProducts.map((productName) => (
+          <ul 
+            className="mt-2 border border-gray-200 rounded-lg max-h-60 overflow-y-auto bg-white"
+            onMouseLeave={() => setHighlightedIndex(-1)}
+          >
+            {filteredProducts.map((productName, index) => (
               <li
                 key={productName}
                 onClick={() => {
                   setSearchTerm(productName);
                   handleSelectProduct(productName);
                 }}
-                className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                onMouseEnter={() => setHighlightedIndex(index)}
+                className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
+                  index === highlightedIndex
+                    ? 'bg-blue-50 text-blue-700 font-medium'
+                    : 'hover:bg-gray-50 text-gray-700'
+                }`}
               >
                 {productName}
               </li>
