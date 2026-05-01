@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useProductStore } from '../../store/productStore';
 import { useCurrencyStore } from '../../store/currencyStore';
 import { useProviderStore } from '../../store/providerStore';
@@ -6,6 +6,7 @@ import { formatAmountWithCurrency } from '../../utils/format';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import { uploadProductImage } from '../../lib/supabase';
 import { validateDecimalInput, parseNumericInput } from '../../utils/validateDecimal';
+import { SecureEditableInput } from '../../components/ui/SecureInput';
 
 type Currency = 'Bs' | 'USD';
 
@@ -111,18 +112,6 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
   const [isUploading, setIsUploading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Refs para campos visuales (div contentEditable)
-  const nameDisplayRef = useRef<HTMLDivElement>(null);
-  const costDisplayRef = useRef<HTMLDivElement>(null);
-  const profitDisplayRef = useRef<HTMLDivElement>(null);
-  const unitsDisplayRef = useRef<HTMLDivElement>(null);
-
-  // Refs para inputs fantasma (proxy)
-  const nameInputRef = useRef<HTMLInputElement>(null);
-  const costInputRef = useRef<HTMLInputElement>(null);
-  const profitInputRef = useRef<HTMLInputElement>(null);
-  const unitsInputRef = useRef<HTMLInputElement>(null);
-
   const rate = useCurrencyStore((state) => state.rate);
   const addProduct = useProductStore((state) => state.addProduct);
   const updateProduct = useProductStore((state) => state.updateProduct);
@@ -140,18 +129,8 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
       unitsPerBulk: '',
     });
     setLiveResults(null);
-    // Limpiar displays y inputs fantasma
-    if (nameDisplayRef.current) nameDisplayRef.current.textContent = '';
-    if (costDisplayRef.current) costDisplayRef.current.textContent = '';
-    if (profitDisplayRef.current) profitDisplayRef.current.textContent = '';
-    if (unitsDisplayRef.current) unitsDisplayRef.current.textContent = '';
-    if (nameInputRef.current) nameInputRef.current.value = '';
-    if (costInputRef.current) costInputRef.current.value = '';
-    if (profitInputRef.current) profitInputRef.current.value = '';
-    if (unitsInputRef.current) unitsInputRef.current.value = '';
   };
 
-  // Cargar proveedores
   useEffect(() => {
     if (isOpen) {
       fetchProviders().catch(() => {
@@ -160,18 +139,13 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     }
   }, [isOpen, fetchProviders]);
 
-  // Cargar datos al editar
   useEffect(() => {
     if (isOpen && productToEdit) {
-      const name = productToEdit.name;
-      const cost = productToEdit.cost.toString();
-      const profit = productToEdit.profitPercentage.toString();
-
       const formDataToSet: FormData = {
-        name,
-        cost,
+        name: productToEdit.name,
+        cost: productToEdit.cost.toString(),
         currency: productToEdit.currency,
-        profitPercentage: profit,
+        profitPercentage: productToEdit.profitPercentage.toString(),
         aplicarIVA: !productToEdit.exemptFromVAT,
         photoPreview: productToEdit.photoUrl || null,
         providerId: productToEdit.providerId,
@@ -180,82 +154,28 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
       };
       setFormData(formDataToSet);
       calculateLive(formDataToSet, rate, setLiveResults);
-
-      // Actualizar displays e inputs fantasma
-      setTimeout(() => {
-        if (nameDisplayRef.current) nameDisplayRef.current.textContent = name;
-        if (costDisplayRef.current) costDisplayRef.current.textContent = cost;
-        if (profitDisplayRef.current) profitDisplayRef.current.textContent = profit;
-        if (nameInputRef.current) nameInputRef.current.value = name;
-        if (costInputRef.current) costInputRef.current.value = cost;
-        if (profitInputRef.current) profitInputRef.current.value = profit;
-      }, 0);
     } else if (isOpen) {
       resetForm();
     }
   }, [isOpen, productToEdit, rate]);
 
-  // Handlers de inputs fantasma
-  const handleNameProxyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  const handleNameChange = (value: string) => {
     setFormData(prev => ({ ...prev, name: value }));
     calculateLive({ ...formData, name: value }, rate, setLiveResults);
-    if (nameDisplayRef.current) {
-      nameDisplayRef.current.textContent = value;
-    }
   };
 
-  const handleCostProxyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    value = value.replace(/[^0-9.,]/g, '');
-    const parts = value.split('.');
-    if (parts.length > 2) {
-      value = parts[0] + '.' + parts.slice(1).join('');
-    }
+  const handleCostChange = (value: string) => {
     setFormData(prev => ({ ...prev, cost: value }));
     calculateLive({ ...formData, cost: value }, rate, setLiveResults);
-    if (costDisplayRef.current) {
-      costDisplayRef.current.textContent = value;
-    }
   };
 
-  const handleProfitProxyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    value = value.replace(/[^0-9.,]/g, '');
-    const parts = value.split('.');
-    if (parts.length > 2) {
-      value = parts[0] + '.' + parts.slice(1).join('');
-    }
+  const handleProfitChange = (value: string) => {
     setFormData(prev => ({ ...prev, profitPercentage: value }));
     calculateLive({ ...formData, profitPercentage: value }, rate, setLiveResults);
-    if (profitDisplayRef.current) {
-      profitDisplayRef.current.textContent = value;
-    }
   };
 
-  const handleUnitsProxyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/[^0-9]/g, '');
+  const handleUnitsChange = (value: string) => {
     setFormData(prev => ({ ...prev, unitsPerBulk: value }));
-    if (unitsDisplayRef.current) {
-      unitsDisplayRef.current.textContent = value;
-    }
-  };
-
-  // Focus handlers - redirigir foco al input fantasma
-  const handleNameFocus = () => {
-    if (nameInputRef.current) nameInputRef.current.focus();
-  };
-
-  const handleCostFocus = () => {
-    if (costInputRef.current) costInputRef.current.focus();
-  };
-
-  const handleProfitFocus = () => {
-    if (profitInputRef.current) profitInputRef.current.focus();
-  };
-
-  const handleUnitsFocus = () => {
-    if (unitsInputRef.current) unitsInputRef.current.focus();
   };
 
   const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -275,11 +195,6 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
       packageType: value,
       unitsPerBulk: value === 'unit' ? '' : prev.unitsPerBulk
     }));
-    if (value === 'unit') {
-      calculateLive({ ...formData, packageType: 'unit', unitsPerBulk: '' }, rate, setLiveResults);
-    } else {
-      calculateLive({ ...formData, packageType: 'bulk' }, rate, setLiveResults);
-    }
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -411,92 +326,19 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
 
   if (!isOpen) return null;
 
-  // Timestamp único para inputs fantasma - cada render genera IDs nuevos
-  const ts = Date.now();
-  // Generate unique form ID to break Chrome's form history association
-  const formId = `prod_form_${ts}`;
-  const fieldNameId = `fld_nm_${Math.random().toString(36).substring(2)}`;
-  const fieldCostId = `fld_ct_${Math.random().toString(36).substring(2)}`;
-  const fieldProfitId = `fld_pf_${Math.random().toString(36).substring(2)}`;
-  const fieldUnitsId = `fld_ub_${Math.random().toString(36).substring(2)}`;
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleCancel}>
       <div className="bg-white rounded-2xl p-6 md:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
 
-        {/* INPUTS FANTASMA - Técnica anti-autocomplete avanzada */}
-        {/* Usamos form="" para romper asociación con cualquier form */}
-        {/* data-1p-ignore para engañar a gestores de password */}
-        {/* disabled para evitar que Chrome indexe como campo de historial */}
-        <div style={{ position: 'absolute', left: '-1000px', top: '-1000px', opacity: 0, height: 0, width: 0, overflow: 'hidden' }} form={formId}>
-          <input
-            ref={nameInputRef}
-            type="text"
-            name={fieldNameId}
-            form={formId}
-            data-1p-ignore
-            data-lpignore="true"
-            autoComplete="new-random-field-name-nonsense"
-            readOnly
-            onFocus={(e) => { (e.target as HTMLInputElement).readOnly = false; }}
-            value={formData.name}
-            onChange={handleNameProxyChange}
-            tabIndex={-1}
-            aria-hidden="true"
-            style={{ pointerEvents: 'none' }}
-          />
-          <input
-            ref={costInputRef}
-            type="text"
-            name={fieldCostId}
-            form={formId}
-            inputMode="decimal"
-            data-1p-ignore
-            data-lpignore="true"
-            autoComplete="new-random-cost-nonsense"
-            readOnly
-            onFocus={(e) => { (e.target as HTMLInputElement).readOnly = false; }}
-            value={formData.cost}
-            onChange={handleCostProxyChange}
-            tabIndex={-1}
-            aria-hidden="true"
-            style={{ pointerEvents: 'none' }}
-          />
-          <input
-            ref={profitInputRef}
-            type="text"
-            name={fieldProfitId}
-            form={formId}
-            inputMode="decimal"
-            data-1p-ignore
-            data-lpignore="true"
-            autoComplete="new-random-profit-nonsense"
-            readOnly
-            onFocus={(e) => { (e.target as HTMLInputElement).readOnly = false; }}
-            value={formData.profitPercentage}
-            onChange={handleProfitProxyChange}
-            tabIndex={-1}
-            aria-hidden="true"
-            style={{ pointerEvents: 'none' }}
-          />
-          <input
-            ref={unitsInputRef}
-            type="text"
-            name={fieldUnitsId}
-            form={formId}
-            inputMode="numeric"
-            data-1p-ignore
-            data-lpignore="true"
-            autoComplete="new-random-units-nonsense"
-            readOnly
-            onFocus={(e) => { (e.target as HTMLInputElement).readOnly = false; }}
-            value={formData.unitsPerBulk}
-            onChange={handleUnitsProxyChange}
-            tabIndex={-1}
-            aria-hidden="true"
-            style={{ pointerEvents: 'none' }}
-          />
-        </div>
+        {/* Input fantasma global para capturar autocompletado */}
+        <input
+          type="text"
+          name={`global_decoy_${Date.now()}`}
+          autoComplete="new-password"
+          style={{ position: 'absolute', left: '-1000px', top: '-1000px', opacity: 0, height: 0, width: 0 }}
+          tabIndex={-1}
+          readOnly
+        />
 
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-800">
@@ -509,13 +351,11 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           <span className="block text-sm font-medium text-gray-700 mb-2">
             Nombre del Producto *
           </span>
-          <div
-            ref={nameDisplayRef}
-            contentEditable={true}
-            onFocus={handleNameFocus}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base min-h-[48px]"
-            style={{ outline: 'none' }}
-            suppressContentEditableWarning
+          <SecureEditableInput
+            value={formData.name}
+            onChange={handleNameChange}
+            placeholder="Ej: Malta 1.5L"
+            inputMode="text"
           />
         </div>
 
@@ -525,14 +365,15 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
             Costo *
           </span>
           <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-            <div
-              ref={costDisplayRef}
-              contentEditable={true}
-              onFocus={handleCostFocus}
-              className="flex-1 min-w-0 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base min-h-[48px]"
-              style={{ outline: 'none' }}
-              suppressContentEditableWarning
-            />
+            <div className="flex-1 min-w-0">
+              <SecureEditableInput
+                value={formData.cost}
+                onChange={handleCostChange}
+                placeholder="0.00"
+                inputMode="decimal"
+                displayClassName="border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base min-h-[48px] flex-1"
+              />
+            </div>
             <select
               value={formData.currency}
               onChange={handleCurrencyChange}
@@ -581,13 +422,11 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
             <span className="block text-sm font-medium text-gray-700 mb-2">
               Unidades por bulto *
             </span>
-            <div
-              ref={unitsDisplayRef}
-              contentEditable={true}
-              onFocus={handleUnitsFocus}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base min-h-[48px]"
-              style={{ outline: 'none' }}
-              suppressContentEditableWarning
+            <SecureEditableInput
+              value={formData.unitsPerBulk}
+              onChange={handleUnitsChange}
+              placeholder="Ej: 10"
+              inputMode="numeric"
             />
             {formData.cost && formData.unitsPerBulk && parseNumericInput(formData.unitsPerBulk) > 0 && (
               <p className="mt-2 text-sm text-blue-600 font-medium">
@@ -605,13 +444,11 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           <span className="block text-sm font-medium text-gray-700 mb-2">
             % Ganancia *
           </span>
-          <div
-            ref={profitDisplayRef}
-            contentEditable={true}
-            onFocus={handleProfitFocus}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base min-h-[48px]"
-            style={{ outline: 'none' }}
-            suppressContentEditableWarning
+          <SecureEditableInput
+            value={formData.profitPercentage}
+            onChange={handleProfitChange}
+            placeholder="Ej: 30"
+            inputMode="decimal"
           />
         </div>
 
@@ -699,7 +536,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
                   {formatAmountWithCurrency(liveResults.utility, liveResults.currency)}
                 </span>
                 {rate > 0 && liveResults.utilityConverted !== undefined && (
-                  <span className="block text-sm text-gray-500 mt-1">
+                  <span className="block text-sm text-gray-500">
                     {formatAmountWithCurrency(liveResults.utilityConverted, liveResults.currency === 'Bs' ? 'USD' : 'Bs')}
                   </span>
                 )}

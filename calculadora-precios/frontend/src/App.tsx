@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { supabase } from '@/lib/supabase';
 import { parseNumericInput } from '@/utils/validateDecimal';
+import { SecureEditableInput } from '@/components/ui/SecureInput';
 
 import { ProductsPage } from '@/features/products/ProductList';
 import { MermaPage } from '@/features/merma/MermaPage';
@@ -60,8 +61,6 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: number) => void; onClose: () => void }) {
   const [inputValue, setInputValue] = useState(rate > 0 ? rate.toString() : '');
-  const modalRef = useRef<HTMLDivElement>(null);
-  const [isFocused, setIsFocused] = useState(false);
 
   const handleSubmit = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -72,75 +71,9 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
     }
   };
 
-  // captura de teclado GLOBAL - sin input nativo
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    const key = e.key;
-
-    // Permitir números
-    if (/^[0-9]$/.test(key)) {
-      e.preventDefault();
-      setInputValue(prev => prev + key);
-      return;
-    }
-
-    // Permitir punto decimal (solo uno)
-    if (key === '.' && !inputValue.includes('.')) {
-      e.preventDefault();
-      setInputValue(prev => prev + key);
-      return;
-    }
-
-    // Permitir coma como decimal
-    if (key === ',' && !inputValue.includes('.') && !inputValue.includes(',')) {
-      e.preventDefault();
-      setInputValue(prev => prev + '.');
-      return;
-    }
-
-    // Backspace - borrar último carácter
-    if (key === 'Backspace') {
-      e.preventDefault();
-      setInputValue(prev => prev.slice(0, -1));
-      return;
-    }
-
-    // Escape - cerrar modal
-    if (key === 'Escape') {
-      e.preventDefault();
-      onClose();
-      return;
-    }
-
-    // Enter -提交
-    if (key === 'Enter') {
-      e.preventDefault();
-      const parsed = parseNumericInput(inputValue);
-      if (parsed > 0) {
-        setRate(parsed);
-        onClose();
-      }
-    }
-  };
-
-  // hacer click en el modal para enfocar
-  const handleModalClick = () => {
-    setIsFocused(true);
-  };
-
   return (
-    <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4"
-      onClick={handleModalClick}
-    >
-      <div
-        ref={modalRef}
-        className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
-        role="dialog"
-        aria-modal="true"
-      >
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
+      <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl">
         <div className="text-center mb-4 md:mb-6">
           <h2 className="text-xl md:text-2xl font-bold text-gray-800">¡Bienvenido!</h2>
           <p className="text-gray-600 mt-2 text-sm md:text-base">¿Cuál es la tasa de cambio de hoy?</p>
@@ -150,20 +83,12 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
         <div className="space-y-6">
           <div>
             <span className="block text-sm font-medium text-gray-700 mb-2">Tasa de Cambio</span>
-            {/* Display Div - SIN Input, solo muestra el valor */}
-            <div
-              className={`w-full px-4 py-2 md:py-3 border-2 rounded-lg text-base md:text-lg text-center min-h-[48px] flex items-center justify-center bg-white transition-colors ${isFocused
-                  ? 'border-blue-500 ring-2 ring-blue-200'
-                  : 'border-gray-300 focus:border-blue-500'
-                }`}
-            >
-              <span className={inputValue ? 'text-gray-900 font-mono text-xl' : 'text-gray-400'}>
-                {inputValue || 'Ingrese la tasa'}
-              </span>
-            </div>
-            <p className="mt-2 text-xs text-gray-500 text-center">
-              Escriba los números directamente con el teclado
-            </p>
+            <SecureEditableInput
+              value={inputValue}
+              onChange={setInputValue}
+              placeholder="Ej: 40.50"
+              inputMode="decimal"
+            />
           </div>
           <button
             type="button"
