@@ -180,19 +180,19 @@ function App() {
       {/* Sidebar */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-48 bg-white border-r shadow-sm flex flex-col
+        w-64 bg-white border-r shadow-sm flex flex-col
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="flex-shrink-0 flex items-center px-3 py-2 border-b">
-          <span className="text-base font-semibold text-gray-900">La Mundial</span>
+        <div className="flex-shrink-0 flex items-center px-4 py-3 md:py-4 border-b">
+          <span className="text-lg md:text-xl font-semibold text-gray-900">La Mundial</span>
         </div>
 
-        <nav className="flex-shrink-0 px-2 py-1.5 space-y-0.5">
+        <nav className="flex-shrink-0 px-2 md:px-3 py-2 space-y-0.5">
           <NavLink
             to="/products"
             className={({ isActive }) =>
-              `flex items-center px-2 py-1 rounded-md font-medium transition-colors duration-150 text-xs md:text-sm ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
               }`
             }
           >
@@ -201,7 +201,7 @@ function App() {
           <NavLink
             to="/providers"
             className={({ isActive }) =>
-              `flex items-center px-2 py-1 rounded-md font-medium transition-colors duration-150 text-xs md:text-sm ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
               }`
             }
           >
@@ -210,7 +210,7 @@ function App() {
           <NavLink
             to="/calculator"
             className={({ isActive }) =>
-              `flex items-center px-2 py-1 rounded-md font-medium transition-colors duration-150 text-xs md:text-sm ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
               }`
             }
           >
@@ -219,7 +219,7 @@ function App() {
           <NavLink
             to="/comparator"
             className={({ isActive }) =>
-              `flex items-center px-2 py-1 rounded-md font-medium transition-colors duration-150 text-xs md:text-sm ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
               }`
             }
           >
@@ -228,7 +228,7 @@ function App() {
           <NavLink
             to="/merma"
             className={({ isActive }) =>
-              `flex items-center px-2 py-1 rounded-md font-medium transition-colors duration-150 text-xs md:text-sm ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
               }`
             }
           >
@@ -237,26 +237,26 @@ function App() {
         </nav>
 
         {/* Logo centered - pushes to bottom with spacer */}
-        <div className="flex-grow flex items-center justify-center px-3 py-2 lg:py-4">
+        <div className="flex-grow flex items-center justify-center px-4 py-4 lg:py-6">
           <img
             src="/logo.png"
             alt="La Mundial XXI"
-            className="w-full max-w-[160px] object-contain lg:hidden"
+            className="w-full max-w-[200px] object-contain lg:hidden"
           />
           <img
             src="/logo.png"
             alt="La Mundial XXI"
-            className="w-full max-w-[140px] object-contain hidden lg:block"
+            className="w-full max-w-[180px] object-contain hidden lg:block"
           />
         </div>
 
-        <div className="flex-shrink-0 h-3"></div>
+        <div className="flex-shrink-0 h-4"></div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-3 md:p-4 overflow-y-auto lg:pt-4 pt-14">
+      <main className="flex-1 p-4 md:p-6 overflow-y-auto lg:pt-6 pt-16">
         {supabaseError && (
-          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
             ⚠️ {supabaseError}
           </div>
         )}
