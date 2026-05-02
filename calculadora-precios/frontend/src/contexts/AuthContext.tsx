@@ -4,20 +4,19 @@ type UserRole = 'gerencia' | 'invitado' | null;
 
 interface AuthContextType {
   userRole: UserRole;
-  login: (role: 'gerencia' | 'invitado', password?: string) => boolean;
+  login: (role: 'gerencia' | 'invitado', username?: string, password?: string) => boolean;
   logout: () => void;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const INACTIVITY_TIMEOUT = 2 * 60 * 1000; // 2 minutos en ms
+const INACTIVITY_TIMEOUT = 2 * 60 * 1000; // 2 minutos
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Función para limpiar temporizador
   const clearInactivityTimer = () => {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
@@ -25,18 +24,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Función para iniciar temporizador de inactividad
   const startInactivityTimer = () => {
     clearInactivityTimer();
     inactivityTimerRef.current = setTimeout(() => {
-      //Auto-logout tras 2 minutos de inactividad
       setUserRole(null);
       localStorage.removeItem('userRole');
       console.log('🕒 Sesión cerrada por inactividad (2 minutos)');
     }, INACTIVITY_TIMEOUT);
   };
 
-  // Reiniciar temporizador en actividad del usuario
   useEffect(() => {
     const handleUserActivity = () => {
       if (userRole) {
@@ -44,7 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Eventos que indican actividad
     window.addEventListener('mousemove', handleUserActivity);
     window.addEventListener('keydown', handleUserActivity);
     window.addEventListener('click', handleUserActivity);
@@ -61,34 +56,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [userRole]);
 
-  // Cargar rol desde localStorage al iniciar
   useEffect(() => {
     const savedRole = localStorage.getItem('userRole') as UserRole;
     if (savedRole === 'gerencia' || savedRole === 'invitado') {
       setUserRole(savedRole);
-      // Iniciar temporizador al cargar rol existente
       startInactivityTimer();
     }
   }, []);
 
-  const login = (role: 'gerencia' | 'invitado', password?: string): boolean => {
+  const login = (role: 'gerencia' | 'invitado', username?: string, password?: string): boolean => {
     if (role === 'invitado') {
       setUserRole('invitado');
       localStorage.setItem('userRole', 'invitado');
-      startInactivityTimer(); // Iniciar timer
+      startInactivityTimer();
       return true;
     }
 
     if (role === 'gerencia') {
-      // Credenciales: usuario pumpo (case-insensitive), contraseña Laly2018 (exacta)
       const validUser = 'pumpo';
       const validPass = 'Laly2018';
-      const inputUser = (password?.toLowerCase() || '').trim();
+      // Limpiar y normalizar usuario
+      const inputUser = (username || '').trim().toLowerCase();
+      // Contraseña exacta (con trim para eliminar espacios accidentales)
+      const inputPass = (password || '').trim();
 
-      if (inputUser === validUser && password === validPass) {
+      if (inputUser === validUser && inputPass === validPass) {
         setUserRole('gerencia');
         localStorage.setItem('userRole', 'gerencia');
-        startInactivityTimer(); // Iniciar timer
+        startInactivityTimer();
         return true;
       }
       return false;

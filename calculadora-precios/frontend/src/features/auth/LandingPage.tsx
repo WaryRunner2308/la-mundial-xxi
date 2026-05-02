@@ -14,11 +14,11 @@ export function LandingPage() {
 
   const handleGerenciaSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const success = login('gerencia', credentials.password);
+    // Enviar username y password al login
+    const success = login('gerencia', credentials.username, credentials.password);
     if (!success) {
       setError('Credenciales incorrectas. Verifica usuario y contraseña.');
     }
-    // Si success, el contexto actualiza y App cambia de pantalla automáticamente
   };
 
   const handleCancelarLogin = () => {
