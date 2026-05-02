@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useProductStore } from '../../store/productStore';
 import { useProviderStore } from '../../store/providerStore';
 import { ProductPriceComparison } from '../../types/provider';
@@ -11,10 +11,7 @@ export function ComparatorPage() {
   const [selectedProduct, setSelectedProduct] = useState<ProductPriceComparison | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-
-  // Generar un nombre aleatorio único para el input (cada vez que el componente se monta)
-  const randomInputName = `search_input_${Math.random().toString(36).substring(7)}`;
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   // Obtener productos únicos por nombre
   const uniqueProductNames = Array.from(new Set(products.map((p) => p.name))).sort();
@@ -24,56 +21,16 @@ export function ComparatorPage() {
     name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Resetear índice seleccionado cuando cambia la búsqueda o los resultados
+  // Resetear índice cuando cambia la lista
   useEffect(() => {
-    setSelectedIndex(-1);
-  }, [searchTerm, filteredProducts.length]);
-
-  // Manejo de teclado en el input de búsqueda
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (filteredProducts.length === 0) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedIndex((prev) =>
-          prev < filteredProducts.length - 1 ? prev + 1 : prev
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (selectedIndex >= 0 && selectedIndex < filteredProducts.length) {
-          const selectedName = filteredProducts[selectedIndex];
-          setSearchTerm(selectedName);
-          handleSelectProduct(selectedName);
-          setSelectedIndex(-1);
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        setSearchTerm('');
-        setSelectedProduct(null);
-        setSelectedIndex(-1);
-        break;
-      default:
-        break;
-    }
-  };
-
-  // Resetear índice resaltado cuando cambia la búsqueda (el hook ya lo hace, pero por si acaso)
-  useEffect(() => {
-    // El hook maneja el reset automáticamente cuando items cambian
+    setHighlightedIndex(-1);
   }, [filteredProducts]);
 
   // Al seleccionar un producto, agrupar por proveedor
   const handleSelectProduct = (productName: string) => {
     setLoading(true);
     setError(null);
-    setSelectedIndex(-1);
+    setHighlightedIndex(-1);
 
     try {
       const productVariants = products.filter((p) => p.name === productName);
@@ -99,7 +56,7 @@ export function ComparatorPage() {
               provider_name: provider?.name || 'Desconocido',
             };
           })
-          .sort((a, b) => a.cost_usd - b.cost_usd), // Ordenar por precio ascendente
+          .sort((a, b) => a.cost_usd - b.cost_usd),
       };
 
       setSelectedProduct(comparison);
@@ -111,12 +68,61 @@ export function ComparatorPage() {
     }
   };
 
-  // Limpiar resultados cuando el buscador esté vacío
+   // Manejo de teclado en input de búsqueda (NAVEGACIÓN HÍBRIDA)
+   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+     if (filteredProducts.length === 0) return;
+
+     switch (e.key) {
+       case 'ArrowDown':
+         e.preventDefault();
+         setHighlightedIndex((prev) =>
+           prev < filteredProducts.length - 1 ? prev + 1 : prev
+         );
+         break;
+       case 'ArrowUp':
+         e.preventDefault();
+         setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1)); // ← Vuelve al input (-1)
+         break;
+       case 'Enter':
+         e.preventDefault();
+         if (highlightedIndex >= 0 && highlightedIndex < filteredProducts.length) {
+           const selectedName = filteredProducts[highlightedIndex];
+           setSearchTerm(selectedName);
+           handleSelectProduct(selectedName);
+           setHighlightedIndex(-1);
+         }
+         break;
+       case 'Escape':
+         e.preventDefault();
+         setSearchTerm('');
+         setSelectedProduct(null);
+         setHighlightedIndex(-1);
+         break;
+       default:
+         break;
+     }
+   };
+
+   // Scroll automático al ítem resaltado (móvil/teclado)
+   useEffect(() => {
+     if (highlightedIndex >= 0) {
+       const listbox = document.querySelector('[role="listbox"]');
+       if (listbox) {
+         const items = listbox.querySelectorAll('[role="option"]');
+         const activeItem = items[highlightedIndex] as HTMLElement;
+         if (activeItem) {
+           activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+         }
+       }
+     }
+   }, [highlightedIndex]);
+
+  // Limpiar al limpiar búsqueda
   useEffect(() => {
     if (searchTerm === '') {
       setSelectedProduct(null);
       setError(null);
-      setSelectedIndex(-1);
+      setHighlightedIndex(-1);
     }
   }, [searchTerm]);
 
@@ -137,42 +143,51 @@ export function ComparatorPage() {
         </p>
       </div>
 
-       {/* Buscador */}
-       <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
-         <label htmlFor={randomInputName} className="block text-sm font-medium text-gray-700 mb-2">
-           Buscar Producto
-         </label>
+      {/* Buscador */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
+        <label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-2">
+          Buscar Producto
+        </label>
          <div className="relative">
            <SecureInput
-             id={randomInputName}
+             id="search-input"
              value={searchTerm}
-             onChange={setSearchTerm}
-             onKeyDown={handleKeyDown}
+             onChange={(value) => {
+               setSearchTerm(value);
+               setHighlightedIndex(-1);
+             }}
+             onKeyDown={handleInputKeyDown}
              placeholder="Ej: Malta 1.5L"
              inputMode="search"
              editable
-             displayClassName="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
+             // Cuando highlightedIndex === -1 el input tiene foco visual (anillo azul)
+             // Cuando highlightedIndex >= 0, el foco visual está en la lista (sin anillo en input)
+             displayClassName={`w-full px-4 py-3 border rounded-lg outline-none transition text-base ${
+               highlightedIndex === -1
+                 ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                 : 'border-gray-200'
+             }`}
            />
-           {searchTerm && (
-             <button
-               type="button"
-               onClick={() => {
-                 setSearchTerm('');
-                 setSelectedProduct(null);
-                 setSelectedIndex(-1);
-               }}
-               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
-             >
-               ✕
-             </button>
-           )}
-         </div>
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedProduct(null);
+                setHighlightedIndex(-1);
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
-         {/* Sugerencias */}
+         {/* Sugerencias - Navegación híbrida (teclado + mouse) */}
          {searchTerm && filteredProducts.length > 0 && (
            <ul
-             className="mt-2 border border-gray-200 rounded-lg max-h-60 overflow-y-auto bg-white"
              role="listbox"
+             className="mt-2 border border-gray-200 rounded-lg max-h-60 overflow-y-auto bg-white"
            >
              {filteredProducts.map((productName, index) => (
                <li
@@ -180,16 +195,16 @@ export function ComparatorPage() {
                  onClick={() => {
                    setSearchTerm(productName);
                    handleSelectProduct(productName);
-                   setSelectedIndex(-1);
+                   setHighlightedIndex(-1);
                  }}
-                 onMouseEnter={() => setSelectedIndex(index)}
-                 className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
-                   index === selectedIndex
-                     ? 'bg-blue-50 text-blue-700 font-medium'
+                 onMouseEnter={() => setHighlightedIndex(index)}
+                 className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-all ${
+                   index === highlightedIndex
+                     ? 'bg-blue-50 text-blue-700 font-medium ring-2 ring-blue-500 ring-inset'  // ← RECUADRO AZUL visible
                      : 'hover:bg-gray-50 text-gray-700'
                  }`}
                  role="option"
-                 aria-selected={index === selectedIndex}
+                 aria-selected={index === highlightedIndex}
                >
                  {productName}
                </li>
