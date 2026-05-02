@@ -213,7 +213,18 @@ function App() {
             Productos
           </NavLink>
 
-          {/* SOLO GERENCIA: Proveedores, Calculadora, Comparador, Merma */}
+          {/* SIEMPRE visible: Calculadora (para ambos roles) */}
+          <NavLink
+            to="/calculator"
+            className={({ isActive }) =>
+              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              }`
+            }
+          >
+            Calculadora
+          </NavLink>
+
+          {/* SOLO GERENCIA: Proveedores, Comparador, Merma */}
           {isGerencia && (
             <>
               <NavLink
@@ -224,15 +235,6 @@ function App() {
                 }
               >
                 Proveedores
-              </NavLink>
-              <NavLink
-                to="/calculator"
-                className={({ isActive }) =>
-                  `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                  }`
-                }
-              >
-                Calculadora
               </NavLink>
               <NavLink
                 to="/comparator"
@@ -301,10 +303,11 @@ function App() {
           <Routes>
             <Route path="/" element={<ProductsPage onEditRate={() => setShowEditRate(true)} userRole={userRole} />} />
             <Route path="/products" element={<ProductsPage onEditRate={() => setShowEditRate(true)} userRole={userRole} />} />
+            {/* Calculadora disponible para TODOS los roles */}
+            <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
             {isGerencia && (
               <>
                 <Route path="/providers" element={<ProvidersPage />} />
-                <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
                 <Route path="/comparator" element={<ComparatorPage />} />
                 <Route path="/merma" element={<MermaPage />} />
               </>
