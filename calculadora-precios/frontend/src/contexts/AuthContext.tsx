@@ -17,7 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Cargar rol desde localStorage al iniciar
   useEffect(() => {
     const savedRole = localStorage.getItem('userRole') as UserRole;
-    if (savedRole) {
+    if (savedRole === 'gerencia' || savedRole === 'invitado') {
       setUserRole(savedRole);
     }
   }, []);
@@ -30,12 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (role === 'gerencia') {
-      // Validar credenciales (case-insensitive para usuario)
-      const user = 'pumpo';
-      const pass = 'Laly2018';
-      const inputUser = (password || '').toLowerCase().trim();
+      // Credenciales: usuario pumpo, contraseña Laly2018
+      // Usuario es case-insensitive, contraseña exacta
+      const validUser = 'pumpo';
+      const validPass = 'Laly2018';
+      const inputUser = (password?.toLowerCase() || '').trim();
 
-      if (inputUser === user.toLowerCase() && pass === password) {
+      if (inputUser === validUser && password === validPass) {
         setUserRole('gerencia');
         localStorage.setItem('userRole', 'gerencia');
         return true;

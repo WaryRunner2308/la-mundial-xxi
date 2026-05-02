@@ -61,8 +61,6 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 }
 
-export default App;
-
 function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: number) => void; onClose: () => void }) {
   const [inputValue, setInputValue] = useState(rate > 0 ? rate.toString() : '');
 
@@ -114,6 +112,7 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
 }
 
 function App() {
+  // ========== HOOKS AL INICIO (SIN CONDICIONALES) ==========
   const { rate, setRate } = useCurrencyStore();
   const { loadFromSupabase } = useProductStore();
   const { userRole, logout } = useAuth();
@@ -122,11 +121,6 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const location = useLocation();
-
-  // Si no hay rol seleccionado, mostrar Landing
-  if (!userRole) {
-    return <LandingPage />;
-  }
 
   const isGerencia = userRole === 'gerencia';
 
@@ -162,6 +156,13 @@ function App() {
   const handleRateSave = (newRate: number) => {
     setRate(newRate);
   };
+
+  // ========== RENDERIZADO CONDICIONAL (SIN HOOKS DESPUÉS) ==========
+  
+  // Si no hay rol, mostrar Landing Page
+  if (!userRole) {
+    return <LandingPage />;
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
@@ -314,7 +315,6 @@ function App() {
                 <p>No tienes permiso para esta sección.</p>
               </div>
             } />
-            {/* Ruta comodín: redirige a productos si la URL no coincide */}
             <Route path="*" element={<Navigate to="/products" replace />} />
           </Routes>
         </ErrorBoundary>
@@ -339,3 +339,5 @@ function App() {
     </div>
   );
 }
+
+export default App;
