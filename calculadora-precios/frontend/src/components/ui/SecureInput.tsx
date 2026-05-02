@@ -21,6 +21,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         const inputRef = useRef<HTMLInputElement>(null);
         const displayRef = useRef<HTMLDivElement>(null);
         const [isFocused, setIsFocused] = useState(false);
+        const cursorRef = useRef<HTMLSpanElement>(null);
 
         // Nombre único por montaje para derrotar autocompletado
         const fieldName = useRef<string>(`field_${Math.random().toString(36).substring(2, 15)}`);
@@ -38,6 +39,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 e.preventDefault();
                 e.stopPropagation();
                 inputRef.current.focus();
+                // Al hacer clic, el navegador posiciona el caret automáticamente
             }
         };
 
@@ -72,16 +74,6 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
             onBlur?.();
         };
 
-        const handleDisplayFocus = () => {
-            inputRef.current?.focus();
-            onFocus?.();
-        };
-
-        const handleDisplayInput = (e: React.FormEvent<HTMLDivElement>) => {
-            e.preventDefault();
-            inputRef.current?.focus();
-        };
-
         // Sincronizar valor visual
         useEffect(() => {
             if (displayRef.current && displayRef.current.textContent !== value) {
@@ -101,7 +93,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     </span>
                 )}
 
-                {/* Input transparente que captura todo y muestra cursor nativo */}
+                {/* Input invisible - captura TODOS los eventos y muestra cursor nativo */}
                 <input
                     ref={inputRef}
                     type="text"
@@ -123,17 +115,18 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         top: '0',
                         width: '100%',
                         height: '100%',
-                        opacity: 0,
                         zIndex: 9999,
                         margin: 0,
-                        padding: '0.75rem 1rem', // Same as display padding (px-4 py-3)
-                        border: '1px solid transparent', // Reserve border space
+                        padding: '0.75rem 1rem', // py-3 px-4
+                        border: '1px solid transparent', // Mantener espacio de borde
                         outline: 'none',
+                        backgroundColor: 'transparent',
                         color: 'transparent',
-                        caretColor: '#3b82f6', // Blue cursor visible through transparency
-                        fontSize: '16px', // Prevent zoom on iOS
+                        caretColor: '#3b82f6',
+                        fontSize: '16px',
                         lineHeight: '1.5',
                         fontFamily: 'inherit',
+                        boxSizing: 'border-box' as const,
                     }}
                     data-lpignore="true"
                     data-1p-ignore="true"
@@ -143,10 +136,6 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 {editable ? (
                     <div
                         ref={displayRef}
-                        contentEditable
-                        suppressContentEditableWarning
-                        onFocus={handleDisplayFocus}
-                        onInput={handleDisplayInput}
                         className={`
                             w-full px-4 py-3 border border-gray-300 rounded-lg
                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500
@@ -155,9 +144,6 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                             ${displayClassName}
                         `}
                         style={{
-                            outline: 'none',
-                            pointerEvents: 'auto',
-                            userSelect: 'text',
                             position: 'relative',
                             zIndex: 1,
                         }}
