@@ -232,29 +232,20 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
            >
              <div className="overflow-x-auto px-4 md:px-0">
                <table className="w-full min-w-[600px]">
-                 <thead className="bg-gray-50 border-b border-gray-200">
-                   <tr>
-                     <th className="h-12 px-2 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap min-w-[80px]">Foto</th>
-                     <th className="h-12 px-2 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Nombre</th>
-                     <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Moneda</th>
-                     <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Costo</th>
-                     <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Precio Final</th>
-                     <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Ganancia</th>
-                     <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Margen</th>
-                     <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">IVA</th>
-                     <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Acciones</th>
-                   </tr>
-                 </thead>
-                    <th className="h-12 px-4 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Moneda</th>
-                    <th className="h-12 px-4 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Costo</th>
-                    <th className="h-12 px-4 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Precio Final</th>
-                    <th className="h-12 px-4 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Ganancia</th>
-                    <th className="h-12 px-4 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Margen</th>
-                    <th className="h-12 px-4 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">IVA</th>
-                    <th className="h-12 px-4 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Acciones</th>
-                  </tr>
-                </thead>
-                 <tbody className="divide-y divide-gray-200">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="h-12 px-2 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap min-w-[80px]">Foto</th>
+                      <th className="h-12 px-2 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Nombre</th>
+                      <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Moneda</th>
+                      <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Costo</th>
+                      <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Precio Final</th>
+                      <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Ganancia</th>
+                      <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Margen</th>
+                      <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">IVA</th>
+                      <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
                    {productsWithPrices.map((product, index) => {
                      const costBs = rate > 0 ? product.costUSD * rate : product.costUSD;
                      const priceWithVATBs = rate > 0 ? product.priceWithVATUSD * rate : product.priceWithVATUSD;
