@@ -119,7 +119,7 @@ export function LandingPage() {
                     type="text"
                     value={credentials.username}
                     onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
-                    placeholder="pumpo"
+                    placeholder=""
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                     autoComplete="username"
                   />
