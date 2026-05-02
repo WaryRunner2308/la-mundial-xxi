@@ -40,11 +40,12 @@ export function ProvidersPage() {
   };
 
   // Navegación por teclado en tabla de proveedores
-  const { highlightedIndex, handleKeyDown, setHighlightedIndex } = useKeyboardNavigation({
+  const { highlightedIndex, handleKeyDown, setHighlightedIndex, containerRef } = useKeyboardNavigation({
     items: providers,
     onSelect: (provider) => {
       handleEdit(provider);
     },
+    autoFocus: false,
   });
 
   return (
@@ -91,15 +92,16 @@ export function ProvidersPage() {
                Agregar Proveedor
              </button>
            </div>
-         ) : (
-           <div
-             tabIndex={0}
-             onKeyDown={handleKeyDown}
-             onMouseLeave={() => setHighlightedIndex(-1)}
-             aria-label="Lista de proveedores"
-             role="grid"
-             className="outline-none"
-           >
+          ) : (
+            <div
+              ref={containerRef}
+              tabIndex={0}
+              onKeyDown={handleKeyDown}
+              onMouseLeave={() => setHighlightedIndex(-1)}
+              aria-label="Lista de proveedores"
+              role="grid"
+              className="outline-none"
+            >
              <div className="overflow-x-auto">
                <table className="w-full min-w-[300px]">
                  <thead className="bg-gray-50 border-b border-gray-200">
@@ -120,6 +122,10 @@ export function ProvidersPage() {
                             ${isHighlighted ? 'bg-blue-100 border-l-4 border-l-blue-500' : ''}
                           `}
                           onMouseEnter={() => setHighlightedIndex(index)}
+                          onClick={() => {
+                            handleEdit(provider);
+                            setHighlightedIndex(index);
+                          }}
                           role="row"
                           aria-selected={isHighlighted}
                         >
