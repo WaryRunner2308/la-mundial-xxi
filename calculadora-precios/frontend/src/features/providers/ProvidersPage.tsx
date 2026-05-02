@@ -113,17 +113,16 @@ export function ProvidersPage() {
                   {providers.map((provider, index) => {
                     const isHighlighted = highlightedIndex === index;
                     return (
-                      <tr
-                        key={provider.id}
-                        className={`
-                          hover:bg-gray-50 transition cursor-pointer
-                          ${isHighlighted ? 'bg-blue-100 border-l-4 border-l-blue-500' : ''}
-                        `}
-                        onClick={() => handleEdit(provider)}
-                        onMouseEnter={() => setHighlightedIndex(index)}
-                        role="row"
-                        aria-selected={isHighlighted}
-                      >
+                        <tr
+                          key={provider.id}
+                          className={`
+                            hover:bg-gray-50 transition cursor-pointer
+                            ${isHighlighted ? 'bg-blue-100 border-l-4 border-l-blue-500' : ''}
+                          `}
+                          onMouseEnter={() => setHighlightedIndex(index)}
+                          role="row"
+                          aria-selected={isHighlighted}
+                        >
                         <td className="p-4 align-middle">
                           <span className="text-sm md:text-base font-medium text-gray-900">
                             {provider.name}
@@ -137,7 +136,10 @@ export function ProvidersPage() {
                         </td>
                         <td className="p-4 align-middle text-right space-x-2">
                           <button
-                            onClick={() => handleEdit(provider)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(provider);
+                            }}
                             className="px-2 md:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded transition"
                             title="Editar"
                           >
