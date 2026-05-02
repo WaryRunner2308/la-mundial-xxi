@@ -1,85 +1,69 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function LandingPage() {
-  const { login, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+  const { login } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
 
-  // Si ya está autenticado, redirigir
-  if (isAuthenticated) {
-    navigate('/products');
-    return null;
-  }
-
   const handleInvitado = () => {
     login('invitado');
-    navigate('/products');
   };
 
   const handleGerenciaSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const success = login('gerencia', credentials.password);
-    if (success) {
-      setShowLogin(false);
-      navigate('/products');
-    } else {
+    if (!success) {
       setError('Credenciales incorrectas. Intenta de nuevo.');
     }
   };
 
+  const handleCancelarLogin = () => {
+    setShowLogin(false);
+    setError('');
+    setCredentials({ username: '', password: '' });
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
-      <div className="max-w-2xl w-full space-y-8">
-        {/* Header con Logo y Personajes */}
+    <div className="min-h-screen flex items-center justify-center bg-stone-50 p-4">
+      <div className="max-w-2xl w-full space-y-6">
+        {/* Header con Logo Grande (sin emojis extra) */}
         <div className="text-center">
-          {/* Logo grande */}
-          <div className="flex justify-center mb-6">
+          {/* Logo principal */}
+          <div className="flex justify-center mb-4">
             <img
               src="/logo.png"
               alt="La Mundial XXI"
-              className="w-48 h-48 md:w-64 md:h-64 object-contain"
+              className="w-32 h-32 md:w-40 md:h-40 object-contain"
             />
           </div>
 
-          {/* Personajes */}
-          <div className="flex justify-center items-end gap-8 mb-8">
-            <div className="text-6xl md:text-7xl" role="img" aria-label="Personaje 1">
-              👨‍💼
-            </div>
-            <div className="text-6xl md:text-7xl" role="img" aria-label="Personaje 2">
-              👩‍💼
-            </div>
-          </div>
-
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
             Bienvenido a La Mundial XXI
           </h1>
-          <p className="text-gray-600 text-lg">
+          <p className="text-gray-600 text-base md:text-lg">
             Selecciona tu modo de acceso para continuar
           </p>
         </div>
 
-        {/* Tarjetas de Selección */}
-        <div className="grid md:grid-cols-2 gap-6">
+        {/* Tarjetas de Selección - Responsive, sin scroll */}
+        <div className="grid md:grid-cols-2 gap-4 md:gap-6">
           {/* Tarjeta Invitado */}
           <button
             onClick={handleInvitado}
-            className="group relative bg-white border-2 border-gray-200 rounded-2xl p-8 hover:border-blue-400 hover:shadow-xl transition-all duration-300 text-left"
+            className="group bg-white border-2 border-gray-200 rounded-2xl p-6 md:p-8 hover:border-blue-400 hover:shadow-lg transition-all duration-300 text-left h-full"
           >
-            <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">
-              👀
+            <div className="text-4xl md:text-5xl mb-3 group-hover:scale-110 transition-transform">
+              🔍
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
               Modo Invitado
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 text-sm md:text-base">
               Vista limitada para clientes. Solo consulta de precios.
             </p>
-            <div className="mt-4 inline-flex px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium">
+            <div className="mt-4 inline-flex px-3 md:px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium text-sm md:text-base">
               Acceder →
             </div>
           </button>
@@ -87,26 +71,26 @@ export function LandingPage() {
           {/* Tarjeta Gerencia */}
           <button
             onClick={() => setShowLogin(true)}
-            className="group relative bg-white border-2 border-gray-200 rounded-2xl p-8 hover:border-blue-400 hover:shadow-xl transition-all duration-300 text-left"
+            className="group bg-white border-2 border-gray-200 rounded-2xl p-6 md:p-8 hover:border-blue-400 hover:shadow-lg transition-all duration-300 text-left h-full"
           >
-            <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">
-              🎯
+            <div className="text-4xl md:text-5xl mb-3 group-hover:scale-110 transition-transform">
+              👨‍💼
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
               Modo Gerencia
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 text-sm md:text-base">
               Control total. Acceso completo a todas las funciones.
             </p>
-            <div className="mt-4 inline-flex px-4 py-2 bg-green-50 text-green-700 rounded-lg font-medium">
+            <div className="mt-4 inline-flex px-3 md:px-4 py-2 bg-green-50 text-green-700 rounded-lg font-medium text-sm md:text-base">
               Iniciar Sesión →
             </div>
           </button>
         </div>
 
-        {/* Modal de Login Gerencia */}
+        {/* Modal de Login Gerencia - Estilo elegante */}
         {showLogin && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl">
               <div className="text-center mb-6">
                 <div className="text-5xl mb-2">🔐</div>
@@ -156,11 +140,7 @@ export function LandingPage() {
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowLogin(false);
-                      setError('');
-                      setCredentials({ username: '', password: '' });
-                    }}
+                    onClick={handleCancelarLogin}
                     className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition"
                   >
                     Cancelar

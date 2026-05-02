@@ -314,6 +314,8 @@ function App() {
                 <p>No tienes permiso para esta sección.</p>
               </div>
             } />
+            {/* Ruta comodín: redirige a productos si la URL no coincide */}
+            <Route path="*" element={<Navigate to="/products" replace />} />
           </Routes>
         </ErrorBoundary>
       </main>
