@@ -236,8 +236,8 @@ function App() {
           </NavLink>
         </nav>
 
-        {/* Logo centered - pushes to bottom with spacer */}
-        <div className="flex-grow flex items-center justify-center px-4 py-4 lg:py-6">
+        {/* Logo centered - se mantiene fijo justo debajo del menú */}
+        <div className="flex-shrink-0 px-4 py-4 lg:py-6">
           <img
             src="/logo.png"
             alt="La Mundial XXI"

@@ -62,11 +62,22 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const providerFilterId = searchParams.get('providerId');
+  const [searchQuery, setSearchQuery] = React.useState(''); // ← BUSCADOR
 
-  // Filtrar productos si hay providerId en la URL
-  const filteredProducts = providerFilterId
-    ? products.filter(p => p.providerId?.toString() === providerFilterId)
-    : products;
+  // Filtrar productos por proveedor (si hay) y por búsqueda de texto
+  const filteredProducts = products
+    .filter(p => {
+      // Filtro por proveedor
+      const matchesProvider = providerFilterId
+        ? p.providerId?.toString() === providerFilterId
+        : true;
+      // Filtro por texto de búsqueda
+      const matchesSearch = searchQuery
+        ? p.name.toLowerCase().includes(searchQuery.toLowerCase())
+        : true;
+      return matchesProvider && matchesSearch;
+    })
+    .sort((a, b) => a.name.localeCompare(b.name)); // ← ORDEN ALFABÉTICO
 
   // Obtener nombre del proveedor para el encabezado
   const currentProvider = providerFilterId
@@ -76,7 +87,7 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
   const productsWithPrices = useProductsWithDynamicPrices(filteredProducts);
 
   // Navegación por teclado en tabla de productos
-  const { highlightedIndex, handleKeyDown, setHighlightedIndex } = useKeyboardNavigation({
+  const { highlightedIndex, handleKeyDown, setHighlightedIndex, containerRef } = useKeyboardNavigation({
     items: productsWithPrices,
     onSelect: (product) => {
       setEditingProduct({
@@ -90,6 +101,7 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
       });
       setShowForm(true);
     },
+    autoFocus: false, // No auto-enfocar, el foco lo controla el usuario
   });
 
   return (
@@ -127,31 +139,62 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
         </button>
       </div>
 
-      {/* Tarjeta de Estadísticas */}
-      <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-xl border border-gray-200 p-4 md:p-8 shadow-sm overflow-hidden">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
-          <div className="flex-1 flex items-center justify-center md:justify-start">
-            <h2 className="text-3xl md:text-5xl font-black italic tracking-tight"
-                style={{
-                  background: 'linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 50%, #45B7D1 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}>
-              LA MUNDIAL
-            </h2>
-            <span className="text-xl md:text-2xl font-bold italic text-gray-700 ml-2">XXI</span>
-          </div>
-          <div className="flex flex-col items-center md:items-end">
-            <div className="text-5xl md:text-6xl font-black text-blue-600 leading-none">
-              {filteredProducts.length}
+        {/* Tarjeta de Estadísticas */}
+        <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-xl border border-gray-200 p-4 md:p-8 shadow-sm overflow-hidden">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
+            <div className="flex-1 flex items-center justify-center md:justify-start">
+              <h2 className="text-3xl md:text-5xl font-black italic tracking-tight"
+                  style={{
+                    background: 'linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 50%, #45B7D1 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }}>
+                LA MUNDIAL
+              </h2>
+              <span className="text-xl md:text-2xl font-bold italic text-gray-700 ml-2">XXI</span>
             </div>
-            <p className="text-xs md:text-sm font-semibold text-gray-600 mt-1 uppercase tracking-widest">
-              {currentProvider ? `Productos de ${currentProvider.name}` : 'Productos'}
-            </p>
+            <div className="flex flex-col items-center md:items-end">
+              <div className="text-5xl md:text-6xl font-black text-blue-600 leading-none">
+                {filteredProducts.length}
+              </div>
+              <p className="text-xs md:text-sm font-semibold text-gray-600 mt-1 uppercase tracking-widest">
+                {currentProvider ? `Productos de ${currentProvider.name}` : 'Productos'}
+              </p>
+            </div>
           </div>
+          <div className="mt-4 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full"></div>
         </div>
-        <div className="mt-4 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full"></div>
+
+        {/* Buscador de Productos */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar producto por nombre..."
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tabla de Productos */}
@@ -177,8 +220,9 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
             )}
           </div>
 
-          {/* Contenedor con navegación por teclado */}
+          {/* Contenedor de tabla con navegación por teclado */}
           <div
+            ref={containerRef}
             tabIndex={0}
             onKeyDown={handleKeyDown}
             onMouseLeave={() => setHighlightedIndex(-1)}
@@ -209,15 +253,28 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
                     const isHighlighted = highlightedIndex === index;
 
                     return (
-                      <tr
-                        key={product.id}
-                        className={`
-                          hover:bg-gray-50 transition cursor-pointer
-                          ${isHighlighted ? 'bg-blue-100 border-l-4 border-l-blue-500' : ''}
-                        `}
-                        role="row"
-                        aria-selected={isHighlighted}
-                      >
+                    <tr
+                      key={product.id}
+                      className={`
+                        hover:bg-gray-50 transition cursor-pointer
+                        ${isHighlighted ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}
+                      `}
+                      role="row"
+                      aria-selected={isHighlighted}
+                      onClick={() => {
+                        setEditingProduct({
+                          id: product.id,
+                          name: product.name,
+                          cost: product.costUSD * (rate > 0 ? rate : 1),
+                          currency: product.originalCurrency,
+                          profitPercentage: product.profitPercentage,
+                          exemptFromVAT: product.exemptFromVAT,
+                          photoUrl: product.photoUrl,
+                        });
+                        setShowForm(true);
+                        setHighlightedIndex(index); // Sincronizar highlight visual
+                      }}
+                    >
                     <td className="p-3 md:p-6 align-middle">
                       {product.photoUrl ? (
                         <img src={product.photoUrl} className="w-10 h-10 md:w-12 md:h-12 object-cover rounded-lg" alt="" />
