@@ -256,24 +256,11 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
                     <tr
                       key={product.id}
                       className={`
-                        hover:bg-gray-50 transition cursor-pointer
+                        hover:bg-gray-50 transition
                         ${isHighlighted ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}
                       `}
                       role="row"
                       aria-selected={isHighlighted}
-                      onClick={() => {
-                        setEditingProduct({
-                          id: product.id,
-                          name: product.name,
-                          cost: product.costUSD * (rate > 0 ? rate : 1),
-                          currency: product.originalCurrency,
-                          profitPercentage: product.profitPercentage,
-                          exemptFromVAT: product.exemptFromVAT,
-                          photoUrl: product.photoUrl,
-                        });
-                        setShowForm(true);
-                        setHighlightedIndex(index); // Sincronizar highlight visual
-                      }}
                     >
                     <td className="p-3 md:p-6 align-middle">
                       {product.photoUrl ? (
