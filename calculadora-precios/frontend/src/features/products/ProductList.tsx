@@ -215,19 +215,6 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
                           hover:bg-gray-50 transition cursor-pointer
                           ${isHighlighted ? 'bg-blue-100 border-l-4 border-l-blue-500' : ''}
                         `}
-                        onClick={() => {
-                          setEditingProduct({
-                            id: product.id,
-                            name: product.name,
-                            cost: product.costUSD * (rate > 0 ? rate : 1),
-                            currency: product.originalCurrency,
-                            profitPercentage: product.profitPercentage,
-                            exemptFromVAT: product.exemptFromVAT,
-                            photoUrl: product.photoUrl,
-                          });
-                          setShowForm(true);
-                        }}
-                        onMouseEnter={() => setHighlightedIndex(index)}
                         role="row"
                         aria-selected={isHighlighted}
                       >
@@ -305,22 +292,23 @@ export function ProductsPage({ onEditRate }: { onEditRate: () => void }) {
                       </span>
                     </td>
                     <td className="p-3 md:p-6 align-middle space-x-1 md:space-x-2">
-                      <button
-                        onClick={() => {
-                          setEditingProduct({
-                            id: product.id,
-                            name: product.name,
-                            cost: product.costUSD * (rate > 0 ? rate : 1),
-                            currency: product.originalCurrency,
-                            profitPercentage: product.profitPercentage,
-                            exemptFromVAT: product.exemptFromVAT,
-                            photoUrl: product.photoUrl,
-                          });
-                          setShowForm(true);
-                        }}
-                        className="px-2 md:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded transition"
-                        title="Editar"
-                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingProduct({
+                              id: product.id,
+                              name: product.name,
+                              cost: product.costUSD * (rate > 0 ? rate : 1),
+                              currency: product.originalCurrency,
+                              profitPercentage: product.profitPercentage,
+                              exemptFromVAT: product.exemptFromVAT,
+                              photoUrl: product.photoUrl,
+                            });
+                            setShowForm(true);
+                          }}
+                          className="px-2 md:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded transition"
+                          title="Editar"
+                        >
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-edit-3"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                       </button>
                        <button
