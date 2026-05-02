@@ -21,6 +21,10 @@ export function ConfirmationModal({
 }: ConfirmationModalProps) {
   useEffect(() => {
     if (!isOpen) return;
+    // Force keyboard dismissal on mobile when modal opens
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     const style = document.createElement('style');
     style.textContent = `
       @keyframes fadeIn {
