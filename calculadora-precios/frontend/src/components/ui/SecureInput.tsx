@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 
 interface SecureInputProps {
     value: string;
@@ -21,7 +21,6 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         const inputRef = useRef<HTMLInputElement>(null);
         const displayRef = useRef<HTMLDivElement>(null);
         const [isFocused, setIsFocused] = useState(false);
-        const cursorRef = useRef<HTMLSpanElement>(null);
 
         // Nombre único por montaje para derrotar autocompletado
         const fieldName = useRef<string>(`field_${Math.random().toString(36).substring(2, 15)}`);
@@ -34,14 +33,19 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
             }
         }, [autoFocus]);
 
-        const handleContainerClick = (e: React.MouseEvent) => {
+        // Touch/Click handler - responde inmediatamente
+        const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
             if (inputRef.current) {
                 e.preventDefault();
                 e.stopPropagation();
+                // Evitar scroll/zoom en iOS
+                if ((e as any).touches) {
+                    (e as any).touches[0].preventDefault();
+                }
                 inputRef.current.focus();
-                // Al hacer clic, el navegador posiciona el caret automáticamente
+                // Posicionar cursor donde se tocó (el navegador lo hace automáticamente si el input recibe el foco)
             }
-        };
+        }, []);
 
         const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             let newValue = e.target.value;
@@ -84,8 +88,9 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         return (
             <div
                 ref={containerRef}
-                onClick={handleContainerClick}
+                onPointerDown={handlePointerDown}
                 className={`w-full relative ${className}`}
+                style={{ touchAction: 'manipulation' }} // Eliminar retraso de 300ms en móvil
             >
                 {label && (
                     <span className="block text-sm font-medium text-gray-700 mb-2">
@@ -93,7 +98,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     </span>
                 )}
 
-                {/* Input invisible - captura TODOS los eventos y muestra cursor nativo */}
+                {/* Input invisible - usa pointer-events:none para responsiveness */}
                 <input
                     ref={inputRef}
                     type="text"
@@ -117,8 +122,8 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         height: '100%',
                         zIndex: 9999,
                         margin: 0,
-                        padding: '0.75rem 1rem', // py-3 px-4
-                        border: '1px solid transparent', // Mantener espacio de borde
+                        padding: '0.75rem 1rem',
+                        border: '1px solid transparent',
                         outline: 'none',
                         backgroundColor: 'transparent',
                         color: 'transparent',
@@ -127,6 +132,8 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         lineHeight: '1.5',
                         fontFamily: 'inherit',
                         boxSizing: 'border-box' as const,
+                        pointerEvents: 'auto',
+                        WebkitTapHighlightColor: 'transparent',
                     }}
                     data-lpignore="true"
                     data-1p-ignore="true"
@@ -136,6 +143,8 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 {editable ? (
                     <div
                         ref={displayRef}
+                        contentEditable
+                        suppressContentEditableWarning
                         className={`
                             w-full px-4 py-3 border border-gray-300 rounded-lg
                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500
@@ -146,6 +155,8 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         style={{
                             position: 'relative',
                             zIndex: 1,
+                            userSelect: 'text',
+                            WebkitUserSelect: 'text',
                         }}
                         {...(placeholder && !value ? { 'data-placeholder': placeholder } : {})}
                     />
