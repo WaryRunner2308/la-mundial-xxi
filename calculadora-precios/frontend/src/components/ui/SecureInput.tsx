@@ -6,6 +6,7 @@ interface SecureInputProps {
     onFocus?: () => void;
     onBlur?: () => void;
     onSubmit?: () => void;
+    onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void; // ← AGREGADO
     placeholder?: string;
     inputMode?: 'text' | 'decimal' | 'numeric' | 'email' | 'tel';
     className?: string;
@@ -16,7 +17,7 @@ interface SecureInputProps {
 }
 
 export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
-    ({ value, onChange, onFocus, onBlur, onSubmit, placeholder, inputMode = 'text', className = '', label, autoFocus, editable = false, displayClassName = '' }, ref) => {
+    ({ value, onChange, onFocus, onBlur, onSubmit, onKeyDown, placeholder, inputMode = 'text', className = '', label, autoFocus, editable = false, displayClassName = '' }, ref) => {
         const containerRef = useRef<HTMLDivElement>(null);
         const inputRef = useRef<HTMLInputElement>(null);
         const displayRef = useRef<HTMLDivElement>(null);
@@ -61,11 +62,16 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
             onChange(newValue);
         };
 
+        // Captura todas las teclas y propaga al padre
         const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+            // Manejar Enter localmente (si hay onSubmit)
             if (e.key === 'Enter') {
                 e.preventDefault();
                 onSubmit?.();
             }
+            // SIEMPRE propagar el evento al componente padre
+            // El padre decidirá si maneja ArrowUp, ArrowDown, etc.
+            onKeyDown?.(e);
         };
 
         const handleInputFocus = () => {
