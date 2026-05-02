@@ -21,10 +21,10 @@ export function ComparatorPage() {
     name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Resetear índice cuando cambia la lista
-  useEffect(() => {
-    setHighlightedIndex(-1);
-  }, [filteredProducts]);
+   // Resetear índice SOLO cuando el texto de búsqueda cambia (no en cada render)
+   useEffect(() => {
+     setHighlightedIndex(-1);
+   }, [searchTerm]);
 
   // Al seleccionar un producto, agrupar por proveedor
   const handleSelectProduct = (productName: string) => {
