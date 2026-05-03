@@ -11,7 +11,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const INACTIVITY_TIMEOUT = 2 * 60 * 1000; // 2 minutos
+const INACTIVITY_TIMEOUT = 1 * 60 * 1000; // 1 minuto en ms
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole>(null);
@@ -26,32 +26,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const startInactivityTimer = () => {
     clearInactivityTimer();
+    console.log('🕒 Temporizador iniciado: 1 minuto de inactividad');
     inactivityTimerRef.current = setTimeout(() => {
+      console.log('⏰ Tiempo agotado - Cerrando sesión automáticamente');
       setUserRole(null);
       localStorage.removeItem('userRole');
-      console.log('🕒 Sesión cerrada por inactividad (2 minutos)');
     }, INACTIVITY_TIMEOUT);
   };
 
-  useEffect(() => {
-    const handleUserActivity = () => {
-      if (userRole) {
-        startInactivityTimer();
-      }
-    };
+  const resetTimerOnActivity = () => {
+    if (userRole) {
+      console.log('🔄 Actividad detectada - reiniciando temporizador');
+      startInactivityTimer();
+    }
+  };
 
-    window.addEventListener('mousemove', handleUserActivity);
-    window.addEventListener('keydown', handleUserActivity);
-    window.addEventListener('click', handleUserActivity);
-    window.addEventListener('scroll', handleUserActivity);
-    window.addEventListener('touchstart', handleUserActivity);
+  useEffect(() => {
+    window.addEventListener('mousemove', resetTimerOnActivity);
+    window.addEventListener('keydown', resetTimerOnActivity);
+    window.addEventListener('click', resetTimerOnActivity);
+    window.addEventListener('scroll', resetTimerOnActivity);
+    window.addEventListener('touchstart', resetTimerOnActivity);
 
     return () => {
-      window.removeEventListener('mousemove', handleUserActivity);
-      window.removeEventListener('keydown', handleUserActivity);
-      window.removeEventListener('click', handleUserActivity);
-      window.removeEventListener('scroll', handleUserActivity);
-      window.removeEventListener('touchstart', handleUserActivity);
+      window.removeEventListener('mousemove', resetTimerOnActivity);
+      window.removeEventListener('keydown', resetTimerOnActivity);
+      window.removeEventListener('click', resetTimerOnActivity);
+      window.removeEventListener('scroll', resetTimerOnActivity);
+      window.removeEventListener('touchstart', resetTimerOnActivity);
       clearInactivityTimer();
     };
   }, [userRole]);
@@ -69,23 +71,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserRole('invitado');
       localStorage.setItem('userRole', 'invitado');
       startInactivityTimer();
+      console.log('✅ Sesión de Invitado iniciada');
       return true;
     }
 
     if (role === 'gerencia') {
       const validUser = 'pumpo';
       const validPass = 'Laly2018';
-      // Limpiar y normalizar usuario
       const inputUser = (username || '').trim().toLowerCase();
-      // Contraseña exacta (con trim para eliminar espacios accidentales)
       const inputPass = (password || '').trim();
+
+      console.log('🔐 Intento de login:', { inputUser, inputPass, validUser, validPass });
 
       if (inputUser === validUser && inputPass === validPass) {
         setUserRole('gerencia');
         localStorage.setItem('userRole', 'gerencia');
         startInactivityTimer();
+        console.log('✅ Sesión de Gerencia iniciada');
         return true;
       }
+      console.log('❌ Credenciales incorrectas');
       return false;
     }
 
@@ -96,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearInactivityTimer();
     setUserRole(null);
     localStorage.removeItem('userRole');
+    console.log('🚪 Sesión cerrada manualmente');
   };
 
   const isAuthenticated = userRole !== null;
