@@ -72,27 +72,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Eventos de actividad (registrados UNA SOLA VEZ)
+  // Eventos de actividad (registrados UNA SOLA VEZ, usan ref para evitar cierres)
   useEffect(() => {
     const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'] as const;
     const handler = () => {
-      if (userRole) {
+      const currentRole = userRoleRef.current;
+      if (currentRole) {
         localStorage.setItem('lastActivity', Date.now().toString());
         clearTimer();
-        startTimer(userRole);
+        const timeout = getTimeoutForRole(currentRole);
+        console.log(`🔄 Actividad - reiniciando temporizador (${timeout / 60000} min)`);
+        timerRef.current = setTimeout(() => {
+          if (isMounted.current) {
+            console.log('⏰ Tiempo agotado por inactividad');
+            setUserRole(null);
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('lastActivity');
+          }
+        }, timeout);
       }
     };
     events.forEach(ev => window.addEventListener(ev, handler));
     return () => events.forEach(ev => window.removeEventListener(ev, handler));
-  }, []); // <-- SIN dependencias
+  }, []); // <-- SIN dependencias, se registra una vez
 
-  // Pestaña oculta
+  // Pestaña oculta (usa ref)
   useEffect(() => {
     const handleVisibility = () => {
       if (document.hidden) {
         clearTimer();
-      } else if (userRole) {
-        startTimer(userRole);
+      } else {
+        const currentRole = userRoleRef.current;
+        if (currentRole) {
+          startTimer(currentRole);
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
