@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useProviderStore } from '../../store/providerStore';
+import { SecureInput } from '@/components/ui/SecureInput';
 
 interface ProviderFormProps {
   isOpen: boolean;
@@ -71,20 +72,16 @@ export function ProviderForm({ isOpen, onClose, onSave, editingProvider }: Provi
             <label htmlFor="providerName" className="block text-sm font-medium text-gray-700 mb-2">
               Nombre del Proveedor *
             </label>
-            <input
+            <SecureInput
               id="provider_name_field"
-              name="provider_name_field"
-              type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={setName}
               placeholder="Ej: Polar, Coca-Cola, Luventa"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
+              inputMode="text"
+              editable
+              noRing={true}
+              displayClassName="border border-gray-300 rounded-lg px-4 py-3 outline-none transition bg-white focus:ring-0 focus:border-gray-300 text-base"
               autoFocus
-              autoComplete="new-password"
-              autoCorrect="off"
-              spellCheck="false"
-              autoCapitalize="none"
-              disabled={loading}
             />
             {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
           </div>
