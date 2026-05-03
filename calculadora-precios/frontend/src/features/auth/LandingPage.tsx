@@ -120,24 +120,24 @@ export function LandingPage() {
                     value={credentials.username}
                     onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
                     placeholder=""
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none transition focus:ring-0 focus:border-gray-300"
                     autoComplete="username"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Contraseña
-                  </label>
-                  <input
-                    type="password"
-                    value={credentials.password}
-                    onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                    autoComplete="current-password"
-                  />
-                </div>
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                     Contraseña
+                   </label>
+                   <input
+                     type="password"
+                     value={credentials.password}
+                     onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                     placeholder=""
+                     className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none transition focus:ring-0 focus:border-gray-300"
+                     autoComplete="current-password"
+                   />
+                 </div>
 
                 {error && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm animate-pulse">
