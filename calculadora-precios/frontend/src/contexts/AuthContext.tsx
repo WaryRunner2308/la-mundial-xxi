@@ -11,7 +11,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const INACTIVITY_TIMEOUT = 1 * 60 * 1000; // 1 minuto en ms
+const INACTIVITY_TIMEOUT_INVITADO = 5 * 60 * 1000; // 5 minutos
+const INACTIVITY_TIMEOUT_GERENCIA = 10 * 60 * 1000; // 10 minutos
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole>(null);
@@ -24,45 +25,109 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const startInactivityTimer = () => {
+  const startInactivityTimer = (role: 'gerencia' | 'invitado' | null = userRole) => {
     clearInactivityTimer();
-    console.log('🕒 Temporizador iniciado: 1 minuto de inactividad');
+    const timeout = role === 'gerencia' ? INACTIVITY_TIMEOUT_GERENCIA : INACTIVITY_TIMEOUT_INVITADO;
+    console.log(`🕒 Temporizador iniciado (${role === 'gerencia' ? 'Gerencia' : 'Invitado'}): ${timeout / 60000} minutos`);
     inactivityTimerRef.current = setTimeout(() => {
-      console.log('⏰ Tiempo agotado - Cerrando sesión automáticamente');
+      console.log(`⏰ Tiempo agotado (${role === 'gerencia' ? 'Gerencia' : 'Invitado'}) - Cerrando sesión automáticamente`);
       setUserRole(null);
       localStorage.removeItem('userRole');
-    }, INACTIVITY_TIMEOUT);
+      localStorage.removeItem('lastActivity');
+    }, timeout);
   };
 
   const resetTimerOnActivity = () => {
     if (userRole) {
       console.log('🔄 Actividad detectada - reiniciando temporizador');
-      startInactivityTimer();
+      localStorage.setItem('lastActivity', Date.now().toString());
+      startInactivityTimer(userRole);
     }
   };
 
   useEffect(() => {
-    window.addEventListener('mousemove', resetTimerOnActivity);
-    window.addEventListener('keydown', resetTimerOnActivity);
-    window.addEventListener('click', resetTimerOnActivity);
-    window.addEventListener('scroll', resetTimerOnActivity);
-    window.addEventListener('touchstart', resetTimerOnActivity);
+    const handleActivity = () => {
+      resetTimerOnActivity();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && userRole) {
+        console.log('👀 Pestaña oculta - pausando temporizador');
+        clearInactivityTimer();
+      } else if (!document.hidden && userRole) {
+        console.log('👀 Pestaña activa - reiniciando temporizador');
+        startInactivityTimer(userRole);
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      if (userRole) {
+        console.log('🚪 Cerrando pestaña/navegador - limpiando sesión');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('lastActivity');
+      }
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'userRole' && e.newValue === null) {
+        console.log('🔄 Sesión limpiada en otra pestaña - cerrando local');
+        localStorage.removeItem('lastActivity');
+        setUserRole(null);
+        clearInactivityTimer();
+      }
+    };
+
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+    window.addEventListener('touchstart', handleActivity);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('storage', handleStorageChange);
 
     return () => {
-      window.removeEventListener('mousemove', resetTimerOnActivity);
-      window.removeEventListener('keydown', resetTimerOnActivity);
-      window.removeEventListener('click', resetTimerOnActivity);
-      window.removeEventListener('scroll', resetTimerOnActivity);
-      window.removeEventListener('touchstart', resetTimerOnActivity);
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
+      window.removeEventListener('touchstart', handleActivity);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('storage', handleStorageChange);
       clearInactivityTimer();
     };
   }, [userRole]);
 
   useEffect(() => {
     const savedRole = localStorage.getItem('userRole') as UserRole;
+    const savedLastActivity = localStorage.getItem('lastActivity');
+
     if (savedRole === 'gerencia' || savedRole === 'invitado') {
-      setUserRole(savedRole);
-      startInactivityTimer();
+      const now = Date.now();
+      const lastActive = savedLastActivity ? parseInt(savedLastActivity, 10) : now;
+      const timeSinceLastActivity = now - lastActive;
+      const maxTimeout = savedRole === 'gerencia' ? INACTIVITY_TIMEOUT_GERENCIA : INACTIVITY_TIMEOUT_INVITADO;
+
+      if (timeSinceLastActivity > maxTimeout) {
+        console.log(`⏰ Sesión expirada por inactividad al cargar (${savedRole})`);
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('lastActivity');
+        setUserRole(null);
+      } else {
+        setUserRole(savedRole);
+        const remainingTime = maxTimeout - timeSinceLastActivity;
+        startInactivityTimer(savedRole);
+        // Ajustar el temporizador al tiempo restante
+        clearInactivityTimer();
+        console.log(`⏰ Tiempo restante al cargar: ${remainingTime / 60000} minutos`);
+        inactivityTimerRef.current = setTimeout(() => {
+          console.log(`⏰ Tiempo agotado (${savedRole}) - Cerrando sesión automáticamente`);
+          setUserRole(null);
+          localStorage.removeItem('userRole');
+          localStorage.removeItem('lastActivity');
+        }, remainingTime);
+      }
     }
   }, []);
 
@@ -70,14 +135,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (role === 'invitado') {
       setUserRole('invitado');
       localStorage.setItem('userRole', 'invitado');
-      startInactivityTimer();
+      localStorage.setItem('lastActivity', Date.now().toString());
+      startInactivityTimer('invitado');
       console.log('✅ Sesión de Invitado iniciada');
       return true;
     }
 
     if (role === 'gerencia') {
       const validUser = 'pumpo';
-      const validPass = 'Laly2018';
+      const validPass = 'Laly2018'; // EXACTA: L mayúscula
       const inputUser = (username || '').trim().toLowerCase();
       const inputPass = (password || '').trim();
 
@@ -86,7 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (inputUser === validUser && inputPass === validPass) {
         setUserRole('gerencia');
         localStorage.setItem('userRole', 'gerencia');
-        startInactivityTimer();
+        localStorage.setItem('lastActivity', Date.now().toString());
+        startInactivityTimer('gerencia');
         console.log('✅ Sesión de Gerencia iniciada');
         return true;
       }
@@ -101,6 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearInactivityTimer();
     setUserRole(null);
     localStorage.removeItem('userRole');
+    localStorage.removeItem('lastActivity');
     console.log('🚪 Sesión cerrada manualmente');
   };
 

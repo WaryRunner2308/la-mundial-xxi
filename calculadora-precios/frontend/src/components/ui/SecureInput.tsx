@@ -6,7 +6,7 @@ interface SecureInputProps {
     onFocus?: () => void;
     onBlur?: () => void;
     onSubmit?: () => void;
-    onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void; // ← AGREGADO
+    onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
     placeholder?: string;
     inputMode?: 'text' | 'decimal' | 'numeric' | 'email' | 'tel';
     className?: string;
@@ -14,10 +14,11 @@ interface SecureInputProps {
     autoFocus?: boolean;
     editable?: boolean;
     displayClassName?: string;
+    noRing?: boolean; // ← NUEVA PROP: elimina efectos de foco (ring/glow)
 }
 
 export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
-    ({ value, onChange, onFocus, onBlur, onSubmit, onKeyDown, placeholder, inputMode = 'text', className = '', label, autoFocus, editable = false, displayClassName = '' }, ref) => {
+    ({ value, onChange, onFocus, onBlur, onSubmit, onKeyDown, placeholder, inputMode = 'text', className = '', label, autoFocus, editable = false, displayClassName = '', noRing = false }, ref) => {
         const containerRef = useRef<HTMLDivElement>(null);
         const inputRef = useRef<HTMLInputElement>(null);
         const displayRef = useRef<HTMLDivElement>(null);
@@ -146,40 +147,40 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 />
 
                 {/* Elemento visible */}
-                {editable ? (
-                    <div
-                        ref={displayRef}
-                        contentEditable
-                        suppressContentEditableWarning
-                        className={`
-                            w-full px-4 py-3 border border-gray-300 rounded-lg
-                            focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                            outline-none transition text-base min-h-[48px] bg-white
-                            ${isFocused ? 'ring-2 ring-blue-500 border-blue-500' : ''}
-                            ${displayClassName}
-                        `}
-                        style={{
-                            position: 'relative',
-                            zIndex: 1,
-                            userSelect: 'text',
-                            WebkitUserSelect: 'text',
-                        }}
-                        {...(placeholder && !value ? { 'data-placeholder': placeholder } : {})}
-                    />
-                ) : (
-                    <div
-                        className={`
-                            w-full px-4 py-3 border border-gray-300 rounded-lg bg-white
-                            text-base min-h-[48px] flex items-center
-                            ${value ? 'text-gray-900' : 'text-gray-400'}
-                            ${isFocused ? 'ring-2 ring-blue-500 border-blue-500' : ''}
-                            ${displayClassName}
-                        `}
-                        style={{ position: 'relative', zIndex: 1 }}
-                    >
-                        {value || placeholder}
-                    </div>
-                )}
+                 {editable ? (
+                     <div
+                         ref={displayRef}
+                         contentEditable
+                         suppressContentEditableWarning
+                         className={`
+                             w-full px-4 py-3 border border-gray-300 rounded-lg
+                             ${noRing ? '' : 'focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}
+                             outline-none transition text-base min-h-[48px] bg-white
+                             ${isFocused && !noRing ? 'ring-2 ring-blue-500 border-blue-500' : ''}
+                             ${displayClassName}
+                         `}
+                         style={{
+                             position: 'relative',
+                             zIndex: 1,
+                             userSelect: 'text',
+                             WebkitUserSelect: 'text',
+                         }}
+                         {...(placeholder && !value ? { 'data-placeholder': placeholder } : {})}
+                     />
+                 ) : (
+                     <div
+                         className={`
+                             w-full px-4 py-3 border border-gray-300 rounded-lg bg-white
+                             text-base min-h-[48px] flex items-center
+                             ${value ? 'text-gray-900' : 'text-gray-400'}
+                             ${isFocused && !noRing ? 'ring-2 ring-blue-500 border-blue-500' : ''}
+                             ${displayClassName}
+                         `}
+                         style={{ position: 'relative', zIndex: 1 }}
+                     >
+                         {value || placeholder}
+                     </div>
+                 )}
 
                 {/* CSS anti-autofill */}
                 <style>{`
