@@ -68,18 +68,14 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
     const parsed = parseNumericInput(inputValue);
     if (parsed > 0) {
       setRate(parsed);
-      onClose();
     }
-  };
-
-  const handleButtonClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    handleSubmit();
+    // Cerrar SIEMPRE para desbloquear la app
+    onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4" onClick={handleSubmit}>
+      <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="text-center mb-4 md:mb-6">
           <h2 className="text-xl md:text-2xl font-bold text-gray-800">¡Bienvenido!</h2>
           <p className="text-gray-600 mt-2 text-sm md:text-base">¿Cuál es la tasa de cambio de hoy?</p>
