@@ -124,10 +124,10 @@ export function LandingPage() {
                      editable
                      noRing={true}
                      displayClassName="border border-gray-300 rounded-lg px-4 py-3 outline-none transition bg-white focus:ring-0 focus:border-gray-300"
-                   />
-                 </div
+                    />
+                  </div>
 
-                 <div>
+                  <div>
                    <label className="block text-sm font-medium text-gray-700 mb-2">
                      Contraseña
                    </label>
