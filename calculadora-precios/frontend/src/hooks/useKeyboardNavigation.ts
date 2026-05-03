@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface UseKeyboardNavigationOptions<T> {
   items: T[];
   onSelect: (item: T, index: number) => void;
   onEscape?: () => void;
   enabled?: boolean;
+  autoFocus?: boolean; // Si debe auto-enfocar el contenedor al montarse
 }
 
 export function useKeyboardNavigation<T>({
@@ -12,8 +13,17 @@ export function useKeyboardNavigation<T>({
   onSelect,
   onEscape,
   enabled = true,
+  autoFocus = false,
 }: UseKeyboardNavigationOptions<T>) {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-enfocar el contenedor si se solicita
+  useEffect(() => {
+    if (autoFocus && containerRef.current) {
+      containerRef.current.focus();
+    }
+  }, [autoFocus]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -34,6 +44,8 @@ export function useKeyboardNavigation<T>({
           e.preventDefault();
           if (highlightedIndex >= 0 && highlightedIndex < items.length) {
             onSelect(items[highlightedIndex], highlightedIndex);
+            // Mantener el foco en el contenedor después de seleccionar
+            containerRef.current?.focus();
           }
           break;
         case 'Escape':
@@ -42,6 +54,8 @@ export function useKeyboardNavigation<T>({
           if (onEscape) {
             onEscape();
           }
+          // Devolver foco al input padre si existe
+          containerRef.current?.blur();
           break;
         default:
           break;
@@ -59,5 +73,6 @@ export function useKeyboardNavigation<T>({
     highlightedIndex,
     setHighlightedIndex,
     handleKeyDown,
+    containerRef,
   };
 }

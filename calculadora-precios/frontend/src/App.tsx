@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { supabase } from '@/lib/supabase';
 import { parseNumericInput } from '@/utils/validateDecimal';
 import { SecureInput } from '@/components/ui/SecureInput';
+import { useAuth } from '@/contexts/AuthContext';
 
 import { ProductsPage } from '@/features/products/ProductList';
 import { MermaPage } from '@/features/merma/MermaPage';
@@ -11,6 +12,7 @@ import { useProductStore } from '@/store/productStore';
 import { CalculatorPage } from '@/features/calculator/CalculatorPage';
 import { ProvidersPage } from '@/features/providers/ProvidersPage';
 import { ComparatorPage } from '@/features/comparator/ComparatorPage';
+import { LandingPage } from '@/features/auth/LandingPage';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: { children: React.ReactNode }) {
@@ -110,13 +112,17 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
 }
 
 function App() {
+  // ========== HOOKS AL INICIO (SIN CONDICIONALES) ==========
   const { rate, setRate } = useCurrencyStore();
   const { loadFromSupabase } = useProductStore();
+  const { userRole, logout } = useAuth();
   const [showWelcome, setShowWelcome] = useState(false);
   const [showEditRate, setShowEditRate] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const location = useLocation();
+
+  const isGerencia = userRole === 'gerencia';
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -151,6 +157,13 @@ function App() {
     setRate(newRate);
   };
 
+  // ========== RENDERIZADO CONDICIONAL (SIN HOOKS DESPUÉS) ==========
+  
+  // Si no hay rol, mostrar Landing Page
+  if (!userRole) {
+    return <LandingPage />;
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Mobile header */}
@@ -177,7 +190,7 @@ function App() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Condicional según rol */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
         w-64 bg-white border-r shadow-sm flex flex-col
@@ -189,6 +202,7 @@ function App() {
         </div>
 
         <nav className="flex-shrink-0 px-2 md:px-3 py-2 space-y-0.5">
+          {/* SIEMPRE visible: Productos */}
           <NavLink
             to="/products"
             className={({ isActive }) =>
@@ -198,15 +212,8 @@ function App() {
           >
             Productos
           </NavLink>
-          <NavLink
-            to="/providers"
-            className={({ isActive }) =>
-              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-              }`
-            }
-          >
-            Proveedores
-          </NavLink>
+
+          {/* SIEMPRE visible: Calculadora (para ambos roles) */}
           <NavLink
             to="/calculator"
             className={({ isActive }) =>
@@ -216,24 +223,39 @@ function App() {
           >
             Calculadora
           </NavLink>
-          <NavLink
-            to="/comparator"
-            className={({ isActive }) =>
-              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-              }`
-            }
-          >
-            Comparador
-          </NavLink>
-          <NavLink
-            to="/merma"
-            className={({ isActive }) =>
-              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-              }`
-            }
-          >
-            Merma
-          </NavLink>
+
+          {/* SOLO GERENCIA: Proveedores, Comparador, Merma */}
+          {isGerencia && (
+            <>
+              <NavLink
+                to="/providers"
+                className={({ isActive }) =>
+                  `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+                  }`
+                }
+              >
+                Proveedores
+              </NavLink>
+              <NavLink
+                to="/comparator"
+                className={({ isActive }) =>
+                  `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+                  }`
+                }
+              >
+                Comparador
+              </NavLink>
+              <NavLink
+                to="/merma"
+                className={({ isActive }) =>
+                  `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+                  }`
+                }
+              >
+                Merma
+              </NavLink>
+            </>
+          )}
         </nav>
 
         {/* Logo centered - se mantiene fijo justo debajo del menú */}
@@ -250,6 +272,23 @@ function App() {
           />
         </div>
 
+        {/* Botón de Cerrar Sesión */}
+        {userRole && (
+          <div className="flex-shrink-0 px-4 py-3 border-t">
+            <button
+              onClick={logout}
+              className="w-full px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" x2="9" y1="12" y2="12" />
+              </svg>
+              Cerrar Sesión
+            </button>
+          </div>
+        )}
+
         <div className="flex-shrink-0 h-4"></div>
       </aside>
 
@@ -262,17 +301,29 @@ function App() {
         )}
         <ErrorBoundary>
           <Routes>
-            <Route path="/" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
-            <Route path="/products" element={<ProductsPage onEditRate={() => setShowEditRate(true)} />} />
-            <Route path="/providers" element={<ProvidersPage />} />
+            <Route path="/" element={<ProductsPage onEditRate={() => setShowEditRate(true)} userRole={userRole} />} />
+            <Route path="/products" element={<ProductsPage onEditRate={() => setShowEditRate(true)} userRole={userRole} />} />
+            {/* Calculadora disponible para TODOS los roles */}
             <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
-            <Route path="/comparator" element={<ComparatorPage />} />
-            <Route path="/merma" element={<MermaPage />} />
+            {isGerencia && (
+              <>
+                <Route path="/providers" element={<ProvidersPage />} />
+                <Route path="/comparator" element={<ComparatorPage />} />
+                <Route path="/merma" element={<MermaPage />} />
+              </>
+            )}
+            <Route path="/unauthorized" element={
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-bold text-red-600">Acceso Denegado</h2>
+                <p>No tienes permiso para esta sección.</p>
+              </div>
+            } />
+            <Route path="*" element={<Navigate to="/products" replace />} />
           </Routes>
         </ErrorBoundary>
       </main>
 
-      {/* Modals */}
+      {/* Modales */}
       {showWelcome && (
         <RateModal
           rate={rate}
