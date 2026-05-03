@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { SecureInput } from '@/components/ui/SecureInput';
 
 export function LandingPage() {
   const { login } = useAuth();
@@ -110,20 +111,21 @@ export function LandingPage() {
                 </p>
               </div>
 
-              <form onSubmit={handleGerenciaSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Usuario
-                  </label>
-                  <input
-                    type="text"
-                    value={credentials.username}
-                    onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
-                    placeholder=""
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none transition focus:ring-0 focus:border-gray-300"
-                    autoComplete="username"
-                  />
-                </div>
+               <form onSubmit={handleGerenciaSubmit} className="space-y-4" autoComplete="off" noValidate>
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                     Usuario
+                   </label>
+                   <SecureInput
+                     value={credentials.username}
+                     onChange={(value) => setCredentials({ ...credentials, username: value })}
+                     placeholder=""
+                     inputMode="text"
+                     editable
+                     noRing={true}
+                     displayClassName="border border-gray-300 rounded-lg px-4 py-3 outline-none transition bg-white focus:ring-0 focus:border-gray-300"
+                   />
+                 </div
 
                  <div>
                    <label className="block text-sm font-medium text-gray-700 mb-2">

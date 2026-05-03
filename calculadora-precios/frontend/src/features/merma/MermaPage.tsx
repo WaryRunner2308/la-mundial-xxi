@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { validateDecimalInput, parseNumericInput } from '@/utils/validateDecimal';
+import { parseNumericInput } from '@/utils/validateDecimal';
+import { SecureInput } from '@/components/ui/SecureInput';
 
 export function MermaPage() {
   const [kilosFactura, setKilosFactura] = useState<string>('');
@@ -33,38 +34,32 @@ export function MermaPage() {
               <label htmlFor="kilosFactura" className="block text-sm font-medium text-gray-700 mb-2">
                 Kilos en Factura
               </label>
-                <input
-                  id="merma_kilos_factura"
-                  name="merma_kilos_factura"
-                  type="text"
-                  inputMode="decimal"
-                  autoComplete="new-password"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  autoCapitalize="none"
-                  value={kilosFactura}
-                  onChange={(e) => setKilosFactura(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
-                />
+              <SecureInput
+                id="merma_kilos_factura"
+                value={kilosFactura}
+                onChange={setKilosFactura}
+                placeholder="0.00"
+                inputMode="decimal"
+                editable
+                noRing={true}
+                displayClassName="border border-gray-300 rounded-lg px-4 py-3 outline-none transition bg-white focus:ring-0 focus:border-gray-300 text-lg"
+              />
             </div>
 
             <div>
               <label htmlFor="kilosLlegaron" className="block text-sm font-medium text-gray-700 mb-2">
                 Kilos que Llegaron
               </label>
-                <input
-                  id="merma_kilos_llegaron"
-                  name="merma_kilos_llegaron"
-                  type="text"
-                  inputMode="decimal"
-                  autoComplete="new-password"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  autoCapitalize="none"
-                  value={kilosLlegaron}
-                  onChange={(e) => setKilosLlegaron(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
-                />
+              <SecureInput
+                id="merma_kilos_llegaron"
+                value={kilosLlegaron}
+                onChange={setKilosLlegaron}
+                placeholder="0.00"
+                inputMode="decimal"
+                editable
+                noRing={true}
+                displayClassName="border border-gray-300 rounded-lg px-4 py-3 outline-none transition bg-white focus:ring-0 focus:border-gray-300 text-lg"
+              />
             </div>
           </div>
         </div>
