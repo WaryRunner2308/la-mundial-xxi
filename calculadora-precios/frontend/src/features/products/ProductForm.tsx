@@ -108,9 +108,10 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     packageType: 'unit',
     unitsPerBulk: '',
   });
-  const [liveResults, setLiveResults] = useState<LiveResults | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+   const [liveResults, setLiveResults] = useState<LiveResults | null>(null);
+   const [isUploading, setIsUploading] = useState(false);
+   const [isSubmitting, setIsSubmitting] = useState(false);
+   const [showConfirm, setShowConfirm] = useState(false);
 
   const rate = useCurrencyStore((state) => state.rate);
   const addProduct = useProductStore((state) => state.addProduct);
@@ -205,18 +206,27 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setIsUploading(true);
-      try {
-        const base64 = await imageToBase64(file, 300);
-        setFormData(prev => ({ ...prev, photoPreview: base64 }));
-      } catch (error) {
-        console.error('Error al procesar imagen:', error);
-        alert('Error al cargar la imagen. Intente con otra.');
-      } finally {
-        setIsUploading(false);
-        e.target.value = '';
-      }
+    if (!file) return;
+
+    // Validar tamaño máximo (5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('La imagen es demasiado grande. Máximo 5MB.');
+      e.target.value = '';
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const base64 = await imageToBase64(file, 300);
+      setFormData(prev => ({ ...prev, photoPreview: base64 }));
+    } catch (error) {
+      console.error('Error al procesar imagen:', error);
+      alert('Error al cargar la imagen. Verifique que sea un archivo válido (JPEG, PNG, WebP). Intente con otra.');
+      // Limpiar input
+      e.target.value = '';
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -256,15 +266,16 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     const utility = priceBase - costPerUnit;
     const priceWithVAT = formData.aplicarIVA ? priceBase * 1.16 : priceBase;
 
+    setIsSubmitting(true);
     try {
-      if (productToEdit) {
+       if (productToEdit) {
         await updateProduct(productToEdit.id, {
           name: formData.name,
           cost: costPerUnit,
           currency: formData.currency,
           profitPercentage: profit,
           exemptFromVAT: !formData.aplicarIVA,
-          photoUrl: formData.photoPreview || '',
+          photoUrl: formData.photoPreview || null,
           providerId: formData.providerId,
         });
       } else {
@@ -274,7 +285,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           currency: formData.currency,
           profitPercentage: profit,
           exemptFromVAT: !formData.aplicarIVA,
-          photoUrl: formData.photoPreview || '',
+          photoUrl: formData.photoPreview || null,
           providerId: formData.providerId,
         });
       }
@@ -283,6 +294,8 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     } catch (error: any) {
       console.error('❌ Error completo al guardar:', error);
       alert(`Error al guardar: ${error.message}\n\nRevisa la consola (F12) para detalles.`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -293,37 +306,56 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
 
   function imageToBase64(file: File, maxWidth = 300): Promise<string> {
     return new Promise((resolve, reject) => {
+      // Validar tipo de archivo
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        reject(new Error(`Tipo de archivo no soportado: ${file.type}. Use JPEG, PNG o WebP.`));
+        return;
+      }
+
       const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Error al leer el archivo'));
       reader.readAsDataURL(file);
+
       reader.onload = () => {
         const img = new Image();
+        img.onerror = () => reject(new Error('El archivo no es una imagen válida'));
         img.src = reader.result as string;
+
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
+          try {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
 
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+
+            // Validar dimensiones mínimas
+            if (width < 1 || height < 1) {
+              reject(new Error('Dimensiones de imagen inválidas'));
+              return;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              reject(new Error('No se pudo crear contexto de canvas'));
+              return;
+            }
+
+            ctx.drawImage(img, 0, 0, width, height);
+            const base64 = canvas.toDataURL('image/jpeg', 0.7);
+            resolve(base64);
+          } catch (err: any) {
+            reject(new Error(`Error procesando imagen: ${err.message}`));
           }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('No se pudo crear el contexto del canvas'));
-            return;
-          }
-
-          ctx.drawImage(img, 0, 0, width, height);
-          const base64 = canvas.toDataURL('image/jpeg', 0.7);
-          resolve(base64);
         };
-        img.onerror = reject;
       };
-      reader.onerror = reject;
     });
   }
 
@@ -569,16 +601,28 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
           <button
             type="button"
             onClick={handleCancel}
-            className="flex-1 h-12 px-6 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition"
+            disabled={isSubmitting}
+            className="flex-1 h-12 px-6 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="flex-1 h-12 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg shadow-lg text-white font-semibold transition"
+            disabled={isSubmitting}
+            className="flex-1 h-12 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg shadow-lg text-white font-semibold transition disabled:opacity-70 disabled:cursor-wait flex items-center justify-center gap-2"
           >
-            {productToEdit ? '💾 Actualizar Producto' : '💾 Guardar Producto'}
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Guardando...
+              </>
+            ) : (
+              productToEdit ? '💾 Actualizar Producto' : '💾 Guardar Producto'
+            )}
           </button>
         </div>
 

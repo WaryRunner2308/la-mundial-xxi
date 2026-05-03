@@ -51,18 +51,18 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     const costUSD = rate > 0 ? (product.currency === 'Bs' ? product.cost / rate : product.cost) : 0;
 
      const dbData: any = {
-       name: product.name,
-       category: '',
-       cost_usd: costUSD,
-       original_currency: product.currency === 'Bs' ? 'Bs' : 'USD',
-       profit_percentage: product.profitPercentage,
-       exempt_from_vat: product.exemptFromVAT,
-       photo_url: product.photoUrl || null,
-     };
+        name: product.name,
+        category: '',
+        cost_usd: costUSD,
+        original_currency: product.currency === 'Bs' ? 'bs' : 'usd',
+        profit_percentage: product.profitPercentage,
+        exempt_from_vat: product.exemptFromVAT,
+        photo_url: product.photoUrl || null,
+      };
 
-    if (product.providerId !== undefined) {
-      dbData.provider_id = product.providerId;
-    }
+      if (product.providerId !== undefined && product.providerId !== null) {
+        dbData.provider_id = product.providerId;
+      }
 
     try {
       const { data, error } = await supabase
@@ -128,8 +128,12 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     if (updates.profitPercentage !== undefined) dbUpdate.profit_percentage = updates.profitPercentage;
     if (updates.exemptFromVAT !== undefined) dbUpdate.exempt_from_vat = updates.exemptFromVAT;
     if (updates.photoUrl !== undefined) dbUpdate.photo_url = updates.photoUrl || null;
-    if (updates.currency !== undefined) dbUpdate.original_currency = updates.currency === 'Bs' ? 'Bs' : 'USD';
-    if (updates.providerId !== undefined) dbUpdate.provider_id = updates.providerId;
+    if (updates.currency !== undefined) dbUpdate.original_currency = updates.currency === 'Bs' ? 'bs' : 'usd';
+    if (updates.providerId !== undefined && updates.providerId !== null) {
+      dbUpdate.provider_id = updates.providerId;
+    } else if (updates.providerId === null) {
+      dbUpdate.provider_id = null;
+    }
 
     const { error } = await supabase.from('products').update(dbUpdate).eq('id', id);
     if (error) {
