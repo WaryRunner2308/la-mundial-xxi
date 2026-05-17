@@ -35,7 +35,6 @@ export function MermaPage() {
                 Kilos en Factura
               </label>
               <SecureInput
-                id="merma_kilos_factura"
                 value={kilosFactura}
                 onChange={setKilosFactura}
                 placeholder="0.00"
@@ -51,7 +50,6 @@ export function MermaPage() {
                 Kilos que Llegaron
               </label>
               <SecureInput
-                id="merma_kilos_llegaron"
                 value={kilosLlegaron}
                 onChange={setKilosLlegaron}
                 placeholder="0.00"

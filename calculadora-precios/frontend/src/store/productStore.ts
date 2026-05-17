@@ -25,8 +25,8 @@ export interface ProductData {
   currency: Currency;
   profitPercentage: number;
   exemptFromVAT: boolean;
-  photoUrl: string;
-  providerId?: number;
+  photoUrl: string | null;
+  providerId?: number | null;
 }
 
 interface ProductStore {
@@ -82,8 +82,8 @@ export const useProductStore = create<ProductStore>((set, get) => ({
         originalCurrency: product.currency,
         profitPercentage: product.profitPercentage,
         exemptFromVAT: product.exemptFromVAT,
-        photoUrl: product.photoUrl,
-        providerId: product.providerId,
+        photoUrl: product.photoUrl ?? '',
+        providerId: product.providerId ?? undefined,
         updatedAt: new Date().toISOString(),
       };
 
@@ -148,8 +148,8 @@ export const useProductStore = create<ProductStore>((set, get) => ({
           name: updates.name ?? p.name,
           profitPercentage: updates.profitPercentage ?? p.profitPercentage,
           exemptFromVAT: updates.exemptFromVAT ?? p.exemptFromVAT,
-          photoUrl: updates.photoUrl ?? p.photoUrl,
-          providerId: updates.providerId ?? p.providerId,
+          photoUrl: updates.photoUrl !== undefined ? (updates.photoUrl ?? '') : p.photoUrl,
+          providerId: updates.providerId !== undefined ? (updates.providerId ?? undefined) : p.providerId,
           costUSD: updatedCostUSD ?? p.costUSD,
           originalCurrency: updates.currency ?? p.originalCurrency,
         } : p
