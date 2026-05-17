@@ -18,8 +18,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isMounted = useRef(true);
+  const userRoleRef = useRef<UserRole>(null);
 
   useEffect(() => { isMounted.current = true; return () => { isMounted.current = false; }; }, []);
+  useEffect(() => { userRoleRef.current = userRole; }, [userRole]);
+
+  const getTimeoutForRole = (role: 'gerencia' | 'invitado') =>
+    role === 'gerencia' ? TIMEOUT_GERENCIA : TIMEOUT_INVITADO;
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -115,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Cierre de pestaña
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (userRole) {
+      if (userRoleRef.current) {
         localStorage.removeItem('userRole');
         localStorage.removeItem('lastActivity');
       }

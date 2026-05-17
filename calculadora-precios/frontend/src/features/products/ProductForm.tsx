@@ -17,7 +17,7 @@ interface FormData {
   profitPercentage: string;
   aplicarIVA: boolean;
   photoPreview: string | null;
-  providerId?: number;
+  providerId?: number | null;
   packageType: 'unit' | 'bulk';
   unitsPerBulk: string;
 }
@@ -186,7 +186,7 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
   };
 
   const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const providerId = e.target.value ? parseInt(e.target.value, 10) : undefined;
+    const providerId = e.target.value ? parseInt(e.target.value, 10) : null;
     setFormData(prev => ({ ...prev, providerId }));
   };
 

@@ -150,7 +150,6 @@ export function ComparatorPage() {
         </label>
          <div className="relative">
            <SecureInput
-             id="search-input"
              value={searchTerm}
              onChange={(value) => {
                setSearchTerm(value);
@@ -158,7 +157,7 @@ export function ComparatorPage() {
              }}
              onKeyDown={handleInputKeyDown}
              placeholder="Ej: Malta 1.5L"
-             inputMode="search"
+             inputMode="text"
              editable
              // Cuando highlightedIndex === -1 el input tiene foco visual (anillo azul)
              // Cuando highlightedIndex >= 0, el foco visual está en la lista (sin anillo en input)

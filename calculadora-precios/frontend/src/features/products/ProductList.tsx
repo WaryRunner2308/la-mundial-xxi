@@ -184,7 +184,7 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                value={searchQuery}
                onChange={setSearchQuery}
                placeholder="Buscar producto por nombre..."
-               inputMode="search"
+               inputMode="text"
                editable
                noRing={true}
                displayClassName="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none transition text-base bg-white focus:ring-0 focus:border-gray-300"
@@ -418,12 +418,14 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
             </div>
             <h3 className="text-lg md:text-xl font-semibold mb-2 text-gray-900">No hay productos</h3>
             <p className="text-sm md:text-base text-gray-500 mb-4 md:mb-6">Agrega tu primer producto para comenzar</p>
-            <button
-              onClick={() => setShowForm(true)}
-              className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition text-sm md:text-base"
-            >
-              Agregar Primer Producto
-            </button>
+            {isGerencia && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition text-sm md:text-base"
+              >
+                Agregar Primer Producto
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -449,10 +451,15 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
          message={`¿Estás seguro de que deseas eliminar "${productToDelete?.name}"? Esta acción no se puede deshacer.`}
          confirmText="Eliminar"
          cancelText="Cancelar"
-         onConfirm={() => {
+         onConfirm={async () => {
            if (productToDelete) {
-             removeProduct(productToDelete.id);
-             setProductToDelete(null);
+             try {
+               await removeProduct(productToDelete.id);
+             } catch {
+               alert('Error al eliminar el producto. Inténtalo de nuevo.');
+             } finally {
+               setProductToDelete(null);
+             }
            }
          }}
          onCancel={() => setProductToDelete(null)}

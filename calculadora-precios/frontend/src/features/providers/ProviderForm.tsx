@@ -73,7 +73,6 @@ export function ProviderForm({ isOpen, onClose, onSave, editingProvider }: Provi
               Nombre del Proveedor *
             </label>
             <SecureInput
-              id="provider_name_field"
               value={name}
               onChange={setName}
               placeholder="Ej: Polar, Coca-Cola, Luventa"
