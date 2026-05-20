@@ -38,19 +38,27 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         // Touch/Click handler - responde inmediatamente
         const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
             if (inputRef.current) {
-                e.preventDefault();
-                e.stopPropagation();
-                // Evitar scroll/zoom en iOS
-                if ((e as any).touches) {
-                    (e as any).touches[0].preventDefault();
+                if (e.pointerType === 'touch') {
+                    e.preventDefault(); // solo en touch para evitar scroll/zoom en iOS
                 }
+                e.stopPropagation();
                 inputRef.current.focus();
-                // Posicionar cursor donde se tocó (el navegador lo hace automáticamente si el input recibe el foco)
+                // Coloca el cursor al final después del foco
+                requestAnimationFrame(() => {
+                    if (inputRef.current) {
+                        const len = inputRef.current.value.length;
+                        inputRef.current.setSelectionRange(len, len);
+                    }
+                });
             }
         }, []);
 
         const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-            let newValue = e.target.value;
+            const input = e.target;
+            const cursorBefore = input.selectionStart ?? input.value.length;
+            const lengthBefore = input.value.length;
+
+            let newValue = input.value;
             if (inputMode === 'decimal') {
                 newValue = newValue.replace(/[^0-9.,]/g, '');
                 const parts = newValue.split('.');
@@ -60,7 +68,17 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
             } else if (inputMode === 'numeric') {
                 newValue = newValue.replace(/[^0-9]/g, '');
             }
+
+            // Calcula la posición correcta del cursor ajustando por caracteres eliminados
+            const newCursor = Math.max(0, cursorBefore + (newValue.length - lengthBefore));
             onChange(newValue);
+
+            // Restaura el cursor después de que React actualice el input controlado
+            requestAnimationFrame(() => {
+                if (inputRef.current) {
+                    inputRef.current.setSelectionRange(newCursor, newCursor);
+                }
+            });
         };
 
         // Captura todas las teclas y propaga al padre
