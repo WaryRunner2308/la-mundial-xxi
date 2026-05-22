@@ -48,7 +48,9 @@ export const useProductStore = create<ProductStore>((set, get) => ({
   addProduct: async (product) => {
     console.log('🔵 [Supabase] Agregando:', product.name);
     const rate = useCurrencyStore.getState().rate;
-    const costUSD = rate > 0 ? (product.currency === 'Bs' ? product.cost / rate : product.cost) : 0;
+    const costUSD = product.currency === 'USD'
+      ? product.cost
+      : (rate > 0 ? product.cost / rate : 0);
 
      const dbData: any = {
         name: product.name,

@@ -243,6 +243,7 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                    <tr>
                      <th className="h-12 px-2 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap min-w-[80px]">Foto</th>
                      <th className="h-12 px-2 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Nombre</th>
+                     <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Precio Final</th>
                      {/* Solo Gerencia ve: Moneda, Costo, Ganancia, Margen, IVA, Acciones */}
                      {isGerencia && (
                        <>
