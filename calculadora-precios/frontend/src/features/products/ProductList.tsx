@@ -244,13 +244,14 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                      <th className="h-12 px-2 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap min-w-[80px]">Foto</th>
                      <th className="h-12 px-2 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Nombre</th>
                      <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Precio Final</th>
-                     {/* Solo Gerencia ve: Costo, Ganancia, Margen, IVA */}
+                     {/* Solo Gerencia ve: Costo, Ganancia, Margen, IVA, (botones) */}
                      {isGerencia && (
                        <>
                          <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Costo</th>
                          <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Ganancia</th>
                          <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Margen</th>
                          <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">IVA</th>
+                         <th className="h-12 px-2 md:px-6 align-middle whitespace-nowrap"></th>
                        </>
                      )}
                    </tr>
@@ -357,6 +358,37 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                              </span>
                            </td>
 
+                           {/* Botones editar / borrar */}
+                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle space-x-1 md:space-x-2">
+                             <button
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 setEditingProduct({
+                                   id: product.id,
+                                   name: product.name,
+                                   cost: product.costUSD * (rate > 0 ? rate : 1),
+                                   currency: product.originalCurrency,
+                                   profitPercentage: product.profitPercentage,
+                                   exemptFromVAT: product.exemptFromVAT,
+                                   photoUrl: product.photoUrl,
+                                 });
+                                 setShowForm(true);
+                               }}
+                               className="px-2 md:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded transition"
+                               title="Editar"
+                             >
+                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                             </button>
+                             <button
+                               onClick={() => setProductToDelete({ id: product.id, name: product.name })}
+                               className="px-2 md:px-3 py-1 text-red-600 hover:bg-red-50 rounded transition"
+                               title="Eliminar"
+                             >
+                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                 <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
+                               </svg>
+                             </button>
+                           </td>
                          </>
                        )}
                      </tr>
