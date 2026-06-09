@@ -101,7 +101,7 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
+      <div className="animate-fade-up">
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
           Calculadora de Precios
         </h1>
@@ -126,7 +126,7 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Panel de Entrada */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="animate-fade-up-1 card-lift bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Datos del Producto</h2>
 
           {/* Costo con selector de moneda */}
@@ -186,14 +186,14 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
         </div>
 
         {/* Panel de Resultados */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="animate-fade-up-2 card-lift bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Resultados</h2>
           {results && rate > 0 ? (
             <div className="space-y-4">
               {/* Precio Final */}
               <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-100">
                 <span className="block text-gray-600 mb-2 text-lg">Precio Final</span>
-                <span className="block font-bold text-4xl text-blue-600 mb-1 font-mono">
+                <span className="animate-number-pop block font-bold text-4xl text-blue-600 mb-1 font-mono">
                   {formatAmountWithCurrency(results.priceWithVAT, results.currency)}
                 </span>
                 {rate > 0 && results.priceWithVATConverted !== undefined && (
@@ -206,7 +206,7 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
               {/* Ganancia */}
               <div className="p-6 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-100">
                 <span className="block text-gray-600 mb-2 text-lg">Ganancia</span>
-                <span className="block font-bold text-4xl text-emerald-600 mb-1 font-mono">
+                <span className="animate-number-pop block font-bold text-4xl text-emerald-600 mb-1 font-mono">
                   {formatAmountWithCurrency(results.utility, results.currency)}
                 </span>
                 {rate > 0 && results.utilityConverted !== undefined && (

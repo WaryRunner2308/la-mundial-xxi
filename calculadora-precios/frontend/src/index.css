@@ -20,3 +20,89 @@ input:-webkit-autofill:focus {
 input[autocomplete="new-password"] {
   pointer-events: auto !important;
 }
+
+/* ===== ANIMATIONS ===== */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes numberPop {
+  0%   { opacity: 0; transform: scale(0.55); }
+  65%  { transform: scale(1.12); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes gradientFlow {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+@keyframes rowSlideIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulseBar {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+.animate-fade-up {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.animate-fade-up-1 {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.07s both;
+}
+.animate-fade-up-2 {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.14s both;
+}
+.animate-fade-up-3 {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.21s both;
+}
+
+.animate-fade-left {
+  animation: fadeInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.animate-fade-left-1 { animation: fadeInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both; }
+.animate-fade-left-2 { animation: fadeInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; }
+.animate-fade-left-3 { animation: fadeInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.18s both; }
+.animate-fade-left-4 { animation: fadeInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.24s both; }
+
+.animate-number-pop {
+  animation: numberPop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s both;
+}
+
+.animate-gradient-text {
+  background-size: 200% 200% !important;
+  animation: gradientFlow 6s ease infinite;
+}
+
+.animate-row-in {
+  animation: rowSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-pulse-bar {
+  animation: pulseBar 3s ease-in-out infinite;
+}
+
+/* Card hover lift */
+.card-lift {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 32px -8px rgba(0, 0, 0, 0.13);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.28); }

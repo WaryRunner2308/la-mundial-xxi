@@ -109,7 +109,7 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
   return (
     <div className="space-y-4 md:space-y-6">
        {/* Header */}
-       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+       <div className="animate-fade-up flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
          <div>
            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">Gestión de Productos</h1>
            <div className="flex items-center mt-1">
@@ -145,10 +145,10 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
        </div>
 
         {/* Tarjeta de Estadísticas */}
-        <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-xl border border-gray-200 p-4 md:p-8 shadow-sm overflow-hidden">
+        <div className="animate-fade-up-1 card-lift bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-xl border border-gray-200 p-4 md:p-8 shadow-sm overflow-hidden">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
             <div className="flex-1 flex items-center justify-center md:justify-start">
-              <h2 className="text-3xl md:text-5xl font-black italic tracking-tight"
+              <h2 className="animate-gradient-text text-3xl md:text-5xl font-black italic tracking-tight"
                   style={{
                     background: 'linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 50%, #45B7D1 100%)',
                     WebkitBackgroundClip: 'text',
@@ -160,7 +160,7 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
               <span className="text-xl md:text-2xl font-bold italic text-gray-700 ml-2">XXI</span>
             </div>
             <div className="flex flex-col items-center md:items-end">
-              <div className="text-5xl md:text-6xl font-black text-blue-600 leading-none">
+              <div className="animate-number-pop text-5xl md:text-6xl font-black text-blue-600 leading-none">
                 {filteredProducts.length}
               </div>
               <p className="text-xs md:text-sm font-semibold text-gray-600 mt-1 uppercase tracking-widest">
@@ -168,11 +168,11 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
               </p>
             </div>
           </div>
-          <div className="mt-4 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full"></div>
+          <div className="animate-pulse-bar mt-4 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full"></div>
         </div>
 
          {/* Buscador de Productos */}
-         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+         <div className="animate-fade-up-2 bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
            <div className="relative">
              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -205,7 +205,7 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
         </div>
 
         {/* Tabla de Productos */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
+        <div className="animate-fade-up-3 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
            {/* Header con controles */}
            <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
              <h2 className="text-lg md:text-xl font-bold text-gray-900">
@@ -267,9 +267,10 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                      <tr
                        key={product.id}
                        className={`
-                         hover:bg-blue-50/30 transition-colors duration-150
+                         animate-row-in hover:bg-blue-50/30 transition-colors duration-150
                          ${isHighlighted ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}
                        `}
+                       style={{ animationDelay: `${0.28 + index * 0.03}s` }}
                        role="row"
                        aria-selected={isHighlighted}
                      >

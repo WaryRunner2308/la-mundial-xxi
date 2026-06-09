@@ -189,12 +189,12 @@ function App() {
       {/* Sidebar - Condicional según rol */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-64 bg-white border-r shadow-sm flex flex-col
+        w-64 bg-slate-900 border-r border-slate-700/50 shadow-xl flex flex-col
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="flex-shrink-0 flex items-center px-4 py-3 md:py-4 border-b">
-          <span className="text-lg md:text-xl font-semibold text-gray-900">La Mundial</span>
+        <div className="flex-shrink-0 flex items-center px-4 py-3 md:py-4 border-b border-slate-700/50">
+          <span className="text-lg md:text-xl font-bold text-white tracking-tight">La Mundial</span>
         </div>
 
         <nav className="flex-shrink-0 px-2 md:px-3 py-2 space-y-0.5">
@@ -202,7 +202,7 @@ function App() {
           <NavLink
             to="/products"
             className={({ isActive }) =>
-              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 text-sm border-l-2 ${isActive ? 'bg-blue-50 text-blue-600 border-blue-500' : 'text-gray-600 hover:bg-gray-50 border-transparent'}`
+              `animate-fade-left flex items-center px-3 py-2 rounded-md font-medium transition-all duration-150 text-sm border-l-2 ${isActive ? 'bg-blue-500/20 text-blue-400 border-blue-400' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white border-transparent'}`
             }
           >
             Productos
@@ -212,7 +212,7 @@ function App() {
           <NavLink
             to="/calculator"
             className={({ isActive }) =>
-              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 text-sm border-l-2 ${isActive ? 'bg-blue-50 text-blue-600 border-blue-500' : 'text-gray-600 hover:bg-gray-50 border-transparent'}`
+              `animate-fade-left-1 flex items-center px-3 py-2 rounded-md font-medium transition-all duration-150 text-sm border-l-2 ${isActive ? 'bg-blue-500/20 text-blue-400 border-blue-400' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white border-transparent'}`
             }
           >
             Calculadora
@@ -224,8 +224,7 @@ function App() {
               <NavLink
                 to="/providers"
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                  }`
+                  `animate-fade-left-2 flex items-center px-3 py-2 rounded-md font-medium transition-all duration-150 text-sm border-l-2 ${isActive ? 'bg-blue-500/20 text-blue-400 border-blue-400' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white border-transparent'}`
                 }
               >
                 Proveedores
@@ -233,8 +232,7 @@ function App() {
               <NavLink
                 to="/comparator"
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                  }`
+                  `animate-fade-left-3 flex items-center px-3 py-2 rounded-md font-medium transition-all duration-150 text-sm border-l-2 ${isActive ? 'bg-blue-500/20 text-blue-400 border-blue-400' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white border-transparent'}`
                 }
               >
                 Comparador
@@ -242,8 +240,7 @@ function App() {
               <NavLink
                 to="/merma"
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                  }`
+                  `animate-fade-left-4 flex items-center px-3 py-2 rounded-md font-medium transition-all duration-150 text-sm border-l-2 ${isActive ? 'bg-blue-500/20 text-blue-400 border-blue-400' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white border-transparent'}`
                 }
               >
                 Merma
@@ -257,21 +254,21 @@ function App() {
           <img
             src="/logo.png"
             alt="La Mundial XXI"
-            className="w-full max-w-[200px] object-contain lg:hidden"
+            className="w-full max-w-[200px] object-contain lg:hidden opacity-90"
           />
           <img
             src="/logo.png"
             alt="La Mundial XXI"
-            className="w-full max-w-[180px] object-contain hidden lg:block"
+            className="w-full max-w-[180px] object-contain hidden lg:block opacity-90"
           />
         </div>
 
         {/* Botón de Cerrar Sesión */}
         {userRole && (
-          <div className="flex-shrink-0 px-4 py-3 border-t">
+          <div className="flex-shrink-0 px-4 py-3 border-t border-slate-700/50">
             <button
               onClick={logout}
-              className="w-full px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition flex items-center justify-center gap-2"
+              className="w-full px-3 py-2 text-sm font-medium text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg transition-all flex items-center justify-center gap-2"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

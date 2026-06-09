@@ -32,7 +32,7 @@ export function LandingPage() {
     <div className="min-h-screen flex items-center justify-center bg-stone-50 p-4">
       <div className="max-w-2xl w-full space-y-6">
         {/* Header con Logo Grande y Personajes Oficiales */}
-        <div className="text-center">
+        <div className="animate-fade-up text-center">
           {/* Logo principal */}
           <div className="flex justify-center mb-3">
             <img
@@ -55,11 +55,11 @@ export function LandingPage() {
           {/* Tarjeta Invitado */}
           <button
             onClick={handleInvitado}
-            className="group relative bg-white border-2 border-stone-200 rounded-2xl p-6 md:p-8 hover:border-blue-400 hover:shadow-xl transition-all duration-300 text-left h-full overflow-hidden"
+            className="animate-fade-up-1 card-lift group relative bg-white border-2 border-stone-200 rounded-2xl p-6 md:p-8 hover:border-blue-400 hover:shadow-xl transition-all duration-300 text-left h-full overflow-hidden"
             style={{ minHeight: '200px' }}
           >
             <div className="relative z-10">
-              <div className="text-4xl md:text-5xl mb-3 group-hover:scale-110 transition-transform">
+              <div className="text-4xl md:text-5xl mb-3 group-hover:scale-110 transition-transform duration-300">
                 🔍
               </div>
               <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
@@ -68,7 +68,7 @@ export function LandingPage() {
               <p className="text-gray-600 text-sm md:text-base mb-4">
                 Consulta rápida de precios. Acceso limitado a visualización.
               </p>
-              <div className="inline-flex px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium text-sm md:text-base">
+              <div className="inline-flex px-4 py-2 bg-blue-50 text-blue-700 group-hover:bg-blue-600 group-hover:text-white rounded-lg font-medium text-sm md:text-base transition-colors duration-300">
                 Entrar como Invitado →
               </div>
             </div>
@@ -77,11 +77,11 @@ export function LandingPage() {
           {/* Tarjeta Gerencia */}
           <button
             onClick={() => setShowLogin(true)}
-            className="group relative bg-white border-2 border-stone-200 rounded-2xl p-6 md:p-8 hover:border-blue-400 hover:shadow-xl transition-all duration-300 text-left h-full overflow-hidden"
+            className="animate-fade-up-2 card-lift group relative bg-white border-2 border-stone-200 rounded-2xl p-6 md:p-8 hover:border-green-400 hover:shadow-xl transition-all duration-300 text-left h-full overflow-hidden"
             style={{ minHeight: '200px' }}
           >
             <div className="relative z-10">
-              <div className="text-4xl md:text-5xl mb-3 group-hover:scale-110 transition-transform">
+              <div className="text-4xl md:text-5xl mb-3 group-hover:scale-110 transition-transform duration-300">
                 🎯
               </div>
               <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
@@ -90,7 +90,7 @@ export function LandingPage() {
               <p className="text-gray-600 text-sm md:text-base mb-4">
                 Control total. Acceso completo a todas las funciones administrativas.
               </p>
-              <div className="inline-flex px-4 py-2 bg-green-50 text-green-700 rounded-lg font-medium text-sm md:text-base">
+              <div className="inline-flex px-4 py-2 bg-green-50 text-green-700 group-hover:bg-green-600 group-hover:text-white rounded-lg font-medium text-sm md:text-base transition-colors duration-300">
                 Iniciar Sesión →
               </div>
             </div>
