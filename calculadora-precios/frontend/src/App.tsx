@@ -20,29 +20,24 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     super(props);
     this.state = { hasError: false, error: null };
   }
-
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
-
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Error capturado por ErrorBoundary:', error, errorInfo);
   }
-
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-[#070e0b]">
-          <div className="max-w-md p-8 bg-[#0d1612] border border-[#1a2e22] rounded-2xl shadow-2xl text-center">
-            <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-[#C8102E]/10 border border-[#C8102E]/20 flex items-center justify-center text-3xl">
+        <div className="flex items-center justify-center min-h-screen bg-[#f5f8f5]">
+          <div className="max-w-md p-8 bg-white border border-[#e4ede6] rounded-2xl shadow-lg text-center">
+            <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-[#fde8ec] border border-[#C8102E]/15 flex items-center justify-center text-3xl">
               ⚠️
             </div>
-            <h2 className="text-2xl font-black text-[#e8f0eb] mb-2" style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.06em' }}>
+            <h2 className="text-2xl font-black text-[#0d1f14] mb-2" style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.06em' }}>
               ALGO SALIÓ MAL
             </h2>
-            <p className="text-[#8aad95] mb-6 text-sm">
-              Ha ocurrido un error inesperado. Puedes intentar recargar la página.
-            </p>
+            <p className="text-[#7aaa8a] mb-6 text-sm">Ha ocurrido un error inesperado. Puedes intentar recargar la página.</p>
             <button
               onClick={() => { localStorage.clear(); window.location.reload(); }}
               className="px-6 py-2.5 bg-[#C8102E] hover:bg-[#a00d25] text-white rounded-xl font-bold transition text-sm"
@@ -50,9 +45,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
               Reiniciar y Limpiar Datos
             </button>
             {this.state.error && (
-              <p className="mt-4 text-xs text-[#4d6b58] text-left font-mono">
-                {this.state.error.message}
-              </p>
+              <p className="mt-4 text-xs text-[#7aaa8a] text-left font-mono">{this.state.error.message}</p>
             )}
           </div>
         </div>
@@ -73,11 +66,11 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4 backdrop-blur-sm"
+      className="fixed inset-0 bg-black/30 flex items-center justify-center z-[100] p-4 backdrop-blur-sm"
       onClick={handleSubmit}
     >
       <div
-        className="bg-[#0d1612] border border-[#1a2e22] rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl"
+        className="bg-white border border-[#e4ede6] rounded-2xl p-6 md:p-8 max-w-md w-full shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Portugal flag strip */}
@@ -87,24 +80,19 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
         </div>
 
         <div className="text-center mb-6">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#009A3A]/10 border border-[#009A3A]/20 flex items-center justify-center text-2xl">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#e8f7ed] border border-[#009A3A]/15 flex items-center justify-center text-2xl">
             💱
           </div>
-          <h2
-            className="text-2xl font-black text-[#e8f0eb]"
-            style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.08em' }}
-          >
+          <h2 className="text-2xl font-black text-[#0d1f14]" style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.08em' }}>
             ¡BIENVENIDO!
           </h2>
-          <p className="text-[#8aad95] mt-2 text-sm">¿Cuál es la tasa de cambio de hoy?</p>
-          <p className="text-xs text-[#4d6b58] mt-1">1 USD = X Bs</p>
+          <p className="text-[#7aaa8a] mt-2 text-sm">¿Cuál es la tasa de cambio de hoy?</p>
+          <p className="text-xs text-[#7aaa8a]/60 mt-1">1 USD = X Bs</p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <span className="block text-xs font-semibold text-[#8aad95] mb-2 uppercase tracking-wider">
-              Tasa de Cambio
-            </span>
+            <span className="block text-xs font-black text-[#3d6b4f] mb-2 uppercase tracking-wider">Tasa de Cambio</span>
             <SecureInput
               value={inputValue}
               onChange={setInputValue}
@@ -113,13 +101,13 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
               inputMode="decimal"
               editable
               noRing
-              displayClassName="!bg-[#112016] !border-[#1a2e22] !text-[#e8f0eb] !rounded-xl"
+              displayClassName="!border-[#e4ede6] !rounded-xl !bg-[#f5f8f5]"
             />
           </div>
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-full py-3 bg-[#009A3A] hover:bg-[#007b2e] text-white font-bold rounded-xl shadow-lg transition text-base"
+            className="w-full py-3 bg-[#009A3A] hover:bg-[#007b2e] text-white font-bold rounded-xl shadow-md transition text-base"
             style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.08em', fontSize: '1.05rem' }}
           >
             CONTINUAR
@@ -143,10 +131,7 @@ function App() {
   const isGerencia = userRole === 'gerencia';
 
   useEffect(() => { setSidebarOpen(false); }, [location]);
-
-  useEffect(() => {
-    if (rate === 0) setShowWelcome(true);
-  }, [rate]);
+  useEffect(() => { if (rate === 0) setShowWelcome(true); }, [rate]);
 
   useEffect(() => {
     supabase
@@ -174,29 +159,28 @@ function App() {
   const navLinkClass = (isActive: boolean) =>
     `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all duration-150 text-sm border ${
       isActive
-        ? 'bg-[#009A3A]/12 text-[#009A3A] border-[#009A3A]/25'
-        : 'text-[#4d6b58] hover:bg-[#0d1612] hover:text-[#c8e0d0] border-transparent'
+        ? 'bg-[#e8f7ed] text-[#009A3A] border-[#009A3A]/25'
+        : 'text-[#7aaa8a] hover:bg-[#f0f5f2] hover:text-[#0d1f14] border-transparent'
     }`;
 
   return (
-    <div className="flex min-h-screen bg-[#070e0b] overflow-x-hidden">
+    <div className="flex min-h-screen bg-[#f5f8f5] overflow-x-hidden">
 
       {/* Mobile header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#070e0b] border-b border-[#1a2e22] px-4 py-3 flex items-center">
-        {/* Portugal flag strip */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-[#e4ede6] px-4 py-3 flex items-center shadow-sm">
         <div className="absolute bottom-0 left-0 right-0 flex h-[2px]">
           <div className="bg-[#009A3A]" style={{ flex: 2 }} />
           <div className="bg-[#C8102E]" style={{ flex: 3 }} />
         </div>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-lg text-[#4d6b58] hover:text-[#e8f0eb] hover:bg-[#0d1612] transition"
+          className="p-2 rounded-lg text-[#7aaa8a] hover:text-[#0d1f14] hover:bg-[#f0f5f2] transition"
           aria-label="Abrir menú"
         >
           {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
         <span
-          className="ml-3 font-black text-[#e8f0eb] tracking-widest"
+          className="ml-3 font-black text-[#0d1f14]"
           style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.2rem', letterSpacing: '0.12em' }}
         >
           LA MUNDIAL
@@ -205,16 +189,13 @@ function App() {
 
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/70 z-40 backdrop-blur-sm"
-          onClick={() => setSidebarOpen(false)}
-        />
+        <div className="lg:hidden fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-64 bg-[#070e0b] border-r border-[#1a2e22] flex flex-col
+        w-64 bg-white border-r border-[#e4ede6] flex flex-col shadow-sm
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
@@ -226,20 +207,16 @@ function App() {
         </div>
 
         {/* Logo Header */}
-        <div className="flex-shrink-0 flex items-center gap-3 px-4 py-4 border-b border-[#1a2e22]">
-          <img
-            src="/logo.png"
-            alt="La Mundial"
-            className="w-9 h-9 object-contain flex-shrink-0"
-          />
+        <div className="flex-shrink-0 flex items-center gap-3 px-4 py-4 border-b border-[#e4ede6]">
+          <img src="/logo.png" alt="La Mundial" className="w-9 h-9 object-contain flex-shrink-0" />
           <div>
             <div
-              className="text-[#e8f0eb] font-black uppercase leading-none tracking-widest"
+              className="text-[#0d1f14] font-black uppercase leading-none tracking-widest"
               style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.05rem' }}
             >
               La Mundial
             </div>
-            <div className="text-[#4d6b58] uppercase tracking-widest font-semibold" style={{ fontSize: '9px' }}>
+            <div className="text-[#7aaa8a] uppercase tracking-widest font-semibold" style={{ fontSize: '9px' }}>
               Gestión de Precios
             </div>
           </div>
@@ -247,42 +224,25 @@ function App() {
 
         {/* Navigation */}
         <nav className="flex-shrink-0 px-3 py-3 space-y-1">
-          <NavLink
-            to="/products"
-            className={({ isActive }) => `nav-btn animate-fade-left ${navLinkClass(isActive)}`}
-          >
+          <NavLink to="/products" className={({ isActive }) => `nav-btn animate-fade-left ${navLinkClass(isActive)}`}>
             <span className="nav-icon"><Package size={15} strokeWidth={2.5} /></span>
             <span className="nav-text">Productos</span>
           </NavLink>
-
-          <NavLink
-            to="/calculator"
-            className={({ isActive }) => `nav-btn animate-fade-left-1 ${navLinkClass(isActive)}`}
-          >
+          <NavLink to="/calculator" className={({ isActive }) => `nav-btn animate-fade-left-1 ${navLinkClass(isActive)}`}>
             <span className="nav-icon"><Calculator size={15} strokeWidth={2.5} /></span>
             <span className="nav-text">Calculadora</span>
           </NavLink>
-
           {isGerencia && (
             <>
-              <NavLink
-                to="/providers"
-                className={({ isActive }) => `nav-btn animate-fade-left-2 ${navLinkClass(isActive)}`}
-              >
+              <NavLink to="/providers" className={({ isActive }) => `nav-btn animate-fade-left-2 ${navLinkClass(isActive)}`}>
                 <span className="nav-icon"><Truck size={15} strokeWidth={2.5} /></span>
                 <span className="nav-text">Proveedores</span>
               </NavLink>
-              <NavLink
-                to="/comparator"
-                className={({ isActive }) => `nav-btn animate-fade-left-3 ${navLinkClass(isActive)}`}
-              >
+              <NavLink to="/comparator" className={({ isActive }) => `nav-btn animate-fade-left-3 ${navLinkClass(isActive)}`}>
                 <span className="nav-icon"><BarChart2 size={15} strokeWidth={2.5} /></span>
                 <span className="nav-text">Comparador</span>
               </NavLink>
-              <NavLink
-                to="/merma"
-                className={({ isActive }) => `nav-btn animate-fade-left-4 ${navLinkClass(isActive)}`}
-              >
+              <NavLink to="/merma" className={({ isActive }) => `nav-btn animate-fade-left-4 ${navLinkClass(isActive)}`}>
                 <span className="nav-icon"><TrendingDown size={15} strokeWidth={2.5} /></span>
                 <span className="nav-text">Merma</span>
               </NavLink>
@@ -292,13 +252,9 @@ function App() {
 
         {/* Mascots — colores originales + animación flotante */}
         <div className="flex-1 flex items-center justify-center px-4 relative overflow-hidden">
-          {/* Ambient verde glow behind mascots */}
           <div
             className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                'radial-gradient(ellipse 85% 65% at 50% 55%, rgba(0,154,58,0.09) 0%, transparent 70%)',
-            }}
+            style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 55%, rgba(0,154,58,0.06) 0%, transparent 70%)' }}
           />
           <img
             src="/logo.png"
@@ -308,42 +264,35 @@ function App() {
         </div>
 
         {/* Rate display + Logout */}
-        <div className="flex-shrink-0 px-4 py-3 border-t border-[#1a2e22] space-y-2">
+        <div className="flex-shrink-0 px-4 py-3 border-t border-[#e4ede6] space-y-2">
           {rate > 0 && (
             <button
               onClick={() => setShowEditRate(true)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#0d1612] border border-[#1a2e22] hover:border-[#009A3A]/30 transition group"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#f5f8f5] border border-[#e4ede6] hover:border-[#009A3A]/30 transition group"
             >
-              <span className="text-[#4d6b58] uppercase tracking-wider font-semibold" style={{ fontSize: '9px' }}>
-                USD / Bs
-              </span>
-              <span
-                className="font-bold text-[#009A3A] group-hover:text-[#00c44b] transition"
-                style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.75rem' }}
-              >
+              <span className="text-[#7aaa8a] uppercase tracking-wider font-semibold" style={{ fontSize: '9px' }}>USD / Bs</span>
+              <span className="font-bold text-[#009A3A] group-hover:text-[#007b2e] transition" style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.75rem' }}>
                 {rate.toFixed(2)}
               </span>
             </button>
           )}
-
           {userRole && (
             <button
               onClick={logout}
-              className="w-full px-3 py-2 text-sm font-semibold text-[#C8102E]/50 hover:bg-[#C8102E]/10 hover:text-[#C8102E] rounded-xl transition-all flex items-center justify-center gap-2"
+              className="w-full px-3 py-2 text-sm font-semibold text-[#C8102E]/50 hover:bg-[#fde8ec] hover:text-[#C8102E] rounded-xl transition-all flex items-center justify-center gap-2"
             >
               <LogOut size={13} />
               Cerrar Sesión
             </button>
           )}
         </div>
-
         <div className="flex-shrink-0 h-3" />
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-[#070e0b] lg:pt-6 pt-16">
+      <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-[#f5f8f5] lg:pt-6 pt-16">
         {supabaseError && (
-          <div className="mb-4 p-4 bg-[#C8102E]/10 border border-[#C8102E]/25 rounded-xl text-[#e05070] text-sm">
+          <div className="mb-4 p-4 bg-[#fde8ec] border border-[#C8102E]/20 rounded-xl text-[#C8102E] text-sm">
             ⚠️ {supabaseError}
           </div>
         )}
@@ -362,10 +311,8 @@ function App() {
             <Route path="/unauthorized" element={
               <div className="text-center py-16">
                 <div className="text-6xl mb-4">🔒</div>
-                <h2 className="text-2xl font-black text-[#C8102E]" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
-                  ACCESO DENEGADO
-                </h2>
-                <p className="text-[#8aad95] mt-2">No tienes permiso para esta sección.</p>
+                <h2 className="text-2xl font-black text-[#C8102E]" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>ACCESO DENEGADO</h2>
+                <p className="text-[#7aaa8a] mt-2">No tienes permiso para esta sección.</p>
               </div>
             } />
             <Route path="*" element={<Navigate to="/products" replace />} />
@@ -373,13 +320,8 @@ function App() {
         </ErrorBoundary>
       </main>
 
-      {/* Modals */}
-      {showWelcome && (
-        <RateModal rate={rate} setRate={handleRateSave} onClose={() => setShowWelcome(false)} />
-      )}
-      {showEditRate && (
-        <RateModal rate={rate} setRate={handleRateSave} onClose={() => setShowEditRate(false)} />
-      )}
+      {showWelcome && <RateModal rate={rate} setRate={handleRateSave} onClose={() => setShowWelcome(false)} />}
+      {showEditRate && <RateModal rate={rate} setRate={handleRateSave} onClose={() => setShowEditRate(false)} />}
     </div>
   );
 }
