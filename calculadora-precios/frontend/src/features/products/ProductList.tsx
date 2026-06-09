@@ -241,22 +241,22 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                <table className="w-full min-w-[600px]">
                  <thead className="bg-gray-50 border-b border-gray-200">
                    <tr>
-                     <th className="h-12 px-2 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap min-w-[80px]">Foto</th>
-                     <th className="h-12 px-2 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Nombre</th>
-                     <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Precio Final</th>
+                     <th className="h-12 px-2 md:px-6 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap min-w-[80px]">Foto</th>
+                     <th className="h-12 px-2 md:px-6 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap">Nombre</th>
+                     <th className="h-12 px-2 md:px-6 text-right text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap">Precio Final</th>
                      {/* Solo Gerencia ve: Costo, Ganancia, Margen, IVA, (botones) */}
                      {isGerencia && (
                        <>
-                         <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Costo</th>
-                         <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Ganancia</th>
-                         <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Margen</th>
-                         <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">IVA</th>
+                         <th className="h-12 px-2 md:px-6 text-right text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap">Costo</th>
+                         <th className="h-12 px-2 md:px-6 text-right text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap">Ganancia</th>
+                         <th className="h-12 px-2 md:px-6 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap">Margen</th>
+                         <th className="h-12 px-2 md:px-6 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap">IVA</th>
                          <th className="h-12 px-2 md:px-6 align-middle whitespace-nowrap"></th>
                        </>
                      )}
                    </tr>
                  </thead>
-                 <tbody className="divide-y divide-gray-200">
+                 <tbody className="divide-y divide-gray-100">
                    {productsWithPrices.map((product, index) => {
                      const costBs = rate > 0 ? product.costUSD * rate : product.costUSD;
                      const priceWithVATBs = rate > 0 ? product.priceWithVATUSD * rate : product.priceWithVATUSD;
@@ -267,7 +267,7 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                      <tr
                        key={product.id}
                        className={`
-                         hover:bg-gray-50 transition
+                         hover:bg-blue-50/30 transition-colors duration-150
                          ${isHighlighted ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}
                        `}
                        role="row"
@@ -293,15 +293,15 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                        <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-right">
                          {rate > 0 ? (
                            <>
-                             <div className="font-bold text-lg md:text-2xl text-gray-900">
+                             <div className="font-bold text-lg md:text-2xl text-gray-900 font-mono">
                                {priceWithVATBs.toFixed(2).toLocaleString()} Bs
                              </div>
-                             <div className="text-xs md:text-sm text-gray-500">
+                             <div className="text-xs md:text-sm text-gray-400 font-mono">
                                {product.priceWithVATUSD.toFixed(2)} USD
                              </div>
                            </>
                          ) : (
-                           <div className="font-bold text-lg md:text-2xl text-gray-900">
+                           <div className="font-bold text-lg md:text-2xl text-gray-900 font-mono">
                              {product.priceWithVATUSD.toFixed(2)} USD
                            </div>
                          )}
@@ -314,15 +314,15 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                            <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-right">
                              {rate > 0 ? (
                                <>
-                                 <div className="font-bold text-sm md:text-base text-gray-900">
+                                 <div className="font-bold text-sm md:text-base text-gray-900 font-mono">
                                    {costBs.toFixed(2).toLocaleString()} Bs
                                  </div>
-                                 <div className="text-xs md:text-sm text-gray-500">
+                                 <div className="text-xs md:text-sm text-gray-400 font-mono">
                                    {product.costUSD.toFixed(2)} USD
                                  </div>
                                </>
                              ) : (
-                               <div className="font-bold text-sm md:text-base text-gray-900">
+                               <div className="font-bold text-sm md:text-base text-gray-900 font-mono">
                                  {product.costUSD.toFixed(2)} USD
                                </div>
                              )}
@@ -332,22 +332,22 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                            <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-right">
                              {rate > 0 ? (
                                <>
-                                 <div className="font-bold text-lg md:text-2xl text-green-600">
+                                 <div className="font-bold text-lg md:text-2xl text-green-600 font-mono">
                                    {utilityBs.toFixed(2).toLocaleString()} Bs
                                  </div>
-                                 <div className="text-xs md:text-sm text-gray-500">
+                                 <div className="text-xs md:text-sm text-gray-400 font-mono">
                                    {product.utilityUSD.toFixed(2)} USD
                                  </div>
                                </>
                              ) : (
-                               <div className="font-bold text-lg md:text-2xl text-green-600">
+                               <div className="font-bold text-lg md:text-2xl text-green-600 font-mono">
                                  {product.utilityUSD.toFixed(2)} USD
                                </div>
                              )}
                            </td>
 
                            {/* Margen (%) */}
-                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-center text-gray-600 text-sm">
+                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-center text-gray-600 text-sm font-mono">
                              {product.profitPercentage}%
                            </td>
 
@@ -374,14 +374,14 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                                  });
                                  setShowForm(true);
                                }}
-                               className="px-2 md:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded transition"
+                               className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                                title="Editar"
                              >
                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                              </button>
                              <button
                                onClick={() => setProductToDelete({ id: product.id, name: product.name })}
-                               className="px-2 md:px-3 py-1 text-red-600 hover:bg-red-50 rounded transition"
+                               className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                                title="Eliminar"
                              >
                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

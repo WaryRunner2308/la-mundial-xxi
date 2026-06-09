@@ -193,7 +193,7 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
               {/* Precio Final */}
               <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-100">
                 <span className="block text-gray-600 mb-2 text-lg">Precio Final</span>
-                <span className="block font-bold text-4xl text-blue-600 mb-1">
+                <span className="block font-bold text-4xl text-blue-600 mb-1 font-mono">
                   {formatAmountWithCurrency(results.priceWithVAT, results.currency)}
                 </span>
                 {rate > 0 && results.priceWithVATConverted !== undefined && (
@@ -206,7 +206,7 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
               {/* Ganancia */}
               <div className="p-6 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-100">
                 <span className="block text-gray-600 mb-2 text-lg">Ganancia</span>
-                <span className="block font-bold text-4xl text-emerald-600 mb-1">
+                <span className="block font-bold text-4xl text-emerald-600 mb-1 font-mono">
                   {formatAmountWithCurrency(results.utility, results.currency)}
                 </span>
                 {rate > 0 && results.utilityConverted !== undefined && (
