@@ -249,54 +249,61 @@ function App() {
         <nav className="flex-shrink-0 px-3 py-3 space-y-1">
           <NavLink
             to="/products"
-            className={({ isActive }) => `animate-fade-left ${navLinkClass(isActive)}`}
+            className={({ isActive }) => `nav-btn animate-fade-left ${navLinkClass(isActive)}`}
           >
-            <Package size={15} strokeWidth={2.5} />
-            <span>Productos</span>
+            <span className="nav-icon"><Package size={15} strokeWidth={2.5} /></span>
+            <span className="nav-text">Productos</span>
           </NavLink>
 
           <NavLink
             to="/calculator"
-            className={({ isActive }) => `animate-fade-left-1 ${navLinkClass(isActive)}`}
+            className={({ isActive }) => `nav-btn animate-fade-left-1 ${navLinkClass(isActive)}`}
           >
-            <Calculator size={15} strokeWidth={2.5} />
-            <span>Calculadora</span>
+            <span className="nav-icon"><Calculator size={15} strokeWidth={2.5} /></span>
+            <span className="nav-text">Calculadora</span>
           </NavLink>
 
           {isGerencia && (
             <>
               <NavLink
                 to="/providers"
-                className={({ isActive }) => `animate-fade-left-2 ${navLinkClass(isActive)}`}
+                className={({ isActive }) => `nav-btn animate-fade-left-2 ${navLinkClass(isActive)}`}
               >
-                <Truck size={15} strokeWidth={2.5} />
-                <span>Proveedores</span>
+                <span className="nav-icon"><Truck size={15} strokeWidth={2.5} /></span>
+                <span className="nav-text">Proveedores</span>
               </NavLink>
               <NavLink
                 to="/comparator"
-                className={({ isActive }) => `animate-fade-left-3 ${navLinkClass(isActive)}`}
+                className={({ isActive }) => `nav-btn animate-fade-left-3 ${navLinkClass(isActive)}`}
               >
-                <BarChart2 size={15} strokeWidth={2.5} />
-                <span>Comparador</span>
+                <span className="nav-icon"><BarChart2 size={15} strokeWidth={2.5} /></span>
+                <span className="nav-text">Comparador</span>
               </NavLink>
               <NavLink
                 to="/merma"
-                className={({ isActive }) => `animate-fade-left-4 ${navLinkClass(isActive)}`}
+                className={({ isActive }) => `nav-btn animate-fade-left-4 ${navLinkClass(isActive)}`}
               >
-                <TrendingDown size={15} strokeWidth={2.5} />
-                <span>Merma</span>
+                <span className="nav-icon"><TrendingDown size={15} strokeWidth={2.5} /></span>
+                <span className="nav-text">Merma</span>
               </NavLink>
             </>
           )}
         </nav>
 
-        {/* Logo watermark */}
-        <div className="flex-1 flex items-center justify-center px-6">
+        {/* Mascots — colores originales + animación flotante */}
+        <div className="flex-1 flex items-center justify-center px-4 relative overflow-hidden">
+          {/* Ambient verde glow behind mascots */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                'radial-gradient(ellipse 85% 65% at 50% 55%, rgba(0,154,58,0.09) 0%, transparent 70%)',
+            }}
+          />
           <img
             src="/logo.png"
-            alt=""
-            className="w-28 object-contain hidden lg:block select-none pointer-events-none"
-            style={{ opacity: 0.04 }}
+            alt="La Mundial XXI"
+            className="mascot-animate w-44 object-contain hidden lg:block select-none relative z-10"
           />
         </div>
 
