@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { parseNumericInput } from '@/utils/validateDecimal';
 import { SecureInput } from '@/components/ui/SecureInput';
 import { useAuth } from '@/contexts/AuthContext';
+import { Package, Calculator, Truck, BarChart2, TrendingDown, LogOut, Menu, X } from 'lucide-react';
 
 import { ProductsPage } from '@/features/products/ProductList';
 import { MermaPage } from '@/features/merma/MermaPage';
@@ -31,32 +32,32 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-red-50">
-          <div className="max-w-md p-8 bg-white rounded-lg shadow-lg text-center">
-            <div className="text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Algo salió mal</h2>
-            <p className="text-gray-600 mb-4">
+        <div className="flex items-center justify-center min-h-screen bg-[#070e0b]">
+          <div className="max-w-md p-8 bg-[#0d1612] border border-[#1a2e22] rounded-2xl shadow-2xl text-center">
+            <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-[#C8102E]/10 border border-[#C8102E]/20 flex items-center justify-center text-3xl">
+              ⚠️
+            </div>
+            <h2 className="text-2xl font-black text-[#e8f0eb] mb-2" style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.06em' }}>
+              ALGO SALIÓ MAL
+            </h2>
+            <p className="text-[#8aad95] mb-6 text-sm">
               Ha ocurrido un error inesperado. Puedes intentar recargar la página.
             </p>
             <button
-              onClick={() => {
-                localStorage.clear();
-                window.location.reload();
-              }}
-              className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
+              onClick={() => { localStorage.clear(); window.location.reload(); }}
+              className="px-6 py-2.5 bg-[#C8102E] hover:bg-[#a00d25] text-white rounded-xl font-bold transition text-sm"
             >
-              🔄 Reiniciar y Limpiar Datos
+              Reiniciar y Limpiar Datos
             </button>
             {this.state.error && (
-              <p className="mt-4 text-xs text-gray-500 text-left">
-                Error: {this.state.error.message}
+              <p className="mt-4 text-xs text-[#4d6b58] text-left font-mono">
+                {this.state.error.message}
               </p>
             )}
           </div>
         </div>
       );
     }
-
     return this.props.children;
   }
 }
@@ -66,25 +67,44 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
 
   const handleSubmit = () => {
     const parsed = parseNumericInput(inputValue);
-    if (parsed > 0) {
-      setRate(parsed);
-    }
-    // Cerrar SIEMPRE para desbloquear la app
+    if (parsed > 0) setRate(parsed);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4" onClick={handleSubmit}>
-      <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="text-center mb-4 md:mb-6">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-800">¡Bienvenido!</h2>
-          <p className="text-gray-600 mt-2 text-sm md:text-base">¿Cuál es la tasa de cambio de hoy?</p>
-          <p className="text-xs md:text-sm text-gray-500 mt-1">(1 USD = X Bs)</p>
+    <div
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4 backdrop-blur-sm"
+      onClick={handleSubmit}
+    >
+      <div
+        className="bg-[#0d1612] border border-[#1a2e22] rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Portugal flag strip */}
+        <div className="flex h-[3px] rounded-full overflow-hidden mb-6">
+          <div className="bg-[#009A3A]" style={{ flex: 2 }} />
+          <div className="bg-[#C8102E]" style={{ flex: 3 }} />
         </div>
 
-        <div className="space-y-6">
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#009A3A]/10 border border-[#009A3A]/20 flex items-center justify-center text-2xl">
+            💱
+          </div>
+          <h2
+            className="text-2xl font-black text-[#e8f0eb]"
+            style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.08em' }}
+          >
+            ¡BIENVENIDO!
+          </h2>
+          <p className="text-[#8aad95] mt-2 text-sm">¿Cuál es la tasa de cambio de hoy?</p>
+          <p className="text-xs text-[#4d6b58] mt-1">1 USD = X Bs</p>
+        </div>
+
+        <div className="space-y-4">
           <div>
-            <span className="block text-sm font-medium text-gray-700 mb-2">Tasa de Cambio</span>
+            <span className="block text-xs font-semibold text-[#8aad95] mb-2 uppercase tracking-wider">
+              Tasa de Cambio
+            </span>
             <SecureInput
               value={inputValue}
               onChange={setInputValue}
@@ -92,14 +112,17 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
               placeholder="Ej: 40.50"
               inputMode="decimal"
               editable
+              noRing
+              displayClassName="!bg-[#112016] !border-[#1a2e22] !text-[#e8f0eb] !rounded-xl"
             />
           </div>
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-full py-2 md:py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg shadow-lg transition text-sm md:text-base"
+            className="w-full py-3 bg-[#009A3A] hover:bg-[#007b2e] text-white font-bold rounded-xl shadow-lg transition text-base"
+            style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.08em', fontSize: '1.05rem' }}
           >
-            Continuar
+            CONTINUAR
           </button>
         </div>
       </div>
@@ -108,7 +131,6 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
 }
 
 function App() {
-  // ========== HOOKS AL INICIO (SIN CONDICIONALES) ==========
   const { rate, setRate } = useCurrencyStore();
   const { loadFromSupabase } = useProductStore();
   const { userRole, logout } = useAuth();
@@ -120,14 +142,10 @@ function App() {
 
   const isGerencia = userRole === 'gerencia';
 
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [location]);
+  useEffect(() => { setSidebarOpen(false); }, [location]);
 
   useEffect(() => {
-    if (rate === 0) {
-      setShowWelcome(true);
-    }
+    if (rate === 0) setShowWelcome(true);
   }, [rate]);
 
   useEffect(() => {
@@ -149,144 +167,176 @@ function App() {
       });
   }, [loadFromSupabase]);
 
-  const handleRateSave = (newRate: number) => {
-    setRate(newRate);
-  };
+  const handleRateSave = (newRate: number) => setRate(newRate);
 
-  // ========== RENDERIZADO CONDICIONAL (SIN HOOKS DESPUÉS) ==========
-  
-  // Si no hay rol, mostrar Landing Page
-  if (!userRole) {
-    return <LandingPage />;
-  }
+  if (!userRole) return <LandingPage />;
+
+  const navLinkClass = (isActive: boolean) =>
+    `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all duration-150 text-sm border ${
+      isActive
+        ? 'bg-[#009A3A]/12 text-[#009A3A] border-[#009A3A]/25'
+        : 'text-[#4d6b58] hover:bg-[#0d1612] hover:text-[#c8e0d0] border-transparent'
+    }`;
 
   return (
-    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+    <div className="flex min-h-screen bg-[#070e0b] overflow-x-hidden">
+
       {/* Mobile header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#070e0b] border-b border-[#1a2e22] px-4 py-3 flex items-center">
+        {/* Portugal flag strip */}
+        <div className="absolute bottom-0 left-0 right-0 flex h-[2px]">
+          <div className="bg-[#009A3A]" style={{ flex: 2 }} />
+          <div className="bg-[#C8102E]" style={{ flex: 3 }} />
+        </div>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          className="p-2 rounded-lg text-[#4d6b58] hover:text-[#e8f0eb] hover:bg-[#0d1612] transition"
           aria-label="Abrir menú"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="4" x2="20" y1="12" y2="12" />
-            <line x1="4" x2="20" y1="6" y2="6" />
-            <line x1="4" x2="20" y1="18" y2="18" />
-          </svg>
+          {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
-        <span className="ml-3 text-lg font-semibold text-gray-900">La Mundial</span>
+        <span
+          className="ml-3 font-black text-[#e8f0eb] tracking-widest"
+          style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.2rem', letterSpacing: '0.12em' }}
+        >
+          LA MUNDIAL
+        </span>
       </div>
 
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          className="lg:hidden fixed inset-0 bg-black/70 z-40 backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar - Condicional según rol */}
+      {/* Sidebar */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-64 bg-slate-900 border-r border-slate-700/50 shadow-xl flex flex-col
+        w-64 bg-[#070e0b] border-r border-[#1a2e22] flex flex-col
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="flex-shrink-0 flex items-center px-4 py-3 md:py-4 border-b border-slate-700/50">
-          <span className="text-lg md:text-xl font-bold text-white tracking-tight">La Mundial</span>
+
+        {/* Portugal Flag Strip */}
+        <div className="flex flex-shrink-0 h-[3px]">
+          <div className="bg-[#009A3A]" style={{ flex: 2 }} />
+          <div className="bg-[#C8102E]" style={{ flex: 3 }} />
         </div>
 
-        <nav className="flex-shrink-0 px-2 md:px-3 py-2 space-y-0.5">
-          {/* SIEMPRE visible: Productos */}
+        {/* Logo Header */}
+        <div className="flex-shrink-0 flex items-center gap-3 px-4 py-4 border-b border-[#1a2e22]">
+          <img
+            src="/logo.png"
+            alt="La Mundial"
+            className="w-9 h-9 object-contain flex-shrink-0"
+          />
+          <div>
+            <div
+              className="text-[#e8f0eb] font-black uppercase leading-none tracking-widest"
+              style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.05rem' }}
+            >
+              La Mundial
+            </div>
+            <div className="text-[#4d6b58] uppercase tracking-widest font-semibold" style={{ fontSize: '9px' }}>
+              Gestión de Precios
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-shrink-0 px-3 py-3 space-y-1">
           <NavLink
             to="/products"
-            className={({ isActive }) =>
-              `animate-fade-left flex items-center px-3 py-2 rounded-md font-medium transition-all duration-150 text-sm border-l-2 ${isActive ? 'bg-blue-500/20 text-blue-400 border-blue-400' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white border-transparent'}`
-            }
+            className={({ isActive }) => `animate-fade-left ${navLinkClass(isActive)}`}
           >
-            Productos
+            <Package size={15} strokeWidth={2.5} />
+            <span>Productos</span>
           </NavLink>
 
-          {/* SIEMPRE visible: Calculadora (para ambos roles) */}
           <NavLink
             to="/calculator"
-            className={({ isActive }) =>
-              `animate-fade-left-1 flex items-center px-3 py-2 rounded-md font-medium transition-all duration-150 text-sm border-l-2 ${isActive ? 'bg-blue-500/20 text-blue-400 border-blue-400' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white border-transparent'}`
-            }
+            className={({ isActive }) => `animate-fade-left-1 ${navLinkClass(isActive)}`}
           >
-            Calculadora
+            <Calculator size={15} strokeWidth={2.5} />
+            <span>Calculadora</span>
           </NavLink>
 
-          {/* SOLO GERENCIA: Proveedores, Comparador, Merma */}
           {isGerencia && (
             <>
               <NavLink
                 to="/providers"
-                className={({ isActive }) =>
-                  `animate-fade-left-2 flex items-center px-3 py-2 rounded-md font-medium transition-all duration-150 text-sm border-l-2 ${isActive ? 'bg-blue-500/20 text-blue-400 border-blue-400' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white border-transparent'}`
-                }
+                className={({ isActive }) => `animate-fade-left-2 ${navLinkClass(isActive)}`}
               >
-                Proveedores
+                <Truck size={15} strokeWidth={2.5} />
+                <span>Proveedores</span>
               </NavLink>
               <NavLink
                 to="/comparator"
-                className={({ isActive }) =>
-                  `animate-fade-left-3 flex items-center px-3 py-2 rounded-md font-medium transition-all duration-150 text-sm border-l-2 ${isActive ? 'bg-blue-500/20 text-blue-400 border-blue-400' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white border-transparent'}`
-                }
+                className={({ isActive }) => `animate-fade-left-3 ${navLinkClass(isActive)}`}
               >
-                Comparador
+                <BarChart2 size={15} strokeWidth={2.5} />
+                <span>Comparador</span>
               </NavLink>
               <NavLink
                 to="/merma"
-                className={({ isActive }) =>
-                  `animate-fade-left-4 flex items-center px-3 py-2 rounded-md font-medium transition-all duration-150 text-sm border-l-2 ${isActive ? 'bg-blue-500/20 text-blue-400 border-blue-400' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white border-transparent'}`
-                }
+                className={({ isActive }) => `animate-fade-left-4 ${navLinkClass(isActive)}`}
               >
-                Merma
+                <TrendingDown size={15} strokeWidth={2.5} />
+                <span>Merma</span>
               </NavLink>
             </>
           )}
         </nav>
 
-        {/* Logo centered - se mantiene fijo justo debajo del menú */}
-        <div className="flex-shrink-0 px-4 py-4 lg:py-6">
+        {/* Logo watermark */}
+        <div className="flex-1 flex items-center justify-center px-6">
           <img
             src="/logo.png"
-            alt="La Mundial XXI"
-            className="w-full max-w-[200px] object-contain lg:hidden opacity-90"
-          />
-          <img
-            src="/logo.png"
-            alt="La Mundial XXI"
-            className="w-full max-w-[180px] object-contain hidden lg:block opacity-90"
+            alt=""
+            className="w-28 object-contain hidden lg:block select-none pointer-events-none"
+            style={{ opacity: 0.04 }}
           />
         </div>
 
-        {/* Botón de Cerrar Sesión */}
-        {userRole && (
-          <div className="flex-shrink-0 px-4 py-3 border-t border-slate-700/50">
+        {/* Rate display + Logout */}
+        <div className="flex-shrink-0 px-4 py-3 border-t border-[#1a2e22] space-y-2">
+          {rate > 0 && (
+            <button
+              onClick={() => setShowEditRate(true)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#0d1612] border border-[#1a2e22] hover:border-[#009A3A]/30 transition group"
+            >
+              <span className="text-[#4d6b58] uppercase tracking-wider font-semibold" style={{ fontSize: '9px' }}>
+                USD / Bs
+              </span>
+              <span
+                className="font-bold text-[#009A3A] group-hover:text-[#00c44b] transition"
+                style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.75rem' }}
+              >
+                {rate.toFixed(2)}
+              </span>
+            </button>
+          )}
+
+          {userRole && (
             <button
               onClick={logout}
-              className="w-full px-3 py-2 text-sm font-medium text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg transition-all flex items-center justify-center gap-2"
+              className="w-full px-3 py-2 text-sm font-semibold text-[#C8102E]/50 hover:bg-[#C8102E]/10 hover:text-[#C8102E] rounded-xl transition-all flex items-center justify-center gap-2"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" x2="9" y1="12" y2="12" />
-              </svg>
+              <LogOut size={13} />
               Cerrar Sesión
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
-        <div className="flex-shrink-0 h-4"></div>
+        <div className="flex-shrink-0 h-3" />
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 overflow-y-auto lg:pt-6 pt-16">
+      <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-[#070e0b] lg:pt-6 pt-16">
         {supabaseError && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mb-4 p-4 bg-[#C8102E]/10 border border-[#C8102E]/25 rounded-xl text-[#e05070] text-sm">
             ⚠️ {supabaseError}
           </div>
         )}
@@ -294,7 +344,6 @@ function App() {
           <Routes>
             <Route path="/" element={<ProductsPage onEditRate={() => setShowEditRate(true)} userRole={userRole} />} />
             <Route path="/products" element={<ProductsPage onEditRate={() => setShowEditRate(true)} userRole={userRole} />} />
-            {/* Calculadora disponible para TODOS los roles */}
             <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
             {isGerencia && (
               <>
@@ -304,9 +353,12 @@ function App() {
               </>
             )}
             <Route path="/unauthorized" element={
-              <div className="text-center py-12">
-                <h2 className="text-2xl font-bold text-red-600">Acceso Denegado</h2>
-                <p>No tienes permiso para esta sección.</p>
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4">🔒</div>
+                <h2 className="text-2xl font-black text-[#C8102E]" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
+                  ACCESO DENEGADO
+                </h2>
+                <p className="text-[#8aad95] mt-2">No tienes permiso para esta sección.</p>
               </div>
             } />
             <Route path="*" element={<Navigate to="/products" replace />} />
@@ -314,21 +366,12 @@ function App() {
         </ErrorBoundary>
       </main>
 
-      {/* Modales */}
+      {/* Modals */}
       {showWelcome && (
-        <RateModal
-          rate={rate}
-          setRate={handleRateSave}
-          onClose={() => setShowWelcome(false)}
-        />
+        <RateModal rate={rate} setRate={handleRateSave} onClose={() => setShowWelcome(false)} />
       )}
-
       {showEditRate && (
-        <RateModal
-          rate={rate}
-          setRate={handleRateSave}
-          onClose={() => setShowEditRate(false)}
-        />
+        <RateModal rate={rate} setRate={handleRateSave} onClose={() => setShowEditRate(false)} />
       )}
     </div>
   );

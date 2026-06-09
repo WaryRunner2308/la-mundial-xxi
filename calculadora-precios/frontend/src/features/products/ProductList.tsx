@@ -8,6 +8,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 import { SecureInput } from '@/components/ui/SecureInput';
+import { Search, X, Pencil, Trash2, Plus, FilterX } from 'lucide-react';
 
 type Currency = 'Bs' | 'USD';
 
@@ -56,39 +57,28 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
     exemptFromVAT: boolean;
     photoUrl: string;
   } | null>(null);
-  const [productToDelete, setProductToDelete] = React.useState<{
-    id: number;
-    name: string;
-  } | null>(null);
+  const [productToDelete, setProductToDelete] = React.useState<{ id: number; name: string } | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const providerFilterId = searchParams.get('providerId');
   const [searchQuery, setSearchQuery] = React.useState('');
 
-  // Determinar si es gerencia
   const isGerencia = userRole === 'gerencia';
 
-  // Filtrar productos por proveedor y búsqueda
   const filteredProducts = products
     .filter(p => {
-      const matchesProvider = providerFilterId
-        ? p.providerId?.toString() === providerFilterId
-        : true;
-      const matchesSearch = searchQuery
-        ? p.name.toLowerCase().includes(searchQuery.toLowerCase())
-        : true;
+      const matchesProvider = providerFilterId ? p.providerId?.toString() === providerFilterId : true;
+      const matchesSearch = searchQuery ? p.name.toLowerCase().includes(searchQuery.toLowerCase()) : true;
       return matchesProvider && matchesSearch;
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Obtener nombre del proveedor para el encabezado
   const currentProvider = providerFilterId
     ? providers.find(p => p.id.toString() === providerFilterId)
     : null;
 
   const productsWithPrices = useProductsWithDynamicPrices(filteredProducts);
 
-  // Navegación por teclado en tabla de productos
   const { highlightedIndex, handleKeyDown, setHighlightedIndex, containerRef } = useKeyboardNavigation({
     items: productsWithPrices,
     onSelect: (product) => {
@@ -103,357 +93,399 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
       });
       setShowForm(true);
     },
-    autoFocus: false, // No auto-enfocar, el foco lo controla el usuario
+    autoFocus: false,
   });
 
   return (
-    <div className="space-y-4 md:space-y-6">
-       {/* Header */}
-       <div className="animate-fade-up flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-         <div>
-           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">Gestión de Productos</h1>
-           <div className="flex items-center mt-1">
-             <p className="text-sm md:text-base text-gray-500">
-               {rate > 0 ? `Tasa: 1 USD = ${rate.toFixed(2)} Bs` : '⚠️ Tasa no configurada'}
-             </p>
-             {rate > 0 && (
-               <button
-                 onClick={onEditRate}
-                 className="ml-2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition"
-                 title="Editar tasa"
-               >
-                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                   <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                   <path d="m15 5 4 4" />
-                 </svg>
-               </button>
-             )}
-           </div>
-         </div>
-         {/* Botón Agregar Producto - SOLO GERENCIA */}
-         {isGerencia && (
-           <button
-             onClick={() => {
-               setEditingProduct(null);
-               setShowForm(true);
-             }}
-             className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg transition text-sm md:text-base w-full md:w-auto"
-           >
-             + Agregar Producto
-           </button>
-         )}
-       </div>
+    <div className="space-y-4 md:space-y-5">
 
-        {/* Tarjeta de Estadísticas */}
-        <div className="animate-fade-up-1 card-lift bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-xl border border-gray-200 p-4 md:p-8 shadow-sm overflow-hidden">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
-            <div className="flex-1 flex items-center justify-center md:justify-start">
-              <h2 className="animate-gradient-text text-3xl md:text-5xl font-black italic tracking-tight"
-                  style={{
-                    background: 'linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 50%, #45B7D1 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                  }}>
-                LA MUNDIAL
-              </h2>
-              <span className="text-xl md:text-2xl font-bold italic text-gray-700 ml-2">XXI</span>
-            </div>
-            <div className="flex flex-col items-center md:items-end">
-              <div className="animate-number-pop text-5xl md:text-6xl font-black text-blue-600 leading-none">
-                {filteredProducts.length}
-              </div>
-              <p className="text-xs md:text-sm font-semibold text-gray-600 mt-1 uppercase tracking-widest">
-                {currentProvider ? `Productos de ${currentProvider.name}` : 'Productos'}
-              </p>
-            </div>
-          </div>
-          <div className="animate-pulse-bar mt-4 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full"></div>
-        </div>
-
-         {/* Buscador de Productos */}
-         <div className="animate-fade-up-2 bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-           <div className="relative">
-             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
-                 <circle cx="11" cy="11" r="8" />
-                 <path d="m21 21-4.3-4.3" />
-               </svg>
-             </div>
-             <SecureInput
-               value={searchQuery}
-               onChange={setSearchQuery}
-               placeholder="Buscar producto por nombre..."
-               inputMode="text"
-               editable
-               noRing={true}
-               displayClassName="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none transition text-base bg-white focus:ring-0 focus:border-gray-300"
-             />
-             {searchQuery && (
-               <button
-                 type="button"
-                 onClick={() => setSearchQuery('')}
-                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
-               >
-                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                   <path d="M18 6 6 18" />
-                   <path d="m6 6 12 12" />
-                 </svg>
-               </button>
-             )}
-          </div>
-        </div>
-
-        {/* Tabla de Productos */}
-        <div className="animate-fade-up-3 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-           {/* Header con controles */}
-           <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-             <h2 className="text-lg md:text-xl font-bold text-gray-900">
-               Lista de Productos
-               <span className="text-xs md:text-sm font-normal text-gray-500 ml-2">
-                 ({filteredProducts.length} de {products.length})
-               </span>
-             </h2>
-             {currentProvider && isGerencia && (
-               <button
-                 onClick={() => navigate('/products')}
-                 className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors flex items-center gap-2"
-               >
-                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                   <path d="M12 5v14M5 12h14"/>
-                 </svg>
-                 Limpiar Filtro
-               </button>
-             )}
-           </div>
-
-           {/* Contenedor de tabla con navegación por teclado */}
-           <div
-             ref={containerRef}
-             tabIndex={0}
-             onKeyDown={handleKeyDown}
-             onMouseLeave={() => setHighlightedIndex(-1)}
-             aria-label="Lista de productos"
-             role="grid"
-             className="outline-none"
-           >
-             <div className="overflow-x-auto px-4 md:px-0">
-               <table className="w-full min-w-[600px]">
-                 <thead className="bg-gray-50 border-b border-gray-200">
-                   <tr>
-                     <th className="h-12 px-2 md:px-6 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap min-w-[80px]">Foto</th>
-                     <th className="h-12 px-2 md:px-6 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap">Nombre</th>
-                     <th className="h-12 px-2 md:px-6 text-right text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap">Precio Final</th>
-                     {/* Solo Gerencia ve: Costo, Ganancia, Margen, IVA, (botones) */}
-                     {isGerencia && (
-                       <>
-                         <th className="h-12 px-2 md:px-6 text-right text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap">Costo</th>
-                         <th className="h-12 px-2 md:px-6 text-right text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap">Ganancia</th>
-                         <th className="h-12 px-2 md:px-6 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap">Margen</th>
-                         <th className="h-12 px-2 md:px-6 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider align-middle whitespace-nowrap">IVA</th>
-                         <th className="h-12 px-2 md:px-6 align-middle whitespace-nowrap"></th>
-                       </>
-                     )}
-                   </tr>
-                 </thead>
-                 <tbody className="divide-y divide-gray-100">
-                   {productsWithPrices.map((product, index) => {
-                     const costBs = rate > 0 ? product.costUSD * rate : product.costUSD;
-                     const priceWithVATBs = rate > 0 ? product.priceWithVATUSD * rate : product.priceWithVATUSD;
-                     const utilityBs = rate > 0 ? product.utilityUSD * rate : product.utilityUSD;
-                     const isHighlighted = highlightedIndex === index;
-
-                     return (
-                     <tr
-                       key={product.id}
-                       className={`
-                         animate-row-in hover:bg-blue-50/30 transition-colors duration-150
-                         ${isHighlighted ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}
-                       `}
-                       style={{ animationDelay: `${0.28 + index * 0.03}s` }}
-                       role="row"
-                       aria-selected={isHighlighted}
-                     >
-                       {/* Foto - SIEMPRE visible */}
-                       <td className="px-2 md:px-6 py-3 md:py-6 align-middle">
-                         {product.photoUrl ? (
-                           <img src={product.photoUrl} className="w-10 h-10 md:w-12 md:h-12 object-cover rounded-lg" alt="" />
-                         ) : (
-                           <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">
-                             📷
-                           </div>
-                         )}
-                       </td>
-
-                       {/* Nombre - SIEMPRE visible */}
-                       <td className="px-2 md:px-6 py-3 md:py-6 align-middle font-medium text-gray-900 text-sm md:text-base">
-                         {product.name}
-                       </td>
-
-                       {/* Precio Final - Visible para TODOS (rol Invitado y Gerencia) */}
-                       <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-right">
-                         {rate > 0 ? (
-                           <>
-                             <div className="font-bold text-lg md:text-2xl text-gray-900 font-mono">
-                               {priceWithVATBs.toFixed(2).toLocaleString()} Bs
-                             </div>
-                             <div className="text-xs md:text-sm text-gray-400 font-mono">
-                               {product.priceWithVATUSD.toFixed(2)} USD
-                             </div>
-                           </>
-                         ) : (
-                           <div className="font-bold text-lg md:text-2xl text-gray-900 font-mono">
-                             {product.priceWithVATUSD.toFixed(2)} USD
-                           </div>
-                         )}
-                       </td>
-
-                       {/* Columnas SOLO GERENCIA */}
-                       {isGerencia && (
-                         <>
-                           {/* Costo (Bs y USD) */}
-                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-right">
-                             {rate > 0 ? (
-                               <>
-                                 <div className="font-bold text-sm md:text-base text-gray-900 font-mono">
-                                   {costBs.toFixed(2).toLocaleString()} Bs
-                                 </div>
-                                 <div className="text-xs md:text-sm text-gray-400 font-mono">
-                                   {product.costUSD.toFixed(2)} USD
-                                 </div>
-                               </>
-                             ) : (
-                               <div className="font-bold text-sm md:text-base text-gray-900 font-mono">
-                                 {product.costUSD.toFixed(2)} USD
-                               </div>
-                             )}
-                           </td>
-
-                           {/* Ganancia (Bs y USD) */}
-                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-right">
-                             {rate > 0 ? (
-                               <>
-                                 <div className="font-bold text-lg md:text-2xl text-green-600 font-mono">
-                                   {utilityBs.toFixed(2).toLocaleString()} Bs
-                                 </div>
-                                 <div className="text-xs md:text-sm text-gray-400 font-mono">
-                                   {product.utilityUSD.toFixed(2)} USD
-                                 </div>
-                               </>
-                             ) : (
-                               <div className="font-bold text-lg md:text-2xl text-green-600 font-mono">
-                                 {product.utilityUSD.toFixed(2)} USD
-                               </div>
-                             )}
-                           </td>
-
-                           {/* Margen (%) */}
-                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-center text-gray-600 text-sm font-mono">
-                             {product.profitPercentage}%
-                           </td>
-
-                           {/* IVA */}
-                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-center">
-                             <span className={`inline-flex px-1.5 md:px-2 py-0.5 text-xs font-semibold rounded-full ${product.exemptFromVAT ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
-                               {product.exemptFromVAT ? 'Exento' : 'Sí'}
-                             </span>
-                           </td>
-
-                           {/* Botones editar / borrar */}
-                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle space-x-1 md:space-x-2">
-                             <button
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 setEditingProduct({
-                                   id: product.id,
-                                   name: product.name,
-                                   cost: product.costUSD * (rate > 0 ? rate : 1),
-                                   currency: product.originalCurrency,
-                                   profitPercentage: product.profitPercentage,
-                                   exemptFromVAT: product.exemptFromVAT,
-                                   photoUrl: product.photoUrl,
-                                 });
-                                 setShowForm(true);
-                               }}
-                               className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                               title="Editar"
-                             >
-                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-                             </button>
-                             <button
-                               onClick={() => setProductToDelete({ id: product.id, name: product.name })}
-                               className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                               title="Eliminar"
-                             >
-                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                 <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
-                               </svg>
-                             </button>
-                           </td>
-                         </>
-                       )}
-                     </tr>
-                   );
-                 })}
-               </tbody>
-          </table>
-        </div>
-          </div> {/* Cierre del contenedor con navegación por teclado */}
-
-        {/* Empty State */}
-        {productsWithPrices.length === 0 && (
-          <div className="text-center py-8 md:py-12">
-            <div className="w-16 md:w-24 h-16 md:h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-              <span className="text-3xl md:text-4xl">📦</span>
-            </div>
-            <h3 className="text-lg md:text-xl font-semibold mb-2 text-gray-900">No hay productos</h3>
-            <p className="text-sm md:text-base text-gray-500 mb-4 md:mb-6">Agrega tu primer producto para comenzar</p>
-            {isGerencia && (
+      {/* Header */}
+      <div className="animate-fade-up flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1
+            className="font-black text-[#e8f0eb] uppercase tracking-wide"
+            style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', letterSpacing: '0.06em' }}
+          >
+            Gestión de Productos
+          </h1>
+          <div className="flex items-center mt-1 gap-2">
+            <p className="text-sm text-[#4d6b58]">
+              {rate > 0
+                ? <span style={{ fontFamily: '"JetBrains Mono", monospace' }}>1 USD = {rate.toFixed(2)} Bs</span>
+                : '⚠️ Tasa no configurada'}
+            </p>
+            {rate > 0 && (
               <button
-                onClick={() => setShowForm(true)}
-                className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition text-sm md:text-base"
+                onClick={onEditRate}
+                className="p-1 text-[#4d6b58] hover:text-[#009A3A] hover:bg-[#009A3A]/10 rounded-lg transition"
+                title="Editar tasa"
               >
-                Agregar Primer Producto
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                  <path d="m15 5 4 4" />
+                </svg>
               </button>
             )}
           </div>
+        </div>
+
+        {isGerencia && (
+          <button
+            onClick={() => { setEditingProduct(null); setShowForm(true); }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#009A3A] hover:bg-[#007b2e] text-white font-bold rounded-xl shadow-lg transition text-sm w-full md:w-auto justify-center"
+            style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.06em', fontSize: '0.95rem' }}
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            AGREGAR PRODUCTO
+          </button>
         )}
       </div>
 
-       {/* Form Modal */}
-       <ProductForm
-         isOpen={showForm}
-         onClose={() => {
-           setShowForm(false);
-           setEditingProduct(null);
-         }}
-         productToEdit={editingProduct}
-         onSave={() => {
-           setShowForm(false);
-           setEditingProduct(null);
-         }}
-       />
+      {/* Stats Card */}
+      <div className="animate-fade-up-1 card-lift bg-[#0d1612] border border-[#1a2e22] rounded-2xl p-5 md:p-7 overflow-hidden relative">
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 60% 80% at 5% 50%, rgba(0,154,58,0.06) 0%, transparent 60%)' }}
+        />
+        <div className="relative flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex-1 flex items-center gap-4">
+            <div>
+              <h2
+                className="font-black text-[#e8f0eb] uppercase tracking-widest leading-none"
+                style={{
+                  fontFamily: '"Barlow Condensed", sans-serif',
+                  fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
+                  letterSpacing: '0.12em',
+                }}
+              >
+                <span className="text-[#009A3A]">LA</span>{' '}
+                MUNDIAL
+              </h2>
+              <span
+                className="text-[#4d6b58] uppercase tracking-[0.2em] font-semibold"
+                style={{ fontSize: '0.65rem' }}
+              >
+                XXI · Gestión de Precios
+              </span>
+            </div>
+          </div>
 
-       {/* Delete Confirmation Modal */}
-       <ConfirmationModal
-         isOpen={productToDelete !== null}
-         title="¿Eliminar producto?"
-         message={`¿Estás seguro de que deseas eliminar "${productToDelete?.name}"? Esta acción no se puede deshacer.`}
-         confirmText="Eliminar"
-         cancelText="Cancelar"
-         onConfirm={async () => {
-           if (productToDelete) {
-             try {
-               await removeProduct(productToDelete.id);
-             } catch {
-               alert('Error al eliminar el producto. Inténtalo de nuevo.');
-             } finally {
-               setProductToDelete(null);
-             }
-           }
-         }}
-         onCancel={() => setProductToDelete(null)}
-       />
-     </div>
-   );
+          <div className="flex flex-col items-center md:items-end">
+            <div
+              className="animate-number-pop font-black text-[#009A3A] leading-none"
+              style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: 'clamp(3rem, 8vw, 4.5rem)' }}
+            >
+              {filteredProducts.length}
+            </div>
+            <p className="text-[11px] font-semibold text-[#4d6b58] mt-1 uppercase tracking-widest">
+              {currentProvider ? `Productos de ${currentProvider.name}` : 'Productos'}
+            </p>
+          </div>
+        </div>
+
+        <div className="animate-pulse-bar mt-4 flex h-[2px] rounded-full overflow-hidden">
+          <div className="bg-[#009A3A]" style={{ flex: 2 }} />
+          <div className="bg-[#C8102E]" style={{ flex: 3 }} />
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="animate-fade-up-2 bg-[#0d1612] border border-[#1a2e22] rounded-xl p-3">
+        <div className="relative flex items-center">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={16} className="text-[#4d6b58]" />
+          </div>
+          <SecureInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Buscar producto por nombre..."
+            inputMode="text"
+            editable
+            noRing
+            displayClassName="!bg-transparent !border-transparent !text-[#e8f0eb] pl-9 !rounded-lg !min-h-[40px]"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#4d6b58] hover:text-[#e8f0eb] hover:bg-[#1a2e22] rounded-lg z-10 transition"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Products Table */}
+      <div className="animate-fade-up-3 bg-[#0d1612] border border-[#1a2e22] rounded-2xl overflow-hidden">
+
+        {/* Table header bar */}
+        <div className="px-4 md:px-6 py-3 border-b border-[#1a2e22] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <h2
+            className="font-black text-[#e8f0eb] uppercase tracking-wide"
+            style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.05rem', letterSpacing: '0.06em' }}
+          >
+            Lista de Productos{' '}
+            <span className="text-[#4d6b58] font-semibold text-xs normal-case tracking-normal" style={{ fontFamily: 'Nunito, sans-serif' }}>
+              ({filteredProducts.length} de {products.length})
+            </span>
+          </h2>
+
+          {currentProvider && isGerencia && (
+            <button
+              onClick={() => navigate('/products')}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#009A3A] hover:bg-[#009A3A]/10 border border-[#009A3A]/25 rounded-lg transition"
+            >
+              <FilterX size={13} />
+              Limpiar Filtro
+            </button>
+          )}
+        </div>
+
+        {/* Table */}
+        <div
+          ref={containerRef}
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          onMouseLeave={() => setHighlightedIndex(-1)}
+          aria-label="Lista de productos"
+          role="grid"
+          className="outline-none"
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px]">
+              <thead className="bg-[#070e0b] border-b border-[#1a2e22]">
+                <tr>
+                  <th className="h-11 px-3 md:px-5 text-left text-[10px] font-black text-[#4d6b58] uppercase tracking-widest align-middle whitespace-nowrap min-w-[70px]">Foto</th>
+                  <th className="h-11 px-3 md:px-5 text-left text-[10px] font-black text-[#4d6b58] uppercase tracking-widest align-middle whitespace-nowrap">Nombre</th>
+                  <th className="h-11 px-3 md:px-5 text-right text-[10px] font-black text-[#4d6b58] uppercase tracking-widest align-middle whitespace-nowrap">Precio Final</th>
+                  {isGerencia && (
+                    <>
+                      <th className="h-11 px-3 md:px-5 text-right text-[10px] font-black text-[#4d6b58] uppercase tracking-widest align-middle whitespace-nowrap">Costo</th>
+                      <th className="h-11 px-3 md:px-5 text-right text-[10px] font-black text-[#4d6b58] uppercase tracking-widest align-middle whitespace-nowrap">Ganancia</th>
+                      <th className="h-11 px-3 md:px-5 text-center text-[10px] font-black text-[#4d6b58] uppercase tracking-widest align-middle whitespace-nowrap">Margen</th>
+                      <th className="h-11 px-3 md:px-5 text-center text-[10px] font-black text-[#4d6b58] uppercase tracking-widest align-middle whitespace-nowrap">IVA</th>
+                      <th className="h-11 px-3 md:px-5 align-middle whitespace-nowrap" />
+                    </>
+                  )}
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-[#1a2e22]">
+                {productsWithPrices.map((product, index) => {
+                  const costBs = rate > 0 ? product.costUSD * rate : product.costUSD;
+                  const priceWithVATBs = rate > 0 ? product.priceWithVATUSD * rate : product.priceWithVATUSD;
+                  const utilityBs = rate > 0 ? product.utilityUSD * rate : product.utilityUSD;
+                  const isHighlighted = highlightedIndex === index;
+
+                  return (
+                    <tr
+                      key={product.id}
+                      className={`
+                        animate-row-in transition-colors duration-100
+                        ${isHighlighted
+                          ? 'bg-[#009A3A]/8 border-l-4 border-l-[#009A3A]'
+                          : 'hover:bg-[#112016]'}
+                      `}
+                      style={{ animationDelay: `${0.28 + index * 0.025}s` }}
+                      role="row"
+                      aria-selected={isHighlighted}
+                    >
+                      {/* Foto */}
+                      <td className="px-3 md:px-5 py-3 md:py-4 align-middle">
+                        {product.photoUrl ? (
+                          <img src={product.photoUrl} className="w-10 h-10 object-cover rounded-xl border border-[#1a2e22]" alt="" />
+                        ) : (
+                          <div className="w-10 h-10 bg-[#112016] border border-[#1a2e22] rounded-xl flex items-center justify-center text-xs text-[#4d6b58]">
+                            📷
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Nombre */}
+                      <td className="px-3 md:px-5 py-3 md:py-4 align-middle font-semibold text-[#e8f0eb] text-sm md:text-base">
+                        {product.name}
+                      </td>
+
+                      {/* Precio Final */}
+                      <td className="px-3 md:px-5 py-3 md:py-4 align-middle text-right">
+                        {rate > 0 ? (
+                          <>
+                            <div
+                              className="font-black text-[#e8f0eb]"
+                              style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 'clamp(1rem, 2.5vw, 1.3rem)' }}
+                            >
+                              {priceWithVATBs.toFixed(2)} <span className="text-[#4d6b58] text-xs font-bold">Bs</span>
+                            </div>
+                            <div className="text-xs text-[#4d6b58]" style={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                              {product.priceWithVATUSD.toFixed(2)} USD
+                            </div>
+                          </>
+                        ) : (
+                          <div className="font-black text-[#e8f0eb]" style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '1.1rem' }}>
+                            {product.priceWithVATUSD.toFixed(2)} USD
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Columnas SOLO GERENCIA */}
+                      {isGerencia && (
+                        <>
+                          {/* Costo */}
+                          <td className="px-3 md:px-5 py-3 md:py-4 align-middle text-right">
+                            {rate > 0 ? (
+                              <>
+                                <div className="font-bold text-[#8aad95] text-sm" style={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                                  {costBs.toFixed(2)} <span className="text-[#4d6b58] text-xs">Bs</span>
+                                </div>
+                                <div className="text-xs text-[#4d6b58]" style={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                                  {product.costUSD.toFixed(2)} USD
+                                </div>
+                              </>
+                            ) : (
+                              <div className="font-bold text-[#8aad95] text-sm" style={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                                {product.costUSD.toFixed(2)} USD
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Ganancia */}
+                          <td className="px-3 md:px-5 py-3 md:py-4 align-middle text-right">
+                            {rate > 0 ? (
+                              <>
+                                <div
+                                  className="font-black text-[#009A3A]"
+                                  style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 'clamp(0.95rem, 2vw, 1.2rem)' }}
+                                >
+                                  {utilityBs.toFixed(2)} <span className="text-[#007b2e] text-xs font-bold">Bs</span>
+                                </div>
+                                <div className="text-xs text-[#4d6b58]" style={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                                  {product.utilityUSD.toFixed(2)} USD
+                                </div>
+                              </>
+                            ) : (
+                              <div className="font-black text-[#009A3A] text-lg" style={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                                {product.utilityUSD.toFixed(2)} USD
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Margen */}
+                          <td className="px-3 md:px-5 py-3 md:py-4 align-middle text-center">
+                            <span
+                              className="text-[#8aad95] font-bold text-sm"
+                              style={{ fontFamily: '"JetBrains Mono", monospace' }}
+                            >
+                              {product.profitPercentage}%
+                            </span>
+                          </td>
+
+                          {/* IVA */}
+                          <td className="px-3 md:px-5 py-3 md:py-4 align-middle text-center">
+                            <span className={`inline-flex px-2 py-0.5 text-[10px] font-black rounded-full border uppercase tracking-wider ${
+                              product.exemptFromVAT
+                                ? 'bg-[#C8102E]/10 text-[#C8102E] border-[#C8102E]/25'
+                                : 'bg-[#009A3A]/10 text-[#009A3A] border-[#009A3A]/25'
+                            }`}>
+                              {product.exemptFromVAT ? 'Exento' : 'Sí'}
+                            </span>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-3 md:px-5 py-3 md:py-4 align-middle">
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingProduct({
+                                    id: product.id,
+                                    name: product.name,
+                                    cost: product.costUSD * (rate > 0 ? rate : 1),
+                                    currency: product.originalCurrency,
+                                    profitPercentage: product.profitPercentage,
+                                    exemptFromVAT: product.exemptFromVAT,
+                                    photoUrl: product.photoUrl,
+                                  });
+                                  setShowForm(true);
+                                }}
+                                className="p-2 text-[#4d6b58] hover:text-[#009A3A] hover:bg-[#009A3A]/10 rounded-lg transition-colors"
+                                title="Editar"
+                              >
+                                <Pencil size={13} strokeWidth={2} />
+                              </button>
+                              <button
+                                onClick={() => setProductToDelete({ id: product.id, name: product.name })}
+                                className="p-2 text-[#4d6b58] hover:text-[#C8102E] hover:bg-[#C8102E]/10 rounded-lg transition-colors"
+                                title="Eliminar"
+                              >
+                                <Trash2 size={13} strokeWidth={2} />
+                              </button>
+                            </div>
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Empty State */}
+          {productsWithPrices.length === 0 && (
+            <div className="text-center py-14">
+              <div className="w-16 h-16 mx-auto mb-4 bg-[#112016] border border-[#1a2e22] rounded-2xl flex items-center justify-center text-3xl">
+                📦
+              </div>
+              <h3
+                className="font-black text-[#8aad95] mb-2 uppercase tracking-wide"
+                style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.2rem' }}
+              >
+                No hay productos
+              </h3>
+              <p className="text-sm text-[#4d6b58] mb-6">Agrega tu primer producto para comenzar</p>
+              {isGerencia && (
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#009A3A] hover:bg-[#007b2e] text-white font-bold rounded-xl transition text-sm"
+                >
+                  <Plus size={15} />
+                  Agregar Primer Producto
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Form Modal */}
+      <ProductForm
+        isOpen={showForm}
+        onClose={() => { setShowForm(false); setEditingProduct(null); }}
+        productToEdit={editingProduct}
+        onSave={() => { setShowForm(false); setEditingProduct(null); }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={productToDelete !== null}
+        title="¿Eliminar producto?"
+        message={`¿Estás seguro de que deseas eliminar "${productToDelete?.name}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        onConfirm={async () => {
+          if (productToDelete) {
+            try {
+              await removeProduct(productToDelete.id);
+            } catch {
+              alert('Error al eliminar el producto. Inténtalo de nuevo.');
+            } finally {
+              setProductToDelete(null);
+            }
+          }
+        }}
+        onCancel={() => setProductToDelete(null)}
+      />
+    </div>
+  );
 }
