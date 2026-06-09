@@ -99,23 +99,23 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
   }, [rate]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
+        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-ink">
           Calculadora de Precios
         </h1>
-        <div className="flex items-center mt-2">
-          <p className="text-sm md:text-base text-gray-500">
-            {rate > 0 ? `Tasa: 1 USD = ${rate.toFixed(2)} Bs` : '⚠️ Tasa no configurada'}
+        <div className="flex items-center mt-1">
+          <p className="text-sm text-ink-3 font-mono num">
+            {rate > 0 ? `1 USD = ${rate.toFixed(2)} Bs` : 'Tasa no configurada'}
           </p>
           {rate > 0 && (
             <button
               onClick={onEditRate}
-              className="ml-2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+              className="ml-2 p-1.5 text-ink-4 hover:text-price hover:bg-price-subtle rounded transition"
               title="Editar tasa"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
                 <path d="m15 5 4 4" />
               </svg>
@@ -124,42 +124,42 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-2">
         {/* Panel de Entrada */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">Datos del Producto</h2>
+        <div className="bg-surface border border-line rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-ink-2 uppercase tracking-wider mb-5">Datos del Producto</h2>
 
           {/* Costo con selector de moneda */}
-          <div className="mb-6">
-            <span className="block text-sm font-medium text-gray-700 mb-2">
-              Costo *
+          <div className="mb-5">
+            <span className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-2">
+              Costo
             </span>
-            <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+            <div className="flex rounded-lg border border-line-strong overflow-hidden focus-within:ring-2 focus-within:ring-price">
               <div className="flex-1 min-w-0">
-                 <SecureInput
-                   value={formData.cost}
-                   onChange={handleCostChange}
-                   placeholder="0.00"
-                   inputMode="decimal"
-                   editable
-                   displayClassName="border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base md:text-lg min-h-[48px] flex-1"
-                 />
+                <SecureInput
+                  value={formData.cost}
+                  onChange={handleCostChange}
+                  placeholder="0.00"
+                  inputMode="decimal"
+                  editable
+                  displayClassName="border-0 rounded-none focus:ring-0 focus:border-none bg-surface text-ink text-base min-h-[44px] flex-1 font-mono num"
+                />
               </div>
               <select
                 value={formData.currency}
                 onChange={handleCurrencyChange}
-                className="w-20 md:w-32 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer shrink-0"
+                className="w-20 px-3 py-2 border-0 border-l border-line rounded-none focus:ring-0 bg-canvas text-ink-2 text-sm font-semibold cursor-pointer shrink-0"
               >
                 <option value="Bs">Bs</option>
-                <option value="USD">$</option>
+                <option value="USD">USD</option>
               </select>
             </div>
           </div>
 
           {/* % Ganancia */}
-          <div className="mb-6">
-            <span className="block text-sm font-medium text-gray-700 mb-2">
-              % Ganancia *
+          <div className="mb-5">
+            <span className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-2">
+              % Ganancia
             </span>
             <SecureInput
               value={formData.profitPercentage}
@@ -171,56 +171,63 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
           </div>
 
           {/* IVA Checkbox */}
-          <div className="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <div className="flex items-center p-3 border border-line rounded-lg bg-canvas">
             <input
               id="calc_aplicarIVA"
               type="checkbox"
               checked={formData.aplicarIVA}
               onChange={handleCheckboxChange}
-              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-profit border-line-strong rounded focus:ring-profit"
             />
-            <span className="ml-3 text-sm font-medium text-gray-700 cursor-pointer flex-1" onClick={() => setFormData(prev => ({ ...prev, aplicarIVA: !prev.aplicarIVA }))}>
+            <span
+              className="ml-3 text-sm font-medium text-ink-2 cursor-pointer flex-1"
+              onClick={() => setFormData(prev => ({ ...prev, aplicarIVA: !prev.aplicarIVA }))}
+            >
               Aplicar IVA (16%)
             </span>
           </div>
         </div>
 
         {/* Panel de Resultados */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">Resultados</h2>
+        <div className="bg-surface border border-line rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-ink-2 uppercase tracking-wider mb-5">Resultados</h2>
           {results && rate > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {/* Precio Final */}
-              <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-100">
-                <span className="block text-gray-600 mb-2 text-lg">Precio Final</span>
-                <span className="block font-bold text-4xl text-blue-600 mb-1">
+              <div className="p-5 bg-price-subtle rounded-xl border border-price/20">
+                <span className="block text-xs font-semibold text-ink-4 uppercase tracking-wider mb-1">Precio Final</span>
+                <span className="block font-bold text-3xl text-price font-mono num mb-0.5">
                   {formatAmountWithCurrency(results.priceWithVAT, results.currency)}
                 </span>
                 {rate > 0 && results.priceWithVATConverted !== undefined && (
-                  <span className="block text-sm text-gray-500">
+                  <span className="block text-sm text-ink-4 font-mono num border-t border-price/15 pt-1 mt-1">
                     {formatAmountWithCurrency(results.priceWithVATConverted, results.currency === 'Bs' ? 'USD' : 'Bs')}
                   </span>
                 )}
               </div>
 
               {/* Ganancia */}
-              <div className="p-6 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-100">
-                <span className="block text-gray-600 mb-2 text-lg">Ganancia</span>
-                <span className="block font-bold text-4xl text-emerald-600 mb-1">
+              <div className="p-5 bg-profit-subtle rounded-xl border border-profit/20">
+                <span className="block text-xs font-semibold text-ink-4 uppercase tracking-wider mb-1">Ganancia</span>
+                <span className="block font-bold text-3xl text-profit font-mono num mb-0.5">
                   {formatAmountWithCurrency(results.utility, results.currency)}
                 </span>
                 {rate > 0 && results.utilityConverted !== undefined && (
-                  <span className="block text-sm text-gray-500">
+                  <span className="block text-sm text-ink-4 font-mono num border-t border-profit/15 pt-1 mt-1">
                     {formatAmountWithCurrency(results.utilityConverted, results.currency === 'Bs' ? 'USD' : 'Bs')}
                   </span>
                 )}
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-64 text-gray-400">
+            <div className="flex items-center justify-center h-52 text-ink-4">
               <div className="text-center">
-                <div className="text-5xl mb-3">🧮</div>
-                <p className="text-base">Ingresa datos para ver resultados</p>
+                <div className="w-12 h-12 rounded-full bg-surface-raised flex items-center justify-center mx-auto mb-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="16" y1="10" y2="10"/><line x1="8" x2="12" y1="14" y2="14"/>
+                  </svg>
+                </div>
+                <p className="text-sm">Ingresa datos para ver resultados</p>
               </div>
             </div>
           )}

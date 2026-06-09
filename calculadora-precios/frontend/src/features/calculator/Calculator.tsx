@@ -74,7 +74,7 @@ export function Calculator() {
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium mb-1">Costo (Bs)</label>
+              <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">Costo (Bs)</label>
               <Input
                 type="number"
                 name="cost"
@@ -87,7 +87,7 @@ export function Calculator() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">% de Ganancia</label>
+              <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">% de Ganancia</label>
               <Input
                 type="number"
                 name="profitPercentage"
@@ -108,35 +108,36 @@ export function Calculator() {
               checked={formData.exemptFromVAT}
               onChange={handleChange}
             />
-            <span className="text-sm">Producto exento de IVA</span>
+            <span className="text-sm text-ink-2">Producto exento de IVA</span>
           </div>
 
           <Button
             onClick={calculate}
-            className="w-full bg-blue-600 hover:bg-blue-700"
+            className="w-full"
           >
             Calcular Precio
           </Button>
 
           {results && (
-            <div className="mt-6 p-4 bg-gray-50 rounded">
-              <h3 className="text-lg font-semibold mb-4">Resultados</h3>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Precio sin IVA:</span>
-                  <p className="text-xl font-bold">{results.priceWithoutVAT} Bs</p>
+            <div className="mt-5 rounded-lg border border-line overflow-hidden">
+              <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-line">
+                <div className="p-4 bg-price-subtle">
+                  <span className="text-xs font-semibold text-ink-4 uppercase tracking-wider block mb-1">Precio sin IVA</span>
+                  <p className="text-2xl font-bold text-ink font-mono num">{results.priceWithoutVAT} <span className="text-base font-medium text-ink-3">Bs</span></p>
                 </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Precio con IVA:</span>
-                  <p className="text-xl font-bold">{results.priceWithVAT} Bs</p>
+                <div className="p-4 bg-price-subtle border-t sm:border-t-0 border-line">
+                  <span className="text-xs font-semibold text-ink-4 uppercase tracking-wider block mb-1">Precio con IVA</span>
+                  <p className="text-2xl font-bold text-price font-mono num">{results.priceWithVAT} <span className="text-base font-medium text-price/70">Bs</span></p>
                 </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Utilidad:</span>
-                  <p className="text-xl font-bold">{results.utility} Bs</p>
+              </div>
+              <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-line border-t border-line">
+                <div className="p-4 bg-profit-subtle">
+                  <span className="text-xs font-semibold text-ink-4 uppercase tracking-wider block mb-1">Utilidad</span>
+                  <p className="text-2xl font-bold text-profit font-mono num">{results.utility} <span className="text-base font-medium text-profit/70">Bs</span></p>
                 </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Margen usado:</span>
-                  <p className="text-xl font-bold">{results.marginUsed}%</p>
+                <div className="p-4 bg-surface">
+                  <span className="text-xs font-semibold text-ink-4 uppercase tracking-wider block mb-1">Margen usado</span>
+                  <p className="text-2xl font-bold text-ink font-mono num">{results.marginUsed}<span className="text-base font-medium text-ink-3">%</span></p>
                 </div>
               </div>
             </div>

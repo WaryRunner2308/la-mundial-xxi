@@ -111,15 +111,15 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
        {/* Header */}
        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
          <div>
-           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">Gestión de Productos</h1>
+           <h1 className="text-xl md:text-2xl font-bold tracking-tight text-ink">Productos</h1>
            <div className="flex items-center mt-1">
-             <p className="text-sm md:text-base text-gray-500">
-               {rate > 0 ? `Tasa: 1 USD = ${rate.toFixed(2)} Bs` : '⚠️ Tasa no configurada'}
+             <p className="text-sm text-ink-3 font-mono num">
+               {rate > 0 ? `1 USD = ${rate.toFixed(2)} Bs` : 'Tasa no configurada'}
              </p>
              {rate > 0 && (
                <button
                  onClick={onEditRate}
-                 className="ml-2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                 className="ml-2 p-1.5 text-ink-4 hover:text-price hover:bg-price-subtle rounded transition"
                  title="Editar tasa"
                >
                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -130,52 +130,54 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
              )}
            </div>
          </div>
-         {/* Botón Agregar Producto - SOLO GERENCIA */}
          {isGerencia && (
            <button
              onClick={() => {
                setEditingProduct(null);
                setShowForm(true);
              }}
-             className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg transition text-sm md:text-base w-full md:w-auto"
+             className="px-4 py-2 bg-profit hover:bg-profit-hover text-surface-overlay font-semibold rounded-lg transition text-sm w-full md:w-auto flex items-center justify-center gap-2"
            >
-             + Agregar Producto
+             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+               <path d="M5 12h14"/><path d="M12 5v14"/>
+             </svg>
+             Agregar Producto
            </button>
          )}
        </div>
 
         {/* Tarjeta de Estadísticas */}
-        <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-xl border border-gray-200 p-4 md:p-8 shadow-sm overflow-hidden">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
-            <div className="flex-1 flex items-center justify-center md:justify-start">
-              <h2 className="text-3xl md:text-5xl font-black italic tracking-tight"
+        <div className="bg-surface border border-line rounded-xl p-4 md:p-6 overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl md:text-2xl font-black tracking-tight"
                   style={{
-                    background: 'linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 50%, #45B7D1 100%)',
+                    background: 'linear-gradient(135deg, #C47A1E 0%, #8B5E0A 70%, #5C3D07 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
                   }}>
                 LA MUNDIAL
               </h2>
-              <span className="text-xl md:text-2xl font-bold italic text-gray-700 ml-2">XXI</span>
+              <span className="text-xs font-semibold text-ink-3 uppercase tracking-widest">XXI</span>
             </div>
-            <div className="flex flex-col items-center md:items-end">
-              <div className="text-5xl md:text-6xl font-black text-blue-600 leading-none">
+            <div className="text-right">
+              <div className="text-4xl md:text-5xl font-black text-price leading-none num">
                 {filteredProducts.length}
               </div>
-              <p className="text-xs md:text-sm font-semibold text-gray-600 mt-1 uppercase tracking-widest">
-                {currentProvider ? `Productos de ${currentProvider.name}` : 'Productos'}
+              <p className="text-xs font-medium text-ink-4 mt-1 uppercase tracking-widest">
+                {currentProvider ? `de ${currentProvider.name}` : 'Productos'}
               </p>
             </div>
           </div>
-          <div className="mt-4 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full"></div>
+          <div className="mt-4 h-px bg-gradient-to-r from-price/40 via-price/20 to-transparent"></div>
         </div>
 
          {/* Buscador de Productos */}
-         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+         <div className="bg-canvas rounded-xl border border-line p-3">
            <div className="relative">
              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink-4">
                  <circle cx="11" cy="11" r="8" />
                  <path d="m21 21-4.3-4.3" />
                </svg>
@@ -183,19 +185,19 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
              <SecureInput
                value={searchQuery}
                onChange={setSearchQuery}
-               placeholder="Buscar producto por nombre..."
+               placeholder="Buscar por nombre..."
                inputMode="text"
                editable
                noRing={true}
-               displayClassName="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none transition text-base bg-white focus:ring-0 focus:border-gray-300"
+               displayClassName="w-full pl-9 pr-4 py-2 border border-line-strong rounded-lg outline-none transition text-sm bg-surface focus:ring-0 focus:border-price text-ink placeholder:text-ink-4"
              />
              {searchQuery && (
                <button
                  type="button"
                  onClick={() => setSearchQuery('')}
-                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
+                 className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-4 hover:text-ink-2 z-10"
                >
-                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                    <path d="M18 6 6 18" />
                    <path d="m6 6 12 12" />
                  </svg>
@@ -205,24 +207,24 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
         </div>
 
         {/* Tabla de Productos */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
+        <div className="bg-canvas rounded-xl border border-line overflow-hidden">
            {/* Header con controles */}
-           <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-             <h2 className="text-lg md:text-xl font-bold text-gray-900">
+           <div className="px-4 md:px-6 py-3 border-b border-line flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+             <h2 className="text-sm font-semibold text-ink-2">
                Lista de Productos
-               <span className="text-xs md:text-sm font-normal text-gray-500 ml-2">
+               <span className="font-normal text-ink-4 ml-2">
                  ({filteredProducts.length} de {products.length})
                </span>
              </h2>
              {currentProvider && isGerencia && (
                <button
                  onClick={() => navigate('/products')}
-                 className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors flex items-center gap-2"
+                 className="px-3 py-1.5 text-xs font-medium text-price hover:text-price-hover hover:bg-price-subtle rounded-lg border border-price/30 transition-colors flex items-center gap-1.5"
                >
-                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                   <path d="M12 5v14M5 12h14"/>
+                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                   <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
                  </svg>
-                 Limpiar Filtro
+                 Limpiar filtro
                </button>
              )}
            </div>
@@ -239,24 +241,23 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
            >
              <div className="overflow-x-auto px-4 md:px-0">
                <table className="w-full min-w-[600px]">
-                 <thead className="bg-gray-50 border-b border-gray-200">
+                 <thead className="bg-surface border-b border-line">
                    <tr>
-                     <th className="h-12 px-2 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap min-w-[80px]">Foto</th>
-                     <th className="h-12 px-2 md:px-6 text-left text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Nombre</th>
-                     <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Precio Final</th>
-                     {/* Solo Gerencia ve: Costo, Ganancia, Margen, IVA, (botones) */}
+                     <th className="h-10 px-2 md:px-4 text-left text-[11px] font-semibold text-ink-4 uppercase tracking-wider align-middle whitespace-nowrap min-w-[64px]">Foto</th>
+                     <th className="h-10 px-2 md:px-4 text-left text-[11px] font-semibold text-ink-4 uppercase tracking-wider align-middle whitespace-nowrap">Nombre</th>
+                     <th className="h-10 px-2 md:px-4 text-right text-[11px] font-semibold text-ink-4 uppercase tracking-wider align-middle whitespace-nowrap">Precio Final</th>
                      {isGerencia && (
                        <>
-                         <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Costo</th>
-                         <th className="h-12 px-2 md:px-6 text-right text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Ganancia</th>
-                         <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">Margen</th>
-                         <th className="h-12 px-2 md:px-6 text-center text-xs md:text-sm font-semibold text-gray-600 align-middle whitespace-nowrap">IVA</th>
-                         <th className="h-12 px-2 md:px-6 align-middle whitespace-nowrap"></th>
+                         <th className="h-10 px-2 md:px-4 text-right text-[11px] font-semibold text-ink-4 uppercase tracking-wider align-middle whitespace-nowrap">Costo</th>
+                         <th className="h-10 px-2 md:px-4 text-right text-[11px] font-semibold text-ink-4 uppercase tracking-wider align-middle whitespace-nowrap">Ganancia</th>
+                         <th className="h-10 px-2 md:px-4 text-center text-[11px] font-semibold text-ink-4 uppercase tracking-wider align-middle whitespace-nowrap">Margen</th>
+                         <th className="h-10 px-2 md:px-4 text-center text-[11px] font-semibold text-ink-4 uppercase tracking-wider align-middle whitespace-nowrap">IVA</th>
+                         <th className="h-10 px-2 md:px-4 align-middle whitespace-nowrap"></th>
                        </>
                      )}
                    </tr>
                  </thead>
-                 <tbody className="divide-y divide-gray-200">
+                 <tbody className="divide-y divide-line-soft">
                    {productsWithPrices.map((product, index) => {
                      const costBs = rate > 0 ? product.costUSD * rate : product.costUSD;
                      const priceWithVATBs = rate > 0 ? product.priceWithVATUSD * rate : product.priceWithVATUSD;
@@ -267,41 +268,43 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                      <tr
                        key={product.id}
                        className={`
-                         hover:bg-gray-50 transition
-                         ${isHighlighted ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}
+                         hover:bg-surface transition-colors
+                         ${isHighlighted ? 'bg-price-subtle border-l-2 border-l-price' : ''}
                        `}
                        role="row"
                        aria-selected={isHighlighted}
                      >
-                       {/* Foto - SIEMPRE visible */}
-                       <td className="px-2 md:px-6 py-3 md:py-6 align-middle">
+                       {/* Foto */}
+                       <td className="px-2 md:px-4 py-3 align-middle">
                          {product.photoUrl ? (
-                           <img src={product.photoUrl} className="w-10 h-10 md:w-12 md:h-12 object-cover rounded-lg" alt="" />
+                           <img src={product.photoUrl} className="w-9 h-9 object-cover rounded-lg" alt="" />
                          ) : (
-                           <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">
-                             📷
+                           <div className="w-9 h-9 bg-surface-raised rounded-lg flex items-center justify-center">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink-4">
+                               <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                             </svg>
                            </div>
                          )}
                        </td>
 
-                       {/* Nombre - SIEMPRE visible */}
-                       <td className="px-2 md:px-6 py-3 md:py-6 align-middle font-medium text-gray-900 text-sm md:text-base">
+                       {/* Nombre */}
+                       <td className="px-2 md:px-4 py-3 align-middle font-medium text-ink text-sm">
                          {product.name}
                        </td>
 
-                       {/* Precio Final - Visible para TODOS (rol Invitado y Gerencia) */}
-                       <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-right">
+                       {/* Precio Final */}
+                       <td className="px-2 md:px-4 py-3 align-middle text-right">
                          {rate > 0 ? (
                            <>
-                             <div className="font-bold text-lg md:text-2xl text-gray-900">
-                               {priceWithVATBs.toFixed(2).toLocaleString()} Bs
+                             <div className="font-bold text-base md:text-lg text-ink font-mono num">
+                               {priceWithVATBs.toFixed(2)} Bs
                              </div>
-                             <div className="text-xs md:text-sm text-gray-500">
+                             <div className="text-xs text-ink-4 font-mono num mt-0.5 border-t border-line-soft pt-0.5">
                                {product.priceWithVATUSD.toFixed(2)} USD
                              </div>
                            </>
                          ) : (
-                           <div className="font-bold text-lg md:text-2xl text-gray-900">
+                           <div className="font-bold text-base md:text-lg text-ink font-mono num">
                              {product.priceWithVATUSD.toFixed(2)} USD
                            </div>
                          )}
@@ -310,84 +313,86 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
                        {/* Columnas SOLO GERENCIA */}
                        {isGerencia && (
                          <>
-                           {/* Costo (Bs y USD) */}
-                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-right">
+                           {/* Costo */}
+                           <td className="px-2 md:px-4 py-3 align-middle text-right">
                              {rate > 0 ? (
                                <>
-                                 <div className="font-bold text-sm md:text-base text-gray-900">
-                                   {costBs.toFixed(2).toLocaleString()} Bs
+                                 <div className="font-medium text-sm text-ink-2 font-mono num">
+                                   {costBs.toFixed(2)} Bs
                                  </div>
-                                 <div className="text-xs md:text-sm text-gray-500">
+                                 <div className="text-xs text-ink-4 font-mono num mt-0.5 border-t border-line-soft pt-0.5">
                                    {product.costUSD.toFixed(2)} USD
                                  </div>
                                </>
                              ) : (
-                               <div className="font-bold text-sm md:text-base text-gray-900">
+                               <div className="font-medium text-sm text-ink-2 font-mono num">
                                  {product.costUSD.toFixed(2)} USD
                                </div>
                              )}
                            </td>
 
-                           {/* Ganancia (Bs y USD) */}
-                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-right">
+                           {/* Ganancia */}
+                           <td className="px-2 md:px-4 py-3 align-middle text-right">
                              {rate > 0 ? (
                                <>
-                                 <div className="font-bold text-lg md:text-2xl text-green-600">
-                                   {utilityBs.toFixed(2).toLocaleString()} Bs
+                                 <div className="font-bold text-base text-profit font-mono num">
+                                   {utilityBs.toFixed(2)} Bs
                                  </div>
-                                 <div className="text-xs md:text-sm text-gray-500">
+                                 <div className="text-xs text-ink-4 font-mono num mt-0.5 border-t border-line-soft pt-0.5">
                                    {product.utilityUSD.toFixed(2)} USD
                                  </div>
                                </>
                              ) : (
-                               <div className="font-bold text-lg md:text-2xl text-green-600">
+                               <div className="font-bold text-base text-profit font-mono num">
                                  {product.utilityUSD.toFixed(2)} USD
                                </div>
                              )}
                            </td>
 
-                           {/* Margen (%) */}
-                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-center text-gray-600 text-sm">
-                             {product.profitPercentage}%
+                           {/* Margen */}
+                           <td className="px-2 md:px-4 py-3 align-middle text-center">
+                             <span className="text-sm font-mono num text-ink-2">{product.profitPercentage}%</span>
                            </td>
 
                            {/* IVA */}
-                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle text-center">
-                             <span className={`inline-flex px-1.5 md:px-2 py-0.5 text-xs font-semibold rounded-full ${product.exemptFromVAT ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                           <td className="px-2 md:px-4 py-3 align-middle text-center">
+                             <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${product.exemptFromVAT ? 'bg-price-subtle text-price-hover' : 'bg-profit-subtle text-profit'}`}>
                                {product.exemptFromVAT ? 'Exento' : 'Sí'}
                              </span>
                            </td>
 
-                           {/* Botones editar / borrar */}
-                           <td className="px-2 md:px-6 py-3 md:py-6 align-middle space-x-1 md:space-x-2">
-                             <button
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 setEditingProduct({
-                                   id: product.id,
-                                   name: product.name,
-                                   cost: product.costUSD * (rate > 0 ? rate : 1),
-                                   currency: product.originalCurrency,
-                                   profitPercentage: product.profitPercentage,
-                                   exemptFromVAT: product.exemptFromVAT,
-                                   photoUrl: product.photoUrl,
-                                 });
-                                 setShowForm(true);
-                               }}
-                               className="px-2 md:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded transition"
-                               title="Editar"
-                             >
-                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-                             </button>
-                             <button
-                               onClick={() => setProductToDelete({ id: product.id, name: product.name })}
-                               className="px-2 md:px-3 py-1 text-red-600 hover:bg-red-50 rounded transition"
-                               title="Eliminar"
-                             >
-                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                 <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
-                               </svg>
-                             </button>
+                           {/* Acciones */}
+                           <td className="px-2 md:px-4 py-3 align-middle">
+                             <div className="flex items-center gap-1">
+                               <button
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setEditingProduct({
+                                     id: product.id,
+                                     name: product.name,
+                                     cost: product.costUSD * (rate > 0 ? rate : 1),
+                                     currency: product.originalCurrency,
+                                     profitPercentage: product.profitPercentage,
+                                     exemptFromVAT: product.exemptFromVAT,
+                                     photoUrl: product.photoUrl,
+                                   });
+                                   setShowForm(true);
+                                 }}
+                                 className="p-1.5 text-ink-4 hover:text-ink hover:bg-surface rounded transition"
+                                 title="Editar"
+                               >
+                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                               </button>
+                               <button
+                                 onClick={() => setProductToDelete({ id: product.id, name: product.name })}
+                                 className="p-1.5 text-ink-4 hover:text-danger hover:bg-danger-subtle rounded transition"
+                                 title="Eliminar"
+                               >
+                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                   <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
+                                 </svg>
+                               </button>
+                             </div>
                            </td>
                          </>
                        )}
@@ -401,18 +406,20 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
 
         {/* Empty State */}
         {productsWithPrices.length === 0 && (
-          <div className="text-center py-8 md:py-12">
-            <div className="w-16 md:w-24 h-16 md:h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-              <span className="text-3xl md:text-4xl">📦</span>
+          <div className="text-center py-10 md:py-14">
+            <div className="w-14 h-14 mx-auto mb-4 bg-surface-raised rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink-4">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              </svg>
             </div>
-            <h3 className="text-lg md:text-xl font-semibold mb-2 text-gray-900">No hay productos</h3>
-            <p className="text-sm md:text-base text-gray-500 mb-4 md:mb-6">Agrega tu primer producto para comenzar</p>
+            <h3 className="text-base font-semibold mb-1 text-ink">Sin productos</h3>
+            <p className="text-sm text-ink-3 mb-5">Agrega tu primer producto para comenzar</p>
             {isGerencia && (
               <button
                 onClick={() => setShowForm(true)}
-                className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition text-sm md:text-base"
+                className="px-5 py-2 bg-profit hover:bg-profit-hover text-surface-overlay font-medium rounded-lg transition text-sm"
               >
-                Agregar Primer Producto
+                Agregar producto
               </button>
             )}
           </div>

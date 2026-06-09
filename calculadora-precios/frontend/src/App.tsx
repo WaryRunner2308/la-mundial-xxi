@@ -31,21 +31,23 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-red-50">
-          <div className="max-w-md p-8 bg-white rounded-lg shadow-lg text-center">
-            <div className="text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Algo salió mal</h2>
-            <p className="text-gray-600 mb-4">
-              Ha ocurrido un error inesperado. Puedes intentar recargar la página.
-            </p>
+        <div className="flex items-center justify-center min-h-screen bg-canvas">
+          <div className="max-w-md p-8 bg-surface border border-line rounded-xl text-center">
+            <div className="w-16 h-16 rounded-full bg-danger-subtle flex items-center justify-center mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-danger">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-ink mb-2">Algo salió mal</h2>
+            <p className="text-ink-3 mb-5 text-sm">Ha ocurrido un error inesperado. Puedes intentar recargar la página.</p>
             <button
               onClick={() => {
                 localStorage.clear();
                 window.location.reload();
               }}
-              className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
+              className="px-6 py-2 bg-danger hover:bg-danger-hover text-surface-overlay rounded-lg font-medium transition text-sm"
             >
-              🔄 Reiniciar y Limpiar Datos
+              Reiniciar
             </button>
             {this.state.error && (
               <p className="mt-4 text-xs text-gray-500 text-left">
@@ -74,17 +76,16 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4" onClick={handleSubmit}>
-      <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="text-center mb-4 md:mb-6">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-800">¡Bienvenido!</h2>
-          <p className="text-gray-600 mt-2 text-sm md:text-base">¿Cuál es la tasa de cambio de hoy?</p>
-          <p className="text-xs md:text-sm text-gray-500 mt-1">(1 USD = X Bs)</p>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4" onClick={handleSubmit}>
+      <div className="bg-surface-overlay border border-line rounded-xl p-6 md:p-8 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="text-center mb-5">
+          <h2 className="text-xl font-bold text-ink">Tasa de cambio</h2>
+          <p className="text-ink-3 mt-1.5 text-sm">¿Cuántos Bs vale 1 USD hoy?</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div>
-            <span className="block text-sm font-medium text-gray-700 mb-2">Tasa de Cambio</span>
+            <span className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-2">1 USD = ? Bs</span>
             <SecureInput
               value={inputValue}
               onChange={setInputValue}
@@ -97,7 +98,7 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-full py-2 md:py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg shadow-lg transition text-sm md:text-base"
+            className="w-full py-2.5 bg-profit hover:bg-profit-hover text-surface-overlay font-semibold rounded-lg transition text-sm"
           >
             Continuar
           </button>
@@ -161,12 +162,12 @@ function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+    <div className="flex min-h-screen bg-canvas overflow-x-hidden">
       {/* Mobile header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-canvas border-b border-line px-4 py-3 flex items-center">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          className="p-2 rounded-md text-ink-3 hover:text-ink hover:bg-surface"
           aria-label="Abrir menú"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -175,7 +176,7 @@ function App() {
             <line x1="4" x2="20" y1="18" y2="18" />
           </svg>
         </button>
-        <span className="ml-3 text-lg font-semibold text-gray-900">La Mundial</span>
+        <span className="ml-3 text-base font-semibold text-ink tracking-tight">La Mundial</span>
       </div>
 
       {/* Mobile overlay */}
@@ -189,45 +190,39 @@ function App() {
       {/* Sidebar - Condicional según rol */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-64 bg-white border-r shadow-sm flex flex-col
+        w-56 bg-canvas border-r border-line flex flex-col
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="flex-shrink-0 flex items-center px-4 py-3 md:py-4 border-b">
-          <span className="text-lg md:text-xl font-semibold text-gray-900">La Mundial</span>
+        <div className="flex-shrink-0 flex items-center px-4 py-3 md:py-4 border-b border-line">
+          <span className="text-base font-semibold text-ink tracking-tight">La Mundial</span>
         </div>
 
-        <nav className="flex-shrink-0 px-2 md:px-3 py-2 space-y-0.5">
-          {/* SIEMPRE visible: Productos */}
+        <nav className="flex-shrink-0 px-2 md:px-3 py-3 space-y-0.5">
           <NavLink
             to="/products"
             className={({ isActive }) =>
-              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-              }`
+              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 text-sm ${isActive ? 'bg-price-subtle text-price' : 'text-ink-3 hover:bg-surface hover:text-ink'}`
             }
           >
             Productos
           </NavLink>
 
-          {/* SIEMPRE visible: Calculadora (para ambos roles) */}
           <NavLink
             to="/calculator"
             className={({ isActive }) =>
-              `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-              }`
+              `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 text-sm ${isActive ? 'bg-price-subtle text-price' : 'text-ink-3 hover:bg-surface hover:text-ink'}`
             }
           >
             Calculadora
           </NavLink>
 
-          {/* SOLO GERENCIA: Proveedores, Comparador, Merma */}
           {isGerencia && (
             <>
               <NavLink
                 to="/providers"
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                  }`
+                  `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 text-sm ${isActive ? 'bg-price-subtle text-price' : 'text-ink-3 hover:bg-surface hover:text-ink'}`
                 }
               >
                 Proveedores
@@ -235,8 +230,7 @@ function App() {
               <NavLink
                 to="/comparator"
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                  }`
+                  `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 text-sm ${isActive ? 'bg-price-subtle text-price' : 'text-ink-3 hover:bg-surface hover:text-ink'}`
                 }
               >
                 Comparador
@@ -244,8 +238,7 @@ function App() {
               <NavLink
                 to="/merma"
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-1.5 rounded-md font-medium transition-colors duration-150 text-sm md:text-base ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                  }`
+                  `flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-150 text-sm ${isActive ? 'bg-price-subtle text-price' : 'text-ink-3 hover:bg-surface hover:text-ink'}`
                 }
               >
                 Merma
@@ -268,12 +261,11 @@ function App() {
           />
         </div>
 
-        {/* Botón de Cerrar Sesión */}
         {userRole && (
-          <div className="flex-shrink-0 px-4 py-3 border-t">
+          <div className="flex-shrink-0 px-4 py-3 border-t border-line">
             <button
               onClick={logout}
-              className="w-full px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition flex items-center justify-center gap-2"
+              className="w-full px-3 py-2 text-sm font-medium text-danger hover:bg-danger-subtle rounded-lg transition flex items-center justify-center gap-2"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -291,8 +283,8 @@ function App() {
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-6 overflow-y-auto lg:pt-6 pt-16">
         {supabaseError && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            ⚠️ {supabaseError}
+          <div className="mb-4 p-4 bg-danger-subtle border border-danger/20 rounded-lg text-danger text-sm">
+            {supabaseError}
           </div>
         )}
         <ErrorBoundary>
