@@ -51,7 +51,7 @@ export function ConfirmationModal({
        onClick={onCancel}
      >
        <div
-         className="bg-surface-overlay border border-line rounded-xl p-6 md:p-8 max-w-md w-full shadow-xl animate-fade-in"
+         className="bg-white border border-line rounded-xl p-6 md:p-8 max-w-md w-full shadow-xl animate-fade-in"
          onClick={(e) => e.stopPropagation()}
        >
          <div className="flex justify-center mb-4">

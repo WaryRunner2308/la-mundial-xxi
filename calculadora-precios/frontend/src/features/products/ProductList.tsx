@@ -147,30 +147,30 @@ export function ProductsPage({ onEditRate, userRole }: { onEditRate: () => void;
        </div>
 
         {/* Tarjeta de Estadísticas */}
-        <div className="bg-surface border border-line rounded-xl p-4 md:p-6 overflow-hidden">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl md:text-2xl font-black tracking-tight"
+        <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-xl border border-gray-200 p-4 md:p-8 shadow-sm overflow-hidden">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
+            <div className="flex-1 flex items-center justify-center md:justify-start">
+              <h2 className="text-3xl md:text-5xl font-black italic tracking-tight"
                   style={{
-                    background: 'linear-gradient(135deg, #C47A1E 0%, #8B5E0A 70%, #5C3D07 100%)',
+                    background: 'linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 50%, #45B7D1 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
                   }}>
                 LA MUNDIAL
               </h2>
-              <span className="text-xs font-semibold text-ink-3 uppercase tracking-widest">XXI</span>
+              <span className="text-xl md:text-2xl font-bold italic text-gray-700 ml-2">XXI</span>
             </div>
-            <div className="text-right">
-              <div className="text-4xl md:text-5xl font-black text-price leading-none num">
+            <div className="flex flex-col items-center md:items-end">
+              <div className="text-5xl md:text-6xl font-black text-blue-600 leading-none num">
                 {filteredProducts.length}
               </div>
-              <p className="text-xs font-medium text-ink-4 mt-1 uppercase tracking-widest">
-                {currentProvider ? `de ${currentProvider.name}` : 'Productos'}
+              <p className="text-xs md:text-sm font-semibold text-gray-600 mt-1 uppercase tracking-widest">
+                {currentProvider ? `Productos de ${currentProvider.name}` : 'Productos'}
               </p>
             </div>
           </div>
-          <div className="mt-4 h-px bg-gradient-to-r from-price/40 via-price/20 to-transparent"></div>
+          <div className="mt-4 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full"></div>
         </div>
 
          {/* Buscador de Productos */}

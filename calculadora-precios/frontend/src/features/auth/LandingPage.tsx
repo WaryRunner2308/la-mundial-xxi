@@ -27,7 +27,7 @@ export function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-canvas p-4">
+    <div className="min-h-screen flex items-center justify-center bg-stone-50 p-4">
       <div className="max-w-xl w-full space-y-8">
         {/* Header */}
         <div className="text-center">
@@ -100,7 +100,7 @@ export function LandingPage() {
         {/* Login modal */}
         {showLogin && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-surface-overlay border border-line rounded-xl p-6 md:p-8 max-w-sm w-full shadow-xl">
+            <div className="bg-white border border-line rounded-xl p-6 md:p-8 max-w-sm w-full shadow-xl">
               <div className="text-center mb-6">
                 <div className="w-12 h-12 rounded-full bg-profit-subtle flex items-center justify-center mx-auto mb-3">
                   <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-profit">
