@@ -51,12 +51,13 @@ export function ConfirmationModal({
        onClick={onCancel}
      >
        <div
-         className="bg-white border border-line rounded-xl p-6 md:p-8 max-w-md w-full shadow-xl animate-fade-in"
+         className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl animate-fade-in"
          onClick={(e) => e.stopPropagation()}
        >
+         {/* Icono de advertencia */}
          <div className="flex justify-center mb-4">
-           <div className="w-14 h-14 rounded-full bg-danger-subtle flex items-center justify-center">
-             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-danger">
+           <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-600">
                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
                <path d="M12 9v4"/>
                <path d="M12 17h.01"/>
@@ -64,19 +65,19 @@ export function ConfirmationModal({
            </div>
          </div>
 
-         <h3 className="text-xl md:text-2xl font-bold text-ink text-center mb-2">{title}</h3>
-         <p className="text-ink-3 text-center mb-6">{message}</p>
+         <h3 className="text-xl md:text-2xl font-bold text-gray-900 text-center mb-2">{title}</h3>
+         <p className="text-gray-600 text-center mb-6">{message}</p>
 
          <div className="flex gap-3">
            <button
              onClick={onCancel}
-             className="flex-1 px-4 py-3 border border-line rounded-lg font-medium text-ink-2 hover:bg-surface transition"
+             className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition"
            >
              {cancelText}
            </button>
            <button
              onClick={onConfirm}
-             className="flex-1 px-4 py-3 bg-danger hover:bg-danger-hover text-surface-overlay font-semibold rounded-lg transition"
+             className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-lg transition"
            >
              {confirmText}
            </button>

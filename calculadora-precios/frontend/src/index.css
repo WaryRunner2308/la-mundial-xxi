@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Anti-autocomplete styling - remove browser suggestions */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -11,16 +12,11 @@ input::-webkit-inner-spin-button {
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px #F4EDE3 inset !important;
+  -webkit-box-shadow: 0 0 0px 1000px white inset !important;
   transition: background-color 5000s ease-in-out 0s;
 }
 
+/* Disable autocomplete dropdown artifacts */
 input[autocomplete="new-password"] {
   pointer-events: auto !important;
-}
-
-/* Tabular numeric rendering for price columns */
-.num {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum';
 }

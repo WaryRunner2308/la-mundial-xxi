@@ -8,7 +8,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, ...props }, ref) => (
     <div
-      className={cn('rounded-lg border border-line bg-surface', className)}
+      className={cn('rounded-lg border border-gray-200 bg-white shadow-sm', className)}
       ref={ref}
       {...props}
     />
@@ -38,7 +38,7 @@ interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
 export const CardTitle = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
   ({ className, ...props }, ref) => (
     <h2
-      className={cn('text-lg font-semibold leading-none tracking-tight text-ink', className)}
+      className={cn('text-lg font-semibold leading-none tracking-tight text-gray-900', className)}
       ref={ref}
       {...props}
     />
