@@ -6,6 +6,7 @@ import { useCurrencyStore } from '@/store/currencyStore';
 export interface InvoiceProduct {
   nombre: string;
   precio: number;
+  precioTotal: number | null;
   moneda: 'USD' | 'Bs';
   unidad: string;
   cantidadBulto: number | null;
@@ -15,6 +16,7 @@ export interface InvoiceProduct {
   precioAnterior: number | null;
   fotoUrl: string | null;
   ganancia: number;
+  exemptFromVAT: boolean;
 }
 
 export type ScanStep = 'idle' | 'scanning' | 'fetching-images' | 'review' | 'importing' | 'done';
@@ -32,12 +34,68 @@ REGLAS ESTRICTAS:
 1. NOMBRES: Copia el nombre exactamente como aparece en la factura, letra por letra, sin cambiar mayúsculas, sin agregar ni quitar nada.
 2. PRECIOS: En Venezuela el separador decimal puede ser punto (.) o coma (,). Interpreta el número correctamente. El precio nunca debe ser 0.
 3. MONEDA: Si ves "$", "USD", "US$" o "dólar" → "USD". Si ves "Bs", "BsF", "Bs." o "bolívar" → "Bs". Si no está claro, usa "USD".
-4. BULTOS: Si hay cantidad por bulto (ej: "12UND", "24X1", "1X12", "CAJA X24", "x12", "6UN"), divide el precio total entre esa cantidad y pon el resultado en "precio". Pon la cantidad en "cantidad_bulto".
+
+4. REGLAS DE BULTOS (MUY IMPORTANTE):
+   - "1X12" o "12UND" o "12UNI" = el bulto trae 12 unidades
+   - "NXM" significa N bultos de M unidades cada uno (ej: 1X12 = 12 unidades, 2X6 = 12 unidades)
+   - "CAJA X24", "x24", "X6" = el bulto trae 24, 6, etc. unidades
+   - El precio de la factura es por BULTO COMPLETO
+   - precio_unitario = precio_factura / unidades_por_bulto
+   - Ejemplo: MENTOS FRESA 1X12 a $5.17 → precio = 5.17/12 = 0.43
+   - Ejemplo: NUCITA FLOW PACK X6 a $9.54 → precio = 9.54/6 = 1.59
+   - Ejemplo: GALLETA OREO 24UND a $12.00 → precio = 12.00/24 = 0.50
+   - En "cantidad_bulto" devuelve las unidades totales del bulto (12, 6, 24, etc)
+   - En "precio" devuelve SIEMPRE el precio unitario YA DIVIDIDO
+
 5. NO INVENTES: Si no puedes leer un dato con certeza, usa null. Nunca inventes nombres ni precios.
 6. INCLUYE TODOS los productos de la factura, sin omitir ninguno.
 
 RESPONDE ÚNICAMENTE con este JSON (sin texto adicional, sin markdown, sin explicaciones):
 {"productos":[{"nombre":"NOMBRE EXACTO","precio":0.00,"moneda":"USD","unidad":"unidad","cantidad_bulto":null}],"proveedor":"nombre o null","fecha":"YYYY-MM-DD o null"}`;
+
+// Detecta unidades por bulto a partir del nombre del producto.
+// Convención venezolana: "1X12" = 12 unidades; "2X6" = 12; "X6" = 6; "12UND" = 12.
+function detectarBultoEnNombre(nombre: string): number | null {
+  const mXY = nombre.match(/(\d+)\s*[xX]\s*(\d+)/);
+  if (mXY) {
+    const a = parseInt(mXY[1], 10);
+    const b = parseInt(mXY[2], 10);
+    if (a > 0 && b > 0) return a === 1 ? b : a * b;
+  }
+  const mX = nombre.match(/(?:^|\s)[xX]\s*(\d+)/);
+  if (mX) {
+    const n = parseInt(mX[1], 10);
+    if (n > 1) return n;
+  }
+  const mUN = nombre.match(/(\d+)\s*UN[DI]?/i);
+  if (mUN) {
+    const n = parseInt(mUN[1], 10);
+    if (n > 1) return n;
+  }
+  return null;
+}
+
+// Normaliza precio/cantidad_bulto cruzando lo que dijo la IA con el patrón del nombre.
+// Si el nombre indica bulto y la IA no dividió (cantidad_bulto null/1), divide en código.
+function normalizarBulto(precioIA: number, cantidadIA: number | null, nombre: string): {
+  precio: number;
+  cantidadBulto: number | null;
+  precioTotal: number | null;
+} {
+  const detectado = detectarBultoEnNombre(nombre);
+  const cantidadIAValida = cantidadIA && cantidadIA > 1 ? cantidadIA : null;
+
+  if (detectado && detectado > 1) {
+    if (!cantidadIAValida) {
+      return { precio: precioIA / detectado, cantidadBulto: detectado, precioTotal: precioIA };
+    }
+    return { precio: precioIA, cantidadBulto: cantidadIAValida, precioTotal: precioIA * cantidadIAValida };
+  }
+  if (cantidadIAValida) {
+    return { precio: precioIA, cantidadBulto: cantidadIAValida, precioTotal: precioIA * cantidadIAValida };
+  }
+  return { precio: precioIA, cantidadBulto: null, precioTotal: null };
+}
 
 export function useInvoiceScanner() {
   const { products, addProduct, updateProduct } = useProductStore();
@@ -133,17 +191,17 @@ export function useInvoiceScanner() {
   }, []);
 
   const determinarEstado = useCallback(
-    (nombre: string, precio: number, moneda: string): Pick<InvoiceProduct, 'estado' | 'id' | 'precioAnterior'> => {
+    (nombre: string, precio: number, moneda: string): Pick<InvoiceProduct, 'estado' | 'id' | 'precioAnterior' | 'exemptFromVAT'> => {
       const existente = products.find(
         (p) => p.name.toLowerCase().trim() === nombre.toLowerCase().trim()
       );
-      if (!existente) return { estado: 'Nuevo', id: null, precioAnterior: null };
+      if (!existente) return { estado: 'Nuevo', id: null, precioAnterior: null, exemptFromVAT: false };
 
       const precioNuevo = moneda === 'Bs' ? precio / (rate > 0 ? rate : 1) : precio;
       const diff = Math.abs(existente.costUSD - precioNuevo);
 
-      if (diff < 0.001) return { estado: 'Sin cambios', id: existente.id, precioAnterior: existente.costUSD };
-      return { estado: 'Actualizar precio', id: existente.id, precioAnterior: existente.costUSD };
+      if (diff < 0.001) return { estado: 'Sin cambios', id: existente.id, precioAnterior: existente.costUSD, exemptFromVAT: existente.exemptFromVAT };
+      return { estado: 'Actualizar precio', id: existente.id, precioAnterior: existente.costUSD, exemptFromVAT: existente.exemptFromVAT };
     },
     [products, rate]
   );
@@ -185,19 +243,26 @@ export function useInvoiceScanner() {
 
         const mapped: InvoiceProduct[] = result.productos.map((p, i) => {
           const moneda: 'USD' | 'Bs' = p.moneda === 'USD' ? 'USD' : 'Bs';
-          const { estado, id, precioAnterior } = determinarEstado(p.nombre, p.precio, moneda);
+          const { precio, cantidadBulto, precioTotal } = normalizarBulto(
+            Number(p.precio),
+            p.cantidad_bulto ?? null,
+            p.nombre
+          );
+          const { estado, id, precioAnterior, exemptFromVAT } = determinarEstado(p.nombre, precio, moneda);
           return {
             nombre: p.nombre,
-            precio: p.precio,
+            precio,
+            precioTotal,
             moneda,
             unidad: p.unidad,
-            cantidadBulto: p.cantidad_bulto ?? null,
+            cantidadBulto,
             seleccionado: estado !== 'Sin cambios',
             estado,
             id,
             precioAnterior,
             fotoUrl: fotos[i],
             ganancia: 30,
+            exemptFromVAT,
           };
         });
 
@@ -242,7 +307,7 @@ export function useInvoiceScanner() {
             cost: costUsd,
             currency: 'USD',
             profitPercentage: ganancia,
-            exemptFromVAT: false,
+            exemptFromVAT: producto.exemptFromVAT,
             photoUrl: producto.fotoUrl ?? null,
             providerId: proveedorId ?? null,
           });

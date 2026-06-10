@@ -1,7 +1,19 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SecureInput } from '@/components/ui/SecureInput';
+import { useCurrencyStore } from '@/store/currencyStore';
 import type { InvoiceProduct } from './useInvoiceScanner';
+
+const IVA = 0.16;
+
+// (costo / (1 - ganancia/100)) * (1 + IVA si no exento)
+function calcularPrecioVenta(costo: number, ganancia: number, exento: boolean): number {
+  if (costo <= 0) return 0;
+  const margen = 1 - (ganancia || 0) / 100;
+  if (margen <= 0) return 0;
+  const base = costo / margen;
+  return exento ? base : base * (1 + IVA);
+}
 
 interface InvoiceReviewTableProps {
   productos: InvoiceProduct[];
@@ -134,19 +146,26 @@ export function InvoiceReviewTable({
   const allSelected = productos.length > 0 && productos.every((p) => p.seleccionado);
   const someSelected = productos.some((p) => p.seleccionado);
   const selectedCount = productos.filter((p) => p.seleccionado).length;
+  const rate = useCurrencyStore((s) => s.rate);
 
   // Estado local de strings para no romper la escritura decimal ("30." → no colapsar a "30")
   const [gananciaStrs, setGananciaStrs] = React.useState<string[]>(
     () => productos.map((p) => p.ganancia.toString())
+  );
+  const [precioStrs, setPrecioStrs] = React.useState<string[]>(
+    () => productos.map((p) => p.precio.toFixed(2))
   );
   // Sincroniza cuando la lista de productos cambia (nuevo escaneo)
   const prevLenRef = React.useRef(productos.length);
   React.useEffect(() => {
     if (productos.length !== prevLenRef.current) {
       setGananciaStrs(productos.map((p) => p.ganancia.toString()));
+      setPrecioStrs(productos.map((p) => p.precio.toFixed(2)));
       prevLenRef.current = productos.length;
     }
   }, [productos]);
+
+  const gananciaGlobalNum = parseFloat(globalGanancia) || 0;
 
   return (
     <div className="space-y-3">
@@ -219,7 +238,7 @@ export function InvoiceReviewTable({
       <div className="rounded-2xl overflow-hidden"
         style={{ background: '#161b22', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px]">
+          <table className="w-full min-w-[820px]">
             <thead style={{ background: '#1c2128', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               <tr>
                 <th className="h-10 w-10 px-3 text-center">
@@ -232,7 +251,8 @@ export function InvoiceReviewTable({
                 </th>
                 <th className="h-10 px-3 text-left text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle">Foto</th>
                 <th className="h-10 px-4 text-left text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle">Nombre</th>
-                <th className="h-10 px-3 text-right text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle">Precio</th>
+                <th className="h-10 px-3 text-right text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle whitespace-nowrap">Precio Costo</th>
+                <th className="h-10 px-3 text-right text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle whitespace-nowrap">Precio Venta</th>
                 <th className="h-10 px-3 text-center text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle">Moneda</th>
                 <th className="h-10 px-3 text-left text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle">Estado</th>
                 {gananciaMode === 'individual' && (
@@ -243,7 +263,18 @@ export function InvoiceReviewTable({
 
             <tbody>
               <AnimatePresence initial={false}>
-                {productos.map((producto, index) => (
+                {productos.map((producto, index) => {
+                  const gananciaUsada = gananciaMode === 'global' ? gananciaGlobalNum : producto.ganancia;
+                  const precioVenta = calcularPrecioVenta(producto.precio, gananciaUsada, producto.exemptFromVAT);
+                  const monedaSimbolo = producto.moneda === 'USD' ? '$' : 'Bs';
+                  const otroMonedaSimbolo = producto.moneda === 'USD' ? 'Bs' : '$';
+                  let precioVentaOtra: number | null = null;
+                  if (rate > 0) {
+                    precioVentaOtra = producto.moneda === 'USD' ? precioVenta * rate : precioVenta / rate;
+                  }
+                  const tieneBulto = producto.cantidadBulto !== null && producto.cantidadBulto > 1;
+
+                  return (
                   <motion.tr
                     key={`${producto.nombre}-${index}`}
                     initial={{ opacity: 0, x: -10 }}
@@ -282,28 +313,78 @@ export function InvoiceReviewTable({
 
                     {/* Nombre */}
                     <td className="px-4 py-3 align-middle">
-                      <span className="font-semibold text-[#e6edf3] text-sm">{producto.nombre}</span>
-                      {producto.unidad && (
-                        <span className="ml-1.5 text-[10px] text-[#484f58] font-medium">
-                          ({producto.unidad})
-                        </span>
-                      )}
-                      {producto.cantidadBulto !== null && (
-                        <span
-                          className="ml-1.5 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded"
-                          style={{ color: '#a78bfa', background: 'rgba(167,139,250,0.1)' }}
+                      <div className="flex items-center flex-wrap gap-x-1.5">
+                        <span className="font-semibold text-[#e6edf3] text-sm">{producto.nombre}</span>
+                        {producto.unidad && (
+                          <span className="text-[10px] text-[#484f58] font-medium">
+                            ({producto.unidad})
+                          </span>
+                        )}
+                      </div>
+                      {tieneBulto && (
+                        <div
+                          className="mt-1 text-[10px] font-semibold flex items-center gap-1 flex-wrap"
+                          style={{ color: '#a78bfa', fontFamily: '"JetBrains Mono", monospace' }}
                         >
-                          x{producto.cantidadBulto} bulto
-                        </span>
+                          <span className="px-1.5 py-0.5 rounded font-black uppercase tracking-wider text-[9px]"
+                            style={{ background: 'rgba(167,139,250,0.1)' }}>
+                            Bulto de {producto.cantidadBulto}
+                          </span>
+                          {producto.precioTotal !== null && (
+                            <span className="text-[#8b949e]">
+                              — {monedaSimbolo}{producto.precioTotal.toFixed(2)} total → {monedaSimbolo}{producto.precio.toFixed(2)} c/u
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
 
-                    {/* Precio */}
+                    {/* Precio Costo (editable) */}
+                    <td className="px-3 py-2 align-middle text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <span className="text-[#484f58] text-[11px] font-bold">{monedaSimbolo}</span>
+                        <div className="w-20">
+                          <SecureInput
+                            value={precioStrs[index] ?? producto.precio.toFixed(2)}
+                            onChange={(v) => {
+                              setPrecioStrs((prev) => {
+                                const next = [...prev];
+                                next[index] = v;
+                                return next;
+                              });
+                              const num = parseFloat(v);
+                              if (!isNaN(num) && num >= 0) {
+                                onUpdateProducto(index, { precio: num });
+                              }
+                            }}
+                            inputMode="decimal"
+                            editable
+                            noRing
+                            placeholder="0.00"
+                            displayClassName="!min-h-[30px] !py-1 !px-2 !text-sm !rounded-lg !border-white/10 !text-right"
+                          />
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Precio Venta (calculado, verde, JetBrains Mono) */}
                     <td className="px-3 py-3 align-middle text-right">
-                      <span className="font-black text-[#e6edf3]"
-                        style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.95rem' }}>
-                        {Number(producto.precio).toFixed(2)}
-                      </span>
+                      <div className="flex flex-col items-end leading-tight">
+                        <span
+                          className="font-black"
+                          style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.95rem', color: '#1ebb60' }}
+                        >
+                          {monedaSimbolo}{precioVenta.toFixed(2)}
+                        </span>
+                        {precioVentaOtra !== null && (
+                          <span
+                            className="text-[10px] mt-0.5"
+                            style={{ fontFamily: '"JetBrains Mono", monospace', color: '#6e7681' }}
+                          >
+                            {otroMonedaSimbolo}{precioVentaOtra.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Moneda */}
@@ -372,7 +453,8 @@ export function InvoiceReviewTable({
                       </td>
                     )}
                   </motion.tr>
-                ))}
+                  );
+                })}
               </AnimatePresence>
             </tbody>
           </table>
