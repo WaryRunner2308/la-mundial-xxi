@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 
 interface SecureInputProps {
     value: string;
@@ -23,6 +23,8 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         const inputRef = useRef<HTMLInputElement>(null);
         const displayRef = useRef<HTMLDivElement>(null);
         const [isFocused, setIsFocused] = useState(false);
+        // Cursor deseado tras cada onChange — se restaura en useLayoutEffect (antes del paint)
+        const savedCursor = useRef<number | null>(null);
 
         const fieldName = useRef<string>(`field_${Math.random().toString(36).substring(2, 15)}`);
 
@@ -35,11 +37,10 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         }, [autoFocus]);
 
         const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-            if (inputRef.current) {
-                if (e.pointerType === 'touch') {
-                    e.preventDefault();
-                }
-                e.stopPropagation();
+            if (!inputRef.current) return;
+            if (e.pointerType === 'touch') {
+                // En touch prevenimos el comportamiento por defecto y forzamos foco + cursor al final
+                e.preventDefault();
                 inputRef.current.focus();
                 requestAnimationFrame(() => {
                     if (inputRef.current) {
@@ -47,6 +48,10 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         inputRef.current.setSelectionRange(len, len);
                     }
                 });
+            } else {
+                // En mouse el input (z-index:9999) ya recibe el click directamente —
+                // el browser calcula la posición correcta; solo prevenimos propagación extra.
+                e.stopPropagation();
             }
         }, []);
 
@@ -66,14 +71,12 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 newValue = newValue.replace(/[^0-9]/g, '');
             }
 
+            // Guardamos el cursor deseado ANTES de que onChange dispare el re-render de React.
+            // useLayoutEffect lo restaurará sincrónicamente después del commit, antes del paint,
+            // evitando cualquier frame visible con el cursor en posición incorrecta.
             const newCursor = Math.max(0, cursorBefore + (newValue.length - lengthBefore));
+            savedCursor.current = newCursor;
             onChange(newValue);
-
-            requestAnimationFrame(() => {
-                if (inputRef.current) {
-                    inputRef.current.setSelectionRange(newCursor, newCursor);
-                }
-            });
         };
 
         const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -92,6 +95,15 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 displayRef.current.textContent = value;
             }
         }, [value]);
+
+        // Restaura el cursor sincrónicamente después de cada commit de React, antes del paint.
+        // Sin deps array: corre en todos los renders — solo actúa si savedCursor tiene valor.
+        useLayoutEffect(() => {
+            if (inputRef.current && savedCursor.current !== null) {
+                inputRef.current.setSelectionRange(savedCursor.current, savedCursor.current);
+                savedCursor.current = null;
+            }
+        });
 
         return (
             <div
