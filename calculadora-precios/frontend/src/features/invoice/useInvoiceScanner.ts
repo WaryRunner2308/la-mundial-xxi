@@ -26,29 +26,18 @@ export const LOADING_MESSAGES = [
 ];
 
 
-const INVOICE_PROMPT = `Eres un asistente para un negocio de carnes venezolano.
-Analiza esta factura y extrae TODOS los productos.
-Instrucciones importantes:
-- Lee los nombres de productos con mucho cuidado, letra por letra
-- NO agregues ni quites letras a los nombres
-- Si un nombre tiene varias palabras, inclúyelas todas completas
-- Ejemplos de marcas venezolanas comunes: MENTOS, HALLS, FREEGELLS, NUCITA, TUTTI FRUTTI — respétalas exactamente como aparecen
-- Si el producto indica cantidad por bulto (ej: "12UND", "24X1", "1X12", "16UND", "CAJA X24", "x12", "X 6", "6UN", etc), divide el precio total entre esa cantidad para obtener el precio unitario. Ese precio unitario es el que va en el campo "precio". En el campo "cantidad_bulto" indica cuántas unidades trae el bulto (número entero).
-- Si no hay indicación de cantidad por bulto, "precio" es el precio tal como aparece y "cantidad_bulto" es null.
-Responde ÚNICAMENTE con JSON válido sin markdown:
-{
-  "productos": [
-    {
-      "nombre": "nombre del producto",
-      "precio": 00.00,
-      "moneda": "USD o Bs",
-      "unidad": "kg, g, unidad, etc",
-      "cantidad_bulto": null
-    }
-  ],
-  "proveedor": "nombre o null",
-  "fecha": "YYYY-MM-DD o null"
-}`;
+const INVOICE_PROMPT = `Eres un lector de facturas para un negocio venezolano. Tu única tarea es extraer los datos de la factura con precisión absoluta.
+
+REGLAS ESTRICTAS:
+1. NOMBRES: Copia el nombre exactamente como aparece en la factura, letra por letra, sin cambiar mayúsculas, sin agregar ni quitar nada.
+2. PRECIOS: En Venezuela el separador decimal puede ser punto (.) o coma (,). Interpreta el número correctamente. El precio nunca debe ser 0.
+3. MONEDA: Si ves "$", "USD", "US$" o "dólar" → "USD". Si ves "Bs", "BsF", "Bs." o "bolívar" → "Bs". Si no está claro, usa "USD".
+4. BULTOS: Si hay cantidad por bulto (ej: "12UND", "24X1", "1X12", "CAJA X24", "x12", "6UN"), divide el precio total entre esa cantidad y pon el resultado en "precio". Pon la cantidad en "cantidad_bulto".
+5. NO INVENTES: Si no puedes leer un dato con certeza, usa null. Nunca inventes nombres ni precios.
+6. INCLUYE TODOS los productos de la factura, sin omitir ninguno.
+
+RESPONDE ÚNICAMENTE con este JSON (sin texto adicional, sin markdown, sin explicaciones):
+{"productos":[{"nombre":"NOMBRE EXACTO","precio":0.00,"moneda":"USD","unidad":"unidad","cantidad_bulto":null}],"proveedor":"nombre o null","fecha":"YYYY-MM-DD o null"}`;
 
 export function useInvoiceScanner() {
   const { products, addProduct, updateProduct } = useProductStore();
@@ -93,6 +82,7 @@ export function useInvoiceScanner() {
           ],
         }],
         max_tokens: 1500,
+        temperature: 0,
       }),
     });
 
