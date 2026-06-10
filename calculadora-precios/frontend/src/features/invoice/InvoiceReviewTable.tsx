@@ -288,6 +288,14 @@ export function InvoiceReviewTable({
                           ({producto.unidad})
                         </span>
                       )}
+                      {producto.cantidadBulto !== null && (
+                        <span
+                          className="ml-1.5 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded"
+                          style={{ color: '#a78bfa', background: 'rgba(167,139,250,0.1)' }}
+                        >
+                          x{producto.cantidadBulto} bulto
+                        </span>
+                      )}
                     </td>
 
                     {/* Precio */}

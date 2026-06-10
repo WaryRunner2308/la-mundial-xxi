@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, CheckCircle, AlertCircle, RotateCcw, Download } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, AlertCircle, RotateCcw, Download, ChevronDown, Plus, Store, X } from 'lucide-react';
 import { CameraCapture } from './CameraCapture';
 import { InvoiceReviewTable } from './InvoiceReviewTable';
 import { useInvoiceScanner, LOADING_MESSAGES } from './useInvoiceScanner';
+import { useProviderStore } from '@/store/providerStore';
 
 /* ─── Loading spinner con mensajes rotativos ─── */
 function ScanningOverlay({ messageIdx }: { messageIdx: number }) {
@@ -15,7 +16,6 @@ function ScanningOverlay({ messageIdx }: { messageIdx: number }) {
       exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center py-20 gap-6"
     >
-      {/* Spinner */}
       <div className="relative w-20 h-20">
         <motion.div
           animate={{ rotate: 360 }}
@@ -34,7 +34,6 @@ function ScanningOverlay({ messageIdx }: { messageIdx: number }) {
         </div>
       </div>
 
-      {/* Mensajes rotativos */}
       <div className="h-7 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.p
@@ -52,7 +51,7 @@ function ScanningOverlay({ messageIdx }: { messageIdx: number }) {
       </div>
 
       <p className="text-xs text-[#484f58] text-center">
-        Gemini 1.5 Flash está analizando la imagen...
+        Analizando la imagen con IA...
       </p>
     </motion.div>
   );
@@ -121,6 +120,201 @@ function Toast({ message }: { message: string }) {
   );
 }
 
+/* ─── Selector de proveedor ─── */
+interface ProviderSelectorProps {
+  proveedorId: number | null;
+  proveedorDetectado: string | null;
+  onSelect: (id: number | null) => void;
+}
+
+function ProviderSelector({ proveedorId, proveedorDetectado, onSelect }: ProviderSelectorProps) {
+  const { providers, addProvider } = useProviderStore();
+  const [open, setOpen] = useState(false);
+  const [nuevoNombre, setNuevoNombre] = useState('');
+  const [creando, setCreando] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const selected = providers.find((p) => p.id === proveedorId) ?? null;
+
+  // Cierra al hacer click fuera
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setShowNew(false);
+      }
+    };
+    if (open) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const handleCrear = async () => {
+    const name = nuevoNombre.trim();
+    if (!name) return;
+    setCreando(true);
+    try {
+      const nuevo = await addProvider(name);
+      onSelect(nuevo.id);
+      setNuevoNombre('');
+      setShowNew(false);
+      setOpen(false);
+    } finally {
+      setCreando(false);
+    }
+  };
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition"
+        style={{
+          background: selected ? 'rgba(0,154,58,0.1)' : 'rgba(255,255,255,0.05)',
+          border: selected ? '1px solid rgba(0,154,58,0.25)' : '1px solid rgba(255,255,255,0.1)',
+          color: selected ? '#1ebb60' : '#8b949e',
+        }}
+      >
+        <Store size={14} />
+        <span style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.04em' }}>
+          {selected ? selected.name : (proveedorDetectado ? `¿Es "${proveedorDetectado}"?` : '¿Qué proveedor es este?')}
+        </span>
+        {selected && (
+          <span
+            onClick={(e) => { e.stopPropagation(); onSelect(null); }}
+            className="ml-1 text-[#484f58] hover:text-[#C8102E] transition cursor-pointer"
+          >
+            <X size={12} />
+          </span>
+        )}
+        <ChevronDown
+          size={13}
+          className="ml-1 transition-transform"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', color: '#484f58' }}
+        />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute left-0 top-full mt-1.5 z-50 w-64 rounded-xl overflow-hidden"
+            style={{
+              background: '#1c2128',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            }}
+          >
+            {/* Opción: sin proveedor */}
+            <button
+              type="button"
+              onClick={() => { onSelect(null); setOpen(false); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition hover:bg-white/5"
+              style={{ color: proveedorId === null ? '#009A3A' : '#8b949e' }}
+            >
+              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <X size={10} />
+              </div>
+              <span style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.03em' }}>
+                Sin proveedor
+              </span>
+              {proveedorId === null && <span className="ml-auto text-[#009A3A] text-xs">✓</span>}
+            </button>
+
+            {/* Separador */}
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+
+            {/* Lista de proveedores */}
+            <div className="max-h-48 overflow-y-auto py-1">
+              {providers.length === 0 ? (
+                <p className="px-4 py-3 text-xs text-[#484f58]">No hay proveedores registrados</p>
+              ) : (
+                providers.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => { onSelect(p.id); setOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition hover:bg-white/5"
+                    style={{ color: proveedorId === p.id ? '#009A3A' : '#e6edf3' }}
+                  >
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-black uppercase"
+                      style={{
+                        background: proveedorId === p.id ? 'rgba(0,154,58,0.2)' : 'rgba(255,255,255,0.08)',
+                        color: proveedorId === p.id ? '#009A3A' : '#484f58',
+                      }}
+                    >
+                      {p.name.charAt(0)}
+                    </div>
+                    <span className="flex-1 truncate" style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.03em' }}>
+                      {p.name}
+                    </span>
+                    {proveedorId === p.id && <span className="ml-auto text-[#009A3A] text-xs">✓</span>}
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Separador + agregar nuevo */}
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+
+            {!showNew ? (
+              <button
+                type="button"
+                onClick={() => { setShowNew(true); setTimeout(() => inputRef.current?.focus(), 50); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition hover:bg-white/5"
+                style={{ color: '#009A3A' }}
+              >
+                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(0,154,58,0.12)', border: '1px solid rgba(0,154,58,0.2)' }}>
+                  <Plus size={10} style={{ color: '#009A3A' }} />
+                </div>
+                <span style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.03em' }}>
+                  Agregar nuevo proveedor
+                </span>
+              </button>
+            ) : (
+              <div className="px-3 py-2.5 flex items-center gap-2">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={nuevoNombre}
+                  onChange={(e) => setNuevoNombre(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleCrear(); if (e.key === 'Escape') { setShowNew(false); setNuevoNombre(''); } }}
+                  placeholder="Nombre del proveedor"
+                  className="flex-1 bg-transparent text-sm text-[#e6edf3] outline-none placeholder-[#484f58]"
+                  style={{ fontFamily: '"Barlow Condensed", sans-serif' }}
+                />
+                <button
+                  type="button"
+                  onClick={handleCrear}
+                  disabled={!nuevoNombre.trim() || creando}
+                  className="px-2.5 py-1 rounded-lg text-xs font-black uppercase transition disabled:opacity-40"
+                  style={{
+                    background: 'rgba(0,154,58,0.15)',
+                    color: '#009A3A',
+                    border: '1px solid rgba(0,154,58,0.2)',
+                    fontFamily: '"Barlow Condensed", sans-serif',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {creando ? '...' : 'Crear'}
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 /* ─── InvoicePage ─── */
 export function InvoicePage() {
   const navigate = useNavigate();
@@ -129,6 +323,8 @@ export function InvoicePage() {
     setStep,
     productos,
     proveedor,
+    proveedorId,
+    setProveedorId,
     error,
     setError,
     importProgress,
@@ -192,16 +388,6 @@ export function InvoicePage() {
             Importar Factura{' '}
             <span style={{ color: '#009A3A' }}>con IA</span>
           </h1>
-          {proveedor && step === 'review' && (
-            <motion.p
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-sm text-[#8b949e] mt-0.5"
-            >
-              Proveedor detectado:{' '}
-              <span className="font-bold text-[#e6edf3]">{proveedor}</span>
-            </motion.p>
-          )}
         </div>
       </div>
 
@@ -230,7 +416,6 @@ export function InvoicePage() {
               exit={{ opacity: 0 }}
               className="p-6 md:p-8"
             >
-              {/* Error */}
               <AnimatePresence>
                 {error && (
                   <motion.div
@@ -281,8 +466,20 @@ export function InvoicePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="p-4 md:p-6"
+              className="p-4 md:p-6 space-y-4"
             >
+              {/* Selector de proveedor */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-[10px] font-black text-[#484f58] uppercase tracking-widest">
+                  Proveedor:
+                </span>
+                <ProviderSelector
+                  proveedorId={proveedorId}
+                  proveedorDetectado={proveedor}
+                  onSelect={setProveedorId}
+                />
+              </div>
+
               <InvoiceReviewTable
                 productos={productos}
                 onUpdateProducto={updateProducto}

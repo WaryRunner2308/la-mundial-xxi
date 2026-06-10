@@ -8,6 +8,7 @@ export interface InvoiceProduct {
   precio: number;
   moneda: 'USD' | 'Bs';
   unidad: string;
+  cantidadBulto: number | null;
   seleccionado: boolean;
   estado: 'Nuevo' | 'Actualizar precio' | 'Sin cambios';
   id: number | null;
@@ -32,6 +33,7 @@ export function useInvoiceScanner() {
   const [step, setStep] = useState<ScanStep>('idle');
   const [productos, setProductos] = useState<InvoiceProduct[]>([]);
   const [proveedor, setProveedor] = useState<string | null>(null);
+  const [proveedorId, setProveedorId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState(0);
   const [importTotal, setImportTotal] = useState(0);
@@ -75,6 +77,8 @@ Instrucciones importantes:
 - NO agregues ni quites letras a los nombres
 - Si un nombre tiene varias palabras, inclúyelas todas completas
 - Ejemplos de marcas venezolanas comunes: MENTOS, HALLS, FREEGELLS, NUCITA, TUTTI FRUTTI — respétalas exactamente como aparecen
+- Si el producto indica cantidad por bulto (ej: "12UND", "24X1", "1X12", "16UND", "CAJA X24", "x12", "X 6", "6UN", etc), divide el precio total entre esa cantidad para obtener el precio unitario. Ese precio unitario es el que va en el campo "precio". En el campo "cantidad_bulto" indica cuántas unidades trae el bulto (número entero).
+- Si no hay indicación de cantidad por bulto, "precio" es el precio tal como aparece y "cantidad_bulto" es null.
 Responde ÚNICAMENTE con JSON válido sin markdown:
 {
   "productos": [
@@ -82,7 +86,8 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
       "nombre": "nombre del producto",
       "precio": 00.00,
       "moneda": "USD o Bs",
-      "unidad": "kg, g, unidad, etc"
+      "unidad": "kg, g, unidad, etc",
+      "cantidad_bulto": null
     }
   ],
   "proveedor": "nombre o null",
@@ -108,13 +113,17 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
 
     try {
       const parsed = JSON.parse(clean) as {
-        productos: Array<{ nombre: string; precio: number | string; moneda: string; unidad: string }>;
+        productos: Array<{ nombre: string; precio: number | string; moneda: string; unidad: string; cantidad_bulto?: number | string | null }>;
         proveedor: string | null;
         fecha: string | null;
       };
       return {
         ...parsed,
-        productos: parsed.productos.map((p) => ({ ...p, precio: Number(p.precio) })),
+        productos: parsed.productos.map((p) => ({
+          ...p,
+          precio: Number(p.precio),
+          cantidad_bulto: p.cantidad_bulto != null ? Number(p.cantidad_bulto) || null : null,
+        })),
       };
     } catch {
       throw new Error('El modelo no pudo estructurar la respuesta. Intenta con una imagen más clara.');
@@ -122,24 +131,42 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
   }, []);
 
   const searchProductImage = useCallback(async (productName: string): Promise<string | null> => {
+    const query = encodeURIComponent(`${productName} producto Venezuela`);
+
+    // Intento 1: Google Custom Search
     try {
-      const query = encodeURIComponent(`${productName} producto Venezuela`);
-      console.log('API Key exists:', !!import.meta.env.VITE_GOOGLE_SEARCH_API_KEY);
-      console.log('CX exists:', !!import.meta.env.VITE_GOOGLE_SEARCH_CX);
-      console.log('Google Search URL:', `https://www.googleapis.com/customsearch/v1?key=${import.meta.env.VITE_GOOGLE_SEARCH_API_KEY}&cx=${import.meta.env.VITE_GOOGLE_SEARCH_CX}&q=${query}&searchType=image&num=1`);
+      console.log('Google Search key:', import.meta.env.VITE_GOOGLE_SEARCH_API_KEY?.substring(0, 10));
+      console.log('Google Search cx:', import.meta.env.VITE_GOOGLE_SEARCH_CX);
       const res = await fetch(
         `https://www.googleapis.com/customsearch/v1?key=${import.meta.env.VITE_GOOGLE_SEARCH_API_KEY}&cx=${import.meta.env.VITE_GOOGLE_SEARCH_CX}&q=${query}&searchType=image&num=1&imgSize=medium`
       );
-      if (!res.ok) {
+      if (res.ok) {
+        const data = await res.json() as { items?: Array<{ link: string }> };
+        const url = data.items?.[0]?.link ?? null;
+        if (url) return url;
+      } else {
         const errBody = await res.json().catch(() => ({}));
         console.warn('Google Search error:', res.status, errBody);
-        return null;
       }
-      const data = await res.json() as { items?: Array<{ link: string }> };
-      return data.items?.[0]?.link ?? null;
-    } catch {
-      return null;
+    } catch (e) {
+      console.warn('Google Search exception:', e);
     }
+
+    // Intento 2: DuckDuckGo Images fallback
+    try {
+      const ddgRes = await fetch(
+        `https://api.duckduckgo.com/?q=${query}&iax=images&ia=images&format=json`
+      );
+      if (ddgRes.ok) {
+        const ddgData = await ddgRes.json() as { Image?: string; Results?: Array<{ Image?: string }> };
+        const url = ddgData.Image || ddgData.Results?.[0]?.Image || null;
+        if (url) return url;
+      }
+    } catch (e) {
+      console.warn('DuckDuckGo fallback exception:', e);
+    }
+
+    return null;
   }, []);
 
   const determinarEstado = useCallback(
@@ -178,7 +205,15 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
         setStep('fetching-images');
         setLoadingMessageIdx(2);
 
-        setProveedor(result.proveedor ?? null);
+        const detectedName = result.proveedor ?? null;
+        setProveedor(detectedName);
+        if (detectedName) {
+          const match = providers.find((p) =>
+            p.name.toLowerCase().includes(detectedName.toLowerCase()) ||
+            detectedName.toLowerCase().includes(p.name.toLowerCase())
+          );
+          setProveedorId(match?.id ?? null);
+        }
 
         const fotosResults = await Promise.allSettled(
           result.productos.map((p) => searchProductImage(p.nombre))
@@ -193,6 +228,7 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
             precio: p.precio,
             moneda,
             unidad: p.unidad,
+            cantidadBulto: p.cantidad_bulto ?? null,
             seleccionado: estado !== 'Sin cambios',
             estado,
             id,
@@ -212,7 +248,7 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
         clearInterval(msgInterval);
       }
     },
-    [callGeminiVision, searchProductImage, determinarEstado]
+    [callGeminiVision, searchProductImage, determinarEstado, providers]
   );
 
   const ejecutarImportacion = useCallback(async () => {
@@ -222,11 +258,6 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
     setStep('importing');
     setImportProgress(0);
     setImportTotal(seleccionados.length);
-
-    const proveedorId =
-      proveedor
-        ? (providers.find((p) => p.name.toLowerCase().includes(proveedor.toLowerCase()))?.id ?? null)
-        : null;
 
     let creados = 0;
     let actualizados = 0;
@@ -267,7 +298,7 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
     const result = { creados, actualizados };
     setImportResult(result);
     return result;
-  }, [productos, proveedor, providers, rate, addProduct, updateProduct, globalGanancia, gananciaMode]);
+  }, [productos, proveedorId, rate, addProduct, updateProduct, globalGanancia, gananciaMode]);
 
   const updateProducto = useCallback((index: number, changes: Partial<InvoiceProduct>) => {
     setProductos((prev) => prev.map((p, i) => (i === index ? { ...p, ...changes } : p)));
@@ -281,6 +312,7 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
     setStep('idle');
     setProductos([]);
     setProveedor(null);
+    setProveedorId(null);
     setError(null);
     setImportProgress(0);
     setImportTotal(0);
@@ -292,6 +324,8 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
     setStep,
     productos,
     proveedor,
+    proveedorId,
+    setProveedorId,
     error,
     setError,
     importProgress,
