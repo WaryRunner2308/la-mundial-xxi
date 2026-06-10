@@ -49,10 +49,13 @@ export function useInvoiceScanner() {
 
     const mimeType = imageBlob.type || 'image/png';
 
+    // Cada modelo tiene su versión de API correcta:
+    // - gemini-2.0-flash → v1beta
+    // - gemini-1.5-x     → v1 (no existen en v1beta)
     const MODELS = [
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
+      { apiVersion: 'v1beta', model: 'gemini-2.0-flash' },
+      { apiVersion: 'v1',     model: 'gemini-1.5-flash' },
+      { apiVersion: 'v1',     model: 'gemini-1.5-pro'   },
     ];
 
     const body = JSON.stringify({
@@ -92,9 +95,9 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
     let response: Response | null = null;
     let lastError = '';
 
-    for (const model of MODELS) {
+    for (const { apiVersion, model } of MODELS) {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
       );
 
@@ -105,7 +108,7 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
 
       const errData = await res.json().catch(() => ({})) as { error?: { message?: string } };
       lastError = errData?.error?.message ?? `Error ${res.status}`;
-      console.warn(`[Gemini] ${model} falló: ${lastError}`);
+      console.warn(`[Gemini] ${apiVersion}/${model} falló: ${lastError}`);
     }
 
     if (!response) {
