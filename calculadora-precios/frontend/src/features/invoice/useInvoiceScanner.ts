@@ -25,52 +25,12 @@ export const LOADING_MESSAGES = [
   'Buscando imágenes...',
 ];
 
-export function useInvoiceScanner() {
-  const { products, addProduct, updateProduct } = useProductStore();
-  const { providers } = useProviderStore();
-  const { rate } = useCurrencyStore();
+const VISION_MODELS = [
+  'google/gemini-2.0-flash-exp:free',
+  'qwen/qwen2.5-vl-72b-instruct:free',
+] as const;
 
-  const [step, setStep] = useState<ScanStep>('idle');
-  const [productos, setProductos] = useState<InvoiceProduct[]>([]);
-  const [proveedor, setProveedor] = useState<string | null>(null);
-  const [proveedorId, setProveedorId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [importProgress, setImportProgress] = useState(0);
-  const [importTotal, setImportTotal] = useState(0);
-  const [loadingMessageIdx, setLoadingMessageIdx] = useState(0);
-  const [globalGanancia, setGlobalGanancia] = useState('30');
-  const [gananciaMode, setGananciaMode] = useState<'global' | 'individual'>('global');
-  const [importResult, setImportResult] = useState<{ creados: number; actualizados: number } | null>(null);
-
-  const callGeminiVision = useCallback(async (imageBlob: Blob) => {
-    const base64 = await new Promise<string>((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string).split(',')[1]);
-      reader.readAsDataURL(imageBlob);
-    });
-
-    const mimeType = imageBlob.type || 'image/png';
-
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://la-mundial-xxi.vercel.app',
-        'X-Title': 'La Mundial',
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.2-11b-vision-instruct',
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image_url',
-              image_url: { url: `data:${mimeType};base64,${base64}` },
-            },
-            {
-              type: 'text',
-              text: `Eres un asistente para un negocio de carnes venezolano.
+const INVOICE_PROMPT = `Eres un asistente para un negocio de carnes venezolano.
 Analiza esta factura y extrae TODOS los productos.
 Instrucciones importantes:
 - Lee los nombres de productos con mucho cuidado, letra por letra
@@ -92,8 +52,41 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
   ],
   "proveedor": "nombre o null",
   "fecha": "YYYY-MM-DD o null"
-}`,
-            },
+}`;
+
+export function useInvoiceScanner() {
+  const { products, addProduct, updateProduct } = useProductStore();
+  const { providers } = useProviderStore();
+  const { rate } = useCurrencyStore();
+
+  const [step, setStep] = useState<ScanStep>('idle');
+  const [productos, setProductos] = useState<InvoiceProduct[]>([]);
+  const [proveedor, setProveedor] = useState<string | null>(null);
+  const [proveedorId, setProveedorId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importTotal, setImportTotal] = useState(0);
+  const [loadingMessageIdx, setLoadingMessageIdx] = useState(0);
+  const [globalGanancia, setGlobalGanancia] = useState('30');
+  const [gananciaMode, setGananciaMode] = useState<'global' | 'individual'>('global');
+  const [importResult, setImportResult] = useState<{ creados: number; actualizados: number } | null>(null);
+
+  const callVisionModel = useCallback(async (base64: string, mimeType: string, model: string) => {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+        'HTTP-Referer': 'https://la-mundial-xxi.vercel.app',
+        'X-Title': 'La Mundial',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+            { type: 'text', text: INVOICE_PROMPT },
           ],
         }],
         max_tokens: 1500,
@@ -102,71 +95,68 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({})) as { error?: { message?: string } };
-      throw new Error(errData?.error?.message ?? `Error OpenRouter: ${response.status}`);
+      throw new Error(errData?.error?.message ?? `Error OpenRouter ${model}: ${response.status}`);
     }
 
-    const data = await response.json() as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
+    const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
     const text = data.choices?.[0]?.message?.content ?? '';
     const clean = text.replace(/```json|```/g, '').trim();
 
-    try {
-      const parsed = JSON.parse(clean) as {
-        productos: Array<{ nombre: string; precio: number | string; moneda: string; unidad: string; cantidad_bulto?: number | string | null }>;
-        proveedor: string | null;
-        fecha: string | null;
-      };
-      return {
-        ...parsed,
-        productos: parsed.productos.map((p) => ({
-          ...p,
-          precio: Number(p.precio),
-          cantidad_bulto: p.cantidad_bulto != null ? Number(p.cantidad_bulto) || null : null,
-        })),
-      };
-    } catch {
-      throw new Error('El modelo no pudo estructurar la respuesta. Intenta con una imagen más clara.');
-    }
+    const parsed = JSON.parse(clean) as {
+      productos: Array<{ nombre: string; precio: number | string; moneda: string; unidad: string; cantidad_bulto?: number | string | null }>;
+      proveedor: string | null;
+      fecha: string | null;
+    };
+    return {
+      ...parsed,
+      productos: parsed.productos.map((p) => ({
+        ...p,
+        precio: Number(p.precio),
+        cantidad_bulto: p.cantidad_bulto != null ? Number(p.cantidad_bulto) || null : null,
+      })),
+    };
   }, []);
 
-  const searchProductImage = useCallback(async (productName: string): Promise<string | null> => {
-    const query = encodeURIComponent(`${productName} producto Venezuela`);
+  const callGeminiVision = useCallback(async (imageBlob: Blob) => {
+    const base64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(',')[1]);
+      reader.readAsDataURL(imageBlob);
+    });
+    const mimeType = imageBlob.type || 'image/png';
 
-    // Intento 1: Google Custom Search
+    let lastError: Error = new Error('Sin modelos disponibles.');
+    for (const model of VISION_MODELS) {
+      try {
+        console.log(`Intentando modelo: ${model}`);
+        const result = await callVisionModel(base64, mimeType, model);
+        console.log(`Modelo ${model} respondió correctamente.`);
+        return result;
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.warn(`Modelo ${model} falló:`, lastError.message);
+      }
+    }
+    throw new Error(`Todos los modelos fallaron. Último error: ${lastError.message}`);
+  }, [callVisionModel]);
+
+  const searchProductImage = useCallback(async (productName: string): Promise<string | null> => {
+    // Intento 1: Wikipedia (funciona bien para marcas conocidas)
     try {
-      console.log('Google Search key:', import.meta.env.VITE_GOOGLE_SEARCH_API_KEY?.substring(0, 10));
-      console.log('Google Search cx:', import.meta.env.VITE_GOOGLE_SEARCH_CX);
+      const wikiQuery = encodeURIComponent(productName);
       const res = await fetch(
-        `https://www.googleapis.com/customsearch/v1?key=${import.meta.env.VITE_GOOGLE_SEARCH_API_KEY}&cx=${import.meta.env.VITE_GOOGLE_SEARCH_CX}&q=${query}&searchType=image&num=1&imgSize=medium`
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${wikiQuery}`
       );
       if (res.ok) {
-        const data = await res.json() as { items?: Array<{ link: string }> };
-        const url = data.items?.[0]?.link ?? null;
-        if (url) return url;
-      } else {
-        const errBody = await res.json().catch(() => ({}));
-        console.warn('Google Search error:', res.status, errBody);
+        const data = await res.json() as { thumbnail?: { source: string } };
+        if (data.thumbnail?.source) return data.thumbnail.source;
       }
-    } catch (e) {
-      console.warn('Google Search exception:', e);
+    } catch {
+      // silencioso
     }
 
-    // Intento 2: DuckDuckGo Images fallback
-    try {
-      const ddgRes = await fetch(
-        `https://api.duckduckgo.com/?q=${query}&iax=images&ia=images&format=json`
-      );
-      if (ddgRes.ok) {
-        const ddgData = await ddgRes.json() as { Image?: string; Results?: Array<{ Image?: string }> };
-        const url = ddgData.Image || ddgData.Results?.[0]?.Image || null;
-        if (url) return url;
-      }
-    } catch (e) {
-      console.warn('DuckDuckGo fallback exception:', e);
-    }
-
-    return null;
+    // Intento 2: LoremFlickr — siempre devuelve una imagen relevante de Flickr, sin API key
+    return `https://loremflickr.com/200/200/${encodeURIComponent(productName)}/all`;
   }, []);
 
   const determinarEstado = useCallback(

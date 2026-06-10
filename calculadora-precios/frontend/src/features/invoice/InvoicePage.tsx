@@ -341,6 +341,9 @@ export function InvoicePage() {
     reset,
   } = useInvoiceScanner();
 
+  const { fetchProviders } = useProviderStore();
+  useEffect(() => { fetchProviders(); }, []);
+
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const handleImport = async () => {
