@@ -70,6 +70,11 @@ export function useInvoiceScanner() {
               type: 'text',
               text: `Eres un asistente para un negocio de carnes venezolano.
 Analiza esta factura y extrae TODOS los productos.
+Instrucciones importantes:
+- Lee los nombres de productos con mucho cuidado, letra por letra
+- NO agregues ni quites letras a los nombres
+- Si un nombre tiene varias palabras, inclúyelas todas completas
+- Ejemplos de marcas venezolanas comunes: MENTOS, HALLS, FREEGELLS, NUCITA, TUTTI FRUTTI — respétalas exactamente como aparecen
 Responde ÚNICAMENTE con JSON válido sin markdown:
 {
   "productos": [
@@ -119,10 +124,17 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
   const searchProductImage = useCallback(async (productName: string): Promise<string | null> => {
     try {
       const query = encodeURIComponent(`${productName} producto Venezuela`);
+      console.log('API Key exists:', !!import.meta.env.VITE_GOOGLE_SEARCH_API_KEY);
+      console.log('CX exists:', !!import.meta.env.VITE_GOOGLE_SEARCH_CX);
+      console.log('Google Search URL:', `https://www.googleapis.com/customsearch/v1?key=${import.meta.env.VITE_GOOGLE_SEARCH_API_KEY}&cx=${import.meta.env.VITE_GOOGLE_SEARCH_CX}&q=${query}&searchType=image&num=1`);
       const res = await fetch(
         `https://www.googleapis.com/customsearch/v1?key=${import.meta.env.VITE_GOOGLE_SEARCH_API_KEY}&cx=${import.meta.env.VITE_GOOGLE_SEARCH_CX}&q=${query}&searchType=image&num=1&imgSize=medium`
       );
-      if (!res.ok) return null;
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        console.warn('Google Search error:', res.status, errBody);
+        return null;
+      }
       const data = await res.json() as { items?: Array<{ link: string }> };
       return data.items?.[0]?.link ?? null;
     } catch {
