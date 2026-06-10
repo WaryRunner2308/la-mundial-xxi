@@ -8,7 +8,7 @@ import { SecureInput } from '@/components/ui/SecureInput';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Package, Calculator, Truck, BarChart2, TrendingDown,
-  LogOut, Menu, X, DollarSign,
+  Menu, X, DollarSign,
 } from 'lucide-react';
 
 import { ProductsPage } from '@/features/products/ProductList';
@@ -168,7 +168,7 @@ const NAV_ITEMS = [
 function App() {
   const { rate, setRate } = useCurrencyStore();
   const { loadFromSupabase } = useProductStore();
-  const { userRole, logout } = useAuth();
+  const { userRole } = useAuth();
   const [showWelcome, setShowWelcome] = useState(false);
   const [showEditRate, setShowEditRate] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -237,7 +237,8 @@ function App() {
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-50 flex flex-col
-          w-[200px] flex-shrink-0 transition-transform duration-300 ease-in-out
+          w-[200px] flex-shrink-0 self-start
+          transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
         style={{
@@ -247,37 +248,31 @@ function App() {
         }}
       >
         {/* Portugal flag strip */}
-        <div className="flex-shrink-0 flex h-[2px]">
+        <div className="flex h-[2px]">
           <div style={{ flex: 2, background: 'linear-gradient(90deg,#009A3A,#1ebb60)' }} />
           <div style={{ flex: 3, background: '#C8102E' }} />
         </div>
 
-        {/* Logo */}
+        {/* Logo — solo texto, sin imagen */}
         <div
-          className="flex-shrink-0 flex items-center gap-3 px-4 py-4"
+          className="flex items-center px-5 py-4"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
         >
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(0,154,58,0.12)', border: '1px solid rgba(0,154,58,0.22)' }}
-          >
-            <img src="/logo.png" alt="La Mundial" className="w-5 h-5 object-contain" />
-          </div>
           <div className="min-w-0">
             <div
-              className="font-black text-[#e6edf3] uppercase leading-none truncate"
-              style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '0.92rem', letterSpacing: '0.07em' }}
+              className="font-black text-[#e6edf3] uppercase leading-none"
+              style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1rem', letterSpacing: '0.08em' }}
             >
               La <span className="text-[#009A3A]">Mundial</span>
             </div>
-            <div className="text-[#484f58] uppercase tracking-[0.14em] font-semibold mt-0.5" style={{ fontSize: '7px' }}>
+            <div className="text-[#484f58] uppercase tracking-[0.15em] font-semibold mt-0.5" style={{ fontSize: '7px' }}>
               Gestión de Precios
             </div>
           </div>
         </div>
 
         {/* Nav group */}
-        <div className="flex-shrink-0 px-3 pt-4 pb-2">
+        <div className="px-3 pt-4 pb-2">
           <p className="text-[9px] font-black text-[#484f58] uppercase tracking-[0.16em] mb-2 px-2">Menú</p>
           <nav className="space-y-0.5">
             {visibleNav.map((item) => {
@@ -291,7 +286,6 @@ function App() {
                     className="relative flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors duration-150 group"
                     style={{ color: isActive ? '#009A3A' : '#8b949e' }}
                   >
-                    {/* Active background */}
                     {isActive && (
                       <motion.div
                         layoutId="nav-active-pill"
@@ -306,21 +300,18 @@ function App() {
                         transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                       />
                     )}
-                    {/* Hover background */}
                     {!isActive && (
                       <span
                         className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                         style={{ background: 'rgba(255,255,255,0.03)' }}
                       />
                     )}
-                    {/* Icon */}
                     <span
                       className="relative z-10 flex-shrink-0"
                       style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(0,154,58,0.55))' } : {}}
                     >
                       <Icon size={15} strokeWidth={2.2} />
                     </span>
-                    {/* Label */}
                     <span
                       className="relative z-10 font-semibold flex-1 truncate"
                       style={{
@@ -332,7 +323,6 @@ function App() {
                     >
                       {item.label}
                     </span>
-                    {/* Active dot */}
                     {isActive && (
                       <motion.span
                         initial={{ scale: 0 }}
@@ -348,15 +338,9 @@ function App() {
           </nav>
         </div>
 
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Footer: tasa + logout */}
-        <div
-          className="flex-shrink-0 px-3 pb-4 pt-3 space-y-1.5"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
-        >
-          {rate > 0 && (
+        {/* Tasa hoy — pegado debajo del menú */}
+        {rate > 0 && (
+          <div className="px-3 pt-1 pb-3">
             <button
               onClick={() => setShowEditRate(true)}
               className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group"
@@ -365,10 +349,8 @@ function App() {
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)'; }}
             >
               <div className="flex items-center gap-2.5">
-                <div
-                  className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(0,154,58,0.1)' }}
-                >
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(0,154,58,0.1)' }}>
                   <DollarSign size={12} style={{ color: '#009A3A' }} />
                 </div>
                 <div className="text-left">
@@ -385,31 +367,18 @@ function App() {
                 Editar
               </span>
             </button>
-          )}
+          </div>
+        )}
 
-          {userRole && (
-            <button
-              onClick={logout}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all"
-              style={{ color: 'rgba(200,16,46,0.5)' }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(200,16,46,0.06)';
-                (e.currentTarget as HTMLElement).style.color = '#C8102E';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent';
-                (e.currentTarget as HTMLElement).style.color = 'rgba(200,16,46,0.5)';
-              }}
-            >
-              <LogOut size={14} strokeWidth={2} />
-              <span
-                className="text-sm font-semibold"
-                style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.05em' }}
-              >
-                Cerrar Sesión
-              </span>
-            </button>
-          )}
+        {/* Imagen decorativa — al pie del sidebar */}
+        <div className="flex justify-center pb-5 pt-2">
+          <img
+            src="/logo.png"
+            alt=""
+            aria-hidden="true"
+            className="w-24 object-contain select-none"
+            style={{ opacity: 0.55 }}
+          />
         </div>
       </aside>
 
