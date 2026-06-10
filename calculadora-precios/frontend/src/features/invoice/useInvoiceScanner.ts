@@ -49,22 +49,23 @@ export function useInvoiceScanner() {
 
     const mimeType = imageBlob.type || 'image/png';
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: base64,
-                },
-              },
-              {
-                text: `Eres un asistente para un negocio de carnes y abarrotes venezolano.
+    const MODELS = [
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-pro-latest',
+      'gemini-pro-vision',
+    ];
+
+    const body = JSON.stringify({
+      contents: [{
+        parts: [
+          {
+            inline_data: {
+              mime_type: mimeType,
+              data: base64,
+            },
+          },
+          {
+            text: `Eres un asistente para un negocio de carnes y abarrotes venezolano.
 Analiza esta factura y extrae TODOS los productos con sus precios.
 Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
 {
@@ -79,20 +80,36 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
   "proveedor": "nombre del proveedor si aparece o null",
   "fecha": "fecha en formato YYYY-MM-DD o null"
 }`,
-              },
-            ],
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 1500,
           },
-        }),
-      }
-    );
+        ],
+      }],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 1500,
+      },
+    });
 
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({})) as { error?: { message?: string } };
-      throw new Error(errData?.error?.message ?? `Error Gemini: ${response.status}`);
+    let response: Response | null = null;
+    let lastError = '';
+
+    for (const model of MODELS) {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+      );
+
+      if (res.ok) {
+        response = res;
+        break;
+      }
+
+      const errData = await res.json().catch(() => ({})) as { error?: { message?: string } };
+      lastError = errData?.error?.message ?? `Error ${res.status}`;
+      console.warn(`[Gemini] ${model} falló: ${lastError}`);
+    }
+
+    if (!response) {
+      throw new Error(`Gemini no disponible. Último error: ${lastError}`);
     }
 
     const data = await response.json() as {
