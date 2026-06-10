@@ -1,1 +1,19 @@
 node_modules
+
+# Claude Code (memoria, skills, settings — privado)
+.claude/
+.agents/
+skills-lock.json
+
+# Vercel local link (no va al repo)
+.vercel/
+
+# MCP config (puede contener API keys)
+.mcp.json
+
+# Artefactos de diseño temporales
+.interface-design/
+
+# Tests generados por TestSprite
+testsprite_tests/
+calculadora-precios/frontend/testsprite_tests/
