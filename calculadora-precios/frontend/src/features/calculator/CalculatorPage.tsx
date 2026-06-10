@@ -135,8 +135,8 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
 
   const handleCostChange = (value: string) => { const d = { ...formData, cost: value }; setFormData(d); calculate(d); };
   const handleProfitChange = (value: string) => { const d = { ...formData, profitPercentage: value }; setFormData(d); calculate(d); };
-  const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const d = { ...formData, currency: e.target.value as Currency };
+  const handleCurrencyToggle = () => {
+    const d: CalcFormData = { ...formData, currency: formData.currency === 'Bs' ? 'USD' : 'Bs' };
     setFormData(d); calculate(d);
   };
   const handleIVAToggle = () => {
@@ -214,21 +214,21 @@ export function CalculatorPage({ onEditRate }: CalculatorPageProps) {
                   displayClassName="!border-0 !rounded-none !bg-transparent !text-[#e6edf3] !min-h-[48px] flex-1"
                 />
               </div>
-              <select
-                value={formData.currency}
-                onChange={handleCurrencyChange}
-                className="w-20 md:w-24 px-3 py-3 shrink-0 outline-none cursor-pointer font-bold text-sm transition-colors"
+              <button
+                type="button"
+                onClick={handleCurrencyToggle}
+                className="shrink-0 px-4 py-3 font-bold text-sm transition-all"
                 style={{
-                  border: '0',
-                  borderLeft: '1px solid rgba(255,255,255,0.08)',
-                  background: '#21262d',
+                  borderLeft: '1px solid rgba(255,255,255,0.07)',
+                  background: 'transparent',
                   color: '#009A3A',
                   fontFamily: '"JetBrains Mono", monospace',
+                  minWidth: '4rem',
                 }}
+                title="Cambiar moneda"
               >
-                <option value="Bs">Bs</option>
-                <option value="USD">USD</option>
-              </select>
+                {formData.currency}
+              </button>
             </div>
           </div>
 
