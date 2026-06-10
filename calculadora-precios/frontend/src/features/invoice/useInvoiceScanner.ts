@@ -49,28 +49,28 @@ export function useInvoiceScanner() {
 
     const mimeType = imageBlob.type || 'image/png';
 
-    // Cada modelo tiene su versión de API correcta:
-    // - gemini-2.0-flash → v1beta
-    // - gemini-1.5-x     → v1 (no existen en v1beta)
-    const MODELS = [
-      { apiVersion: 'v1beta', model: 'gemini-2.0-flash' },
-      { apiVersion: 'v1',     model: 'gemini-1.5-flash' },
-      { apiVersion: 'v1',     model: 'gemini-1.5-pro'   },
-    ];
-
-    const body = JSON.stringify({
-      contents: [{
-        parts: [
-          {
-            inline_data: {
-              mime_type: mimeType,
-              data: base64,
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+        'HTTP-Referer': 'https://la-mundial-xxi.vercel.app',
+        'X-Title': 'La Mundial',
+      },
+      body: JSON.stringify({
+        model: 'meta-llama/llama-3.2-11b-vision-instruct:free',
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image_url',
+              image_url: { url: `data:${mimeType};base64,${base64}` },
             },
-          },
-          {
-            text: `Eres un asistente para un negocio de carnes y abarrotes venezolano.
-Analiza esta factura y extrae TODOS los productos con sus precios.
-Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
+            {
+              type: 'text',
+              text: `Eres un asistente para un negocio de carnes venezolano.
+Analiza esta factura y extrae TODOS los productos.
+Responde ÚNICAMENTE con JSON válido sin markdown:
 {
   "productos": [
     {
@@ -80,45 +80,25 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
       "unidad": "kg, g, unidad, etc"
     }
   ],
-  "proveedor": "nombre del proveedor si aparece o null",
-  "fecha": "fecha en formato YYYY-MM-DD o null"
+  "proveedor": "nombre o null",
+  "fecha": "YYYY-MM-DD o null"
 }`,
-          },
-        ],
-      }],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 1500,
-      },
+            },
+          ],
+        }],
+        max_tokens: 1500,
+      }),
     });
 
-    let response: Response | null = null;
-    let lastError = '';
-
-    for (const { apiVersion, model } of MODELS) {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
-      );
-
-      if (res.ok) {
-        response = res;
-        break;
-      }
-
-      const errData = await res.json().catch(() => ({})) as { error?: { message?: string } };
-      lastError = errData?.error?.message ?? `Error ${res.status}`;
-      console.warn(`[Gemini] ${apiVersion}/${model} falló: ${lastError}`);
-    }
-
-    if (!response) {
-      throw new Error(`Gemini no disponible. Último error: ${lastError}`);
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({})) as { error?: { message?: string } };
+      throw new Error(errData?.error?.message ?? `Error OpenRouter: ${response.status}`);
     }
 
     const data = await response.json() as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      choices?: Array<{ message?: { content?: string } }>;
     };
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const text = data.choices?.[0]?.message?.content ?? '';
     const clean = text.replace(/```json|```/g, '').trim();
 
     try {
@@ -128,7 +108,7 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
         fecha: string | null;
       };
     } catch {
-      throw new Error('Gemini no pudo estructurar la respuesta. Intenta con una imagen más clara.');
+      throw new Error('El modelo no pudo estructurar la respuesta. Intenta con una imagen más clara.');
     }
   }, []);
 
