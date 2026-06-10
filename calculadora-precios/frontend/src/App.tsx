@@ -8,7 +8,7 @@ import { SecureInput } from '@/components/ui/SecureInput';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Package, Calculator, Truck, BarChart2, TrendingDown,
-  Menu, X, DollarSign,
+  Menu, X, DollarSign, ScanLine,
 } from 'lucide-react';
 
 import { ProductsPage } from '@/features/products/ProductList';
@@ -18,6 +18,7 @@ import { CalculatorPage } from '@/features/calculator/CalculatorPage';
 import { ProvidersPage } from '@/features/providers/ProvidersPage';
 import { ComparatorPage } from '@/features/comparator/ComparatorPage';
 import { LandingPage } from '@/features/auth/LandingPage';
+import { InvoicePage } from '@/features/invoice/InvoicePage';
 
 /* ─── Error Boundary ─── */
 class ErrorBoundary extends React.Component<
@@ -157,11 +158,12 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (r: numb
 
 /* ─── Nav items ─── */
 const NAV_ITEMS = [
-  { path: '/products',   icon: Package,     label: 'Productos',   managerOnly: false },
-  { path: '/calculator', icon: Calculator,  label: 'Calculadora', managerOnly: false },
-  { path: '/providers',  icon: Truck,       label: 'Proveedores', managerOnly: true  },
-  { path: '/comparator', icon: BarChart2,   label: 'Comparador',  managerOnly: true  },
-  { path: '/merma',      icon: TrendingDown,label: 'Merma',       managerOnly: true  },
+  { path: '/products',        icon: Package,     label: 'Productos',      managerOnly: false },
+  { path: '/calculator',      icon: Calculator,  label: 'Calculadora',    managerOnly: false },
+  { path: '/providers',       icon: Truck,       label: 'Proveedores',    managerOnly: true  },
+  { path: '/comparator',      icon: BarChart2,   label: 'Comparador',     managerOnly: true  },
+  { path: '/merma',           icon: TrendingDown,label: 'Merma',          managerOnly: true  },
+  { path: '/import-invoice',  icon: ScanLine,    label: 'Import. Factura',managerOnly: true  },
 ];
 
 /* ─── App ─── */
@@ -397,9 +399,10 @@ function App() {
             <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
             {isGerencia && (
               <>
-                <Route path="/providers"  element={<ProvidersPage />} />
-                <Route path="/comparator" element={<ComparatorPage />} />
-                <Route path="/merma"      element={<MermaPage />} />
+                <Route path="/providers"       element={<ProvidersPage />} />
+                <Route path="/comparator"      element={<ComparatorPage />} />
+                <Route path="/merma"           element={<MermaPage />} />
+                <Route path="/import-invoice"  element={<InvoicePage />} />
               </>
             )}
             <Route path="/unauthorized" element={

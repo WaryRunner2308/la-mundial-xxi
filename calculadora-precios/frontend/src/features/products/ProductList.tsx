@@ -8,7 +8,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 import { SecureInput } from '@/components/ui/SecureInput';
-import { Search, X, Pencil, Trash2, Plus, FilterX, LogOut } from 'lucide-react';
+import { Search, X, Pencil, Trash2, Plus, FilterX, LogOut, ScanLine } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 type Currency = 'Bs' | 'USD';
@@ -140,21 +140,41 @@ export function ProductsPage({
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
           {isGerencia && (
-            <motion.button
-              whileHover={{ scale: 1.03, y: -1 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => { setEditingProduct(null); setShowForm(true); }}
-              className="flex items-center gap-2 px-5 py-2.5 text-white font-bold rounded-xl transition text-sm flex-1 md:flex-none justify-center"
-              style={{
-                fontFamily: '"Barlow Condensed", sans-serif',
-                letterSpacing: '0.06em',
-                background: 'linear-gradient(135deg,#009A3A,#007b2e)',
-                boxShadow: '0 4px 18px rgba(0,154,58,0.35)',
-              }}
-            >
-              <Plus size={16} strokeWidth={2.5} />
-              AGREGAR PRODUCTO
-            </motion.button>
+            <>
+              <motion.button
+                whileHover={{ scale: 1.03, y: -1 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => navigate('/import-invoice')}
+                className="flex items-center gap-2 px-4 py-2.5 font-bold rounded-xl transition text-sm flex-1 md:flex-none justify-center"
+                style={{
+                  fontFamily: '"Barlow Condensed", sans-serif',
+                  letterSpacing: '0.06em',
+                  color: '#009A3A',
+                  background: 'rgba(0,154,58,0.08)',
+                  border: '1px solid rgba(0,154,58,0.22)',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,154,58,0.14)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,154,58,0.08)'; }}
+              >
+                <ScanLine size={15} strokeWidth={2} />
+                IMPORTAR FACTURA
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.03, y: -1 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { setEditingProduct(null); setShowForm(true); }}
+                className="flex items-center gap-2 px-5 py-2.5 text-white font-bold rounded-xl transition text-sm flex-1 md:flex-none justify-center"
+                style={{
+                  fontFamily: '"Barlow Condensed", sans-serif',
+                  letterSpacing: '0.06em',
+                  background: 'linear-gradient(135deg,#009A3A,#007b2e)',
+                  boxShadow: '0 4px 18px rgba(0,154,58,0.35)',
+                }}
+              >
+                <Plus size={16} strokeWidth={2.5} />
+                AGREGAR PRODUCTO
+              </motion.button>
+            </>
           )}
           <motion.button
             whileHover={{ scale: 1.03, y: -1 }}

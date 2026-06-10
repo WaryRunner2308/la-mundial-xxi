@@ -1,5 +1,10 @@
 node_modules
 
+# Variables de entorno (contienen API keys — configurar en Vercel dashboard)
+calculadora-precios/frontend/.env
+calculadora-precios/frontend/.env.local
+calculadora-precios/frontend/.env.*.local
+
 # Claude Code (memoria, skills, settings — privado)
 .claude/
 .agents/
