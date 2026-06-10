@@ -33,7 +33,7 @@ interface ProductStore {
   products: Product[];
   loading: boolean;
   error: string | null;
-  addProduct: (product: ProductData) => Promise<void>;
+  addProduct: (product: ProductData) => Promise<number>;
   removeProduct: (id: number) => Promise<void>;
   updateProduct: (id: number, updates: Partial<ProductData>) => Promise<void>;
   setProducts: (products: Product[]) => void;
@@ -90,6 +90,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       };
 
       set((s) => ({ products: [...s.products, newProduct] }));
+      return data.id as number;
     } catch (err: any) {
       console.error('🔴 [Supabase] Excepción addProduct:', err);
       throw err;

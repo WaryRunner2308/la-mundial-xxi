@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useProductStore } from '@/store/productStore';
 import { useProviderStore } from '@/store/providerStore';
 import { useCurrencyStore } from '@/store/currencyStore';
+import { uploadProductImage } from '@/lib/supabase';
 
 export interface InvoiceProduct {
   nombre: string;
@@ -15,16 +16,16 @@ export interface InvoiceProduct {
   id: number | null;
   precioAnterior: number | null;
   fotoUrl: string | null;
+  fotoBlob: Blob | null;
   ganancia: number;
   exemptFromVAT: boolean;
 }
 
-export type ScanStep = 'idle' | 'scanning' | 'fetching-images' | 'review' | 'importing' | 'done';
+export type ScanStep = 'idle' | 'scanning' | 'review' | 'importing' | 'done';
 
 export const LOADING_MESSAGES = [
   'Leyendo factura...',
   'Identificando productos...',
-  'Buscando imágenes...',
 ];
 
 
@@ -172,24 +173,6 @@ export function useInvoiceScanner() {
     }
   }, []);
 
-  const searchProductImage = useCallback(async (productName: string): Promise<string | null> => {
-    try {
-      const query = encodeURIComponent(`${productName} producto`);
-      const res = await fetch(
-        `https://www.googleapis.com/customsearch/v1?key=${import.meta.env.VITE_GOOGLE_SEARCH_API_KEY}&cx=${import.meta.env.VITE_GOOGLE_SEARCH_CX}&q=${query}&searchType=image&num=1&imgSize=medium`
-      );
-      if (!res.ok) {
-        const errorBody = await res.json().catch(() => ({})) as { error?: { message?: string } };
-        console.error('Google Search error:', errorBody.error?.message);
-        return null;
-      }
-      const data = await res.json() as { items?: Array<{ link: string }> };
-      return data.items?.[0]?.link ?? null;
-    } catch {
-      return null;
-    }
-  }, []);
-
   const determinarEstado = useCallback(
     (nombre: string, precio: number, moneda: string): Pick<InvoiceProduct, 'estado' | 'id' | 'precioAnterior' | 'exemptFromVAT'> => {
       const existente = products.find(
@@ -223,9 +206,6 @@ export function useInvoiceScanner() {
           throw new Error('No se detectaron productos en la imagen. Intenta con una foto más clara.');
         }
 
-        setStep('fetching-images');
-        setLoadingMessageIdx(2);
-
         const detectedName = result.proveedor ?? null;
         setProveedor(detectedName);
         if (detectedName) {
@@ -236,12 +216,7 @@ export function useInvoiceScanner() {
           setProveedorId(match?.id ?? null);
         }
 
-        const fotosResults = await Promise.allSettled(
-          result.productos.map((p) => searchProductImage(p.nombre))
-        );
-        const fotos = fotosResults.map((r) => (r.status === 'fulfilled' ? r.value : null));
-
-        const mapped: InvoiceProduct[] = result.productos.map((p, i) => {
+        const mapped: InvoiceProduct[] = result.productos.map((p) => {
           const moneda: 'USD' | 'Bs' = p.moneda === 'USD' ? 'USD' : 'Bs';
           const { precio, cantidadBulto, precioTotal } = normalizarBulto(
             Number(p.precio),
@@ -260,7 +235,8 @@ export function useInvoiceScanner() {
             estado,
             id,
             precioAnterior,
-            fotoUrl: fotos[i],
+            fotoUrl: null,
+            fotoBlob: null,
             ganancia: 30,
             exemptFromVAT,
           };
@@ -276,7 +252,7 @@ export function useInvoiceScanner() {
         clearInterval(msgInterval);
       }
     },
-    [callGeminiVision, searchProductImage, determinarEstado, providers]
+    [callGeminiVision, determinarEstado, providers]
   );
 
   const ejecutarImportacion = useCallback(async () => {
@@ -302,18 +278,36 @@ export function useInvoiceScanner() {
 
       try {
         if (producto.estado === 'Nuevo') {
-          await addProduct({
+          const newId = await addProduct({
             name: producto.nombre,
             cost: costUsd,
             currency: 'USD',
             profitPercentage: ganancia,
             exemptFromVAT: producto.exemptFromVAT,
-            photoUrl: producto.fotoUrl ?? null,
+            photoUrl: null,
             providerId: proveedorId ?? null,
           });
+          if (producto.fotoBlob && newId) {
+            try {
+              const file = new File([producto.fotoBlob], `product_${newId}.png`, { type: 'image/png' });
+              const url = await uploadProductImage(file, newId);
+              await updateProduct(newId, { photoUrl: url });
+            } catch (uploadErr) {
+              console.error(`Error subiendo foto de "${producto.nombre}":`, uploadErr);
+            }
+          }
           creados++;
         } else if (producto.estado === 'Actualizar precio' && producto.id !== null) {
           await updateProduct(producto.id, { cost: costUsd, currency: 'USD' });
+          if (producto.fotoBlob) {
+            try {
+              const file = new File([producto.fotoBlob], `product_${producto.id}.png`, { type: 'image/png' });
+              const url = await uploadProductImage(file, producto.id);
+              await updateProduct(producto.id, { photoUrl: url });
+            } catch (uploadErr) {
+              console.error(`Error subiendo foto de "${producto.nombre}":`, uploadErr);
+            }
+          }
           actualizados++;
         }
       } catch (err) {

@@ -361,7 +361,7 @@ export function InvoicePage() {
   }, [step, navigate]);
 
   const selectedCount = productos.filter((p) => p.seleccionado).length;
-  const isLoading = step === 'scanning' || step === 'fetching-images';
+  const isLoading = step === 'scanning';
 
   return (
     <motion.div

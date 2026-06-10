@@ -1,10 +1,48 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Upload, ClipboardPaste, X } from 'lucide-react';
 import { SecureInput } from '@/components/ui/SecureInput';
 import { useCurrencyStore } from '@/store/currencyStore';
 import type { InvoiceProduct } from './useInvoiceScanner';
 
 const IVA = 0.16;
+
+// Convierte cualquier blob de imagen a PNG redimensionado a 500px máximo.
+function blobToPng(blob: Blob): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const maxSize = 500;
+      let w = img.naturalWidth || img.width;
+      let h = img.naturalHeight || img.height;
+      if (w > maxSize || h > maxSize) {
+        if (w >= h) { h = Math.round((h * maxSize) / w); w = maxSize; }
+        else { w = Math.round((w * maxSize) / h); h = maxSize; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(url);
+        reject(new Error('No se pudo obtener canvas context'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob((png) => {
+        URL.revokeObjectURL(url);
+        if (png) resolve(png);
+        else reject(new Error('Conversión a PNG falló'));
+      }, 'image/png');
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('No se pudo cargar la imagen'));
+    };
+    img.src = url;
+  });
+}
 
 // (costo / (1 - ganancia/100)) * (1 + IVA si no exento)
 function calcularPrecioVenta(costo: number, ganancia: number, exento: boolean): number {
@@ -81,22 +119,75 @@ function EstadoBadge({ estado, precioAnterior, precio, moneda }: {
   );
 }
 
-function PhotoCell({ fotoUrl, index, onChangeFoto }: {
+interface PhotoCellProps {
   fotoUrl: string | null;
   index: number;
-  onChangeFoto: (index: number, url: string) => void;
-}) {
+  onChangeFoto: (index: number, url: string, blob: Blob) => void;
+  onClearFoto: (index: number) => void;
+}
+
+function PhotoCell({ fotoUrl, index, onChangeFoto, onClearFoto }: PhotoCellProps) {
   const pickerRef = useRef<HTMLInputElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const pasteAreaRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [pasteHover, setPasteHover] = useState(false);
+
+  // Cierra el popover al hacer click fuera
+  useEffect(() => {
+    if (!open) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [open]);
+
+  // Foco automático del área de pegado al abrir, para que Ctrl+V funcione enseguida
+  useEffect(() => {
+    if (open) pasteAreaRef.current?.focus();
+  }, [open]);
+
+  const procesar = async (raw: Blob) => {
+    setBusy(true);
+    try {
+      const png = await blobToPng(raw);
+      const url = URL.createObjectURL(png);
+      onChangeFoto(index, url, png);
+      setOpen(false);
+    } catch (err) {
+      console.error('Error procesando imagen:', err);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handlePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    onChangeFoto(index, url);
+    e.target.value = '';
+    if (file) procesar(file);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const blob = item.getAsFile();
+        if (blob) {
+          e.preventDefault();
+          procesar(blob);
+          return;
+        }
+      }
+    }
   };
 
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="relative flex flex-col items-center gap-1">
       {fotoUrl ? (
         <img
           src={fotoUrl}
@@ -115,18 +206,99 @@ function PhotoCell({ fotoUrl, index, onChangeFoto }: {
       )}
       <button
         type="button"
-        onClick={() => pickerRef.current?.click()}
+        onClick={() => setOpen((v) => !v)}
         className="text-[9px] font-semibold uppercase tracking-wider transition"
-        style={{ color: '#484f58' }}
+        style={{ color: open ? '#009A3A' : '#484f58' }}
         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#009A3A'; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#484f58'; }}
+        onMouseLeave={(e) => { if (!open) (e.currentTarget as HTMLElement).style.color = '#484f58'; }}
       >
         Cambiar
       </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            ref={popoverRef}
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.97 }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 w-64 rounded-xl overflow-hidden p-3 space-y-2"
+            style={{
+              background: '#1c2128',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => pickerRef.current?.click()}
+              disabled={busy}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition disabled:opacity-50"
+              style={{
+                background: 'rgba(0,154,58,0.1)',
+                border: '1px solid rgba(0,154,58,0.2)',
+                color: '#1ebb60',
+                fontFamily: '"Barlow Condensed", sans-serif',
+                letterSpacing: '0.04em',
+              }}
+            >
+              <Upload size={14} />
+              SUBIR ARCHIVO
+            </button>
+
+            <div
+              ref={pasteAreaRef}
+              tabIndex={0}
+              onPaste={handlePaste}
+              onMouseEnter={() => setPasteHover(true)}
+              onMouseLeave={() => setPasteHover(false)}
+              className="w-full flex flex-col items-center gap-1 px-3 py-4 rounded-lg cursor-text outline-none transition"
+              style={{
+                border: `1.5px dashed ${pasteHover ? '#1ebb60' : 'rgba(255,255,255,0.18)'}`,
+                background: pasteHover ? 'rgba(0,154,58,0.06)' : 'transparent',
+                color: pasteHover ? '#1ebb60' : '#8b949e',
+              }}
+            >
+              <ClipboardPaste size={16} />
+              <span
+                className="text-[11px] font-bold uppercase text-center"
+                style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.06em' }}
+              >
+                Pega la imagen aquí
+              </span>
+              <span className="text-[10px] text-[#484f58]">(Ctrl+V)</span>
+            </div>
+
+            {fotoUrl && (
+              <button
+                type="button"
+                onClick={() => { onClearFoto(index); setOpen(false); }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition"
+                style={{
+                  color: '#C8102E',
+                  background: 'rgba(200,16,46,0.07)',
+                  border: '1px solid rgba(200,16,46,0.15)',
+                  fontFamily: '"Barlow Condensed", sans-serif',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                <X size={12} />
+                QUITAR FOTO
+              </button>
+            )}
+
+            {busy && (
+              <p className="text-[10px] text-center text-[#8b949e]">Procesando...</p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <input
         ref={pickerRef}
         type="file"
-        accept="image/*"
+        accept="image/png,image/jpeg,image/webp"
         onChange={handlePick}
         className="hidden"
       />
@@ -307,7 +479,8 @@ export function InvoiceReviewTable({
                       <PhotoCell
                         fotoUrl={producto.fotoUrl}
                         index={index}
-                        onChangeFoto={(i, url) => onUpdateProducto(i, { fotoUrl: url })}
+                        onChangeFoto={(i, url, blob) => onUpdateProducto(i, { fotoUrl: url, fotoBlob: blob })}
+                        onClearFoto={(i) => onUpdateProducto(i, { fotoUrl: null, fotoBlob: null })}
                       />
                     </td>
 
