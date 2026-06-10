@@ -21,9 +21,14 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
     ({ value, onChange, onFocus, onBlur, onSubmit, onKeyDown, placeholder, inputMode = 'text', className = '', label, autoFocus, editable = false, displayClassName = '', noRing = false }, ref) => {
         const containerRef = useRef<HTMLDivElement>(null);
         const inputRef = useRef<HTMLInputElement>(null);
-        const displayRef = useRef<HTMLDivElement>(null);
+
+        // displayRef: solo para el div contenteditable (sincroniza textContent)
+        const displayRef = useRef<HTMLDivElement | null>(null);
+        // visibleRef: apunta al div visible activo (editable o estático) — usado para sincronizar padding
+        const visibleRef = useRef<HTMLDivElement | null>(null);
+
         const [isFocused, setIsFocused] = useState(false);
-        // Cursor deseado tras cada onChange — se restaura en useLayoutEffect (antes del paint)
+        // Cursor deseado tras cada onChange — restaurado en useLayoutEffect antes del paint
         const savedCursor = useRef<number | null>(null);
 
         const fieldName = useRef<string>(`field_${Math.random().toString(36).substring(2, 15)}`);
@@ -39,7 +44,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
             if (!inputRef.current) return;
             if (e.pointerType === 'touch') {
-                // En touch prevenimos el comportamiento por defecto y forzamos foco + cursor al final
+                // En touch: prevenir default + foco + cursor al final (comportamiento esperado en móvil)
                 e.preventDefault();
                 inputRef.current.focus();
                 requestAnimationFrame(() => {
@@ -49,8 +54,8 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     }
                 });
             } else {
-                // En mouse el input (z-index:9999) ya recibe el click directamente —
-                // el browser calcula la posición correcta; solo prevenimos propagación extra.
+                // En mouse: el input (z-index:9999) recibe el click directamente,
+                // el browser posiciona el cursor donde se hizo clic. Solo evitamos propagación.
                 e.stopPropagation();
             }
         }, []);
@@ -71,9 +76,9 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 newValue = newValue.replace(/[^0-9]/g, '');
             }
 
-            // Guardamos el cursor deseado ANTES de que onChange dispare el re-render de React.
-            // useLayoutEffect lo restaurará sincrónicamente después del commit, antes del paint,
-            // evitando cualquier frame visible con el cursor en posición incorrecta.
+            // Guardamos posición de cursor ANTES del re-render.
+            // useLayoutEffect la restaura sincrónicamente (antes del paint) para que no haya
+            // ningún frame visible con el cursor en posición incorrecta.
             const newCursor = Math.max(0, cursorBefore + (newValue.length - lengthBefore));
             savedCursor.current = newCursor;
             onChange(newValue);
@@ -90,15 +95,29 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         const handleInputFocus = () => { setIsFocused(true); onFocus?.(); };
         const handleInputBlur  = () => { setIsFocused(false); onBlur?.(); };
 
+        // Sincroniza el contenido del div contenteditable con el value prop
         useEffect(() => {
             if (displayRef.current && displayRef.current.textContent !== value) {
                 displayRef.current.textContent = value;
             }
         }, [value]);
 
-        // Restaura el cursor sincrónicamente después de cada commit de React, antes del paint.
-        // Sin deps array: corre en todos los renders — solo actúa si savedCursor tiene valor.
+        // Sincroniza el padding del input invisible con el del div visible, y restaura el cursor.
+        // Sin deps array: corre tras cada render.
+        //
+        // CAUSA RAÍZ del bug: el input tiene padding-left: 1rem (16px) fijo, pero displayClassName
+        // puede cambiar el padding del div visible (ej: pl-9 = 36px para el buscador con ícono).
+        // El cursor (del input) quedaría 20px a la izquierda del texto → parece "estar en el medio".
+        // Solución: leer el paddingLeft computado del div visible y aplicarlo al input en cada render.
         useLayoutEffect(() => {
+            if (inputRef.current && visibleRef.current) {
+                const cs = window.getComputedStyle(visibleRef.current);
+                inputRef.current.style.paddingLeft  = cs.paddingLeft;
+                inputRef.current.style.paddingRight = cs.paddingRight;
+                inputRef.current.style.paddingTop    = cs.paddingTop;
+                inputRef.current.style.paddingBottom = cs.paddingBottom;
+            }
+            // Restaura posición de cursor después del commit de React, antes del paint
             if (inputRef.current && savedCursor.current !== null) {
                 inputRef.current.setSelectionRange(savedCursor.current, savedCursor.current);
                 savedCursor.current = null;
@@ -116,7 +135,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     <span className="block text-sm font-medium text-[#8b949e] mb-2">{label}</span>
                 )}
 
-                {/* Invisible real input */}
+                {/* Input invisible: recibe el input real, muestra solo el caret */}
                 <input
                     ref={inputRef}
                     type="text"
@@ -140,7 +159,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         height: '100%',
                         zIndex: 9999,
                         margin: 0,
-                        padding: '0.75rem 1rem',
+                        padding: '0.75rem 1rem', // punto de partida; useLayoutEffect lo sobreescribe con el del div visible
                         border: '1px solid transparent',
                         outline: 'none',
                         backgroundColor: 'transparent',
@@ -157,10 +176,15 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     data-1p-ignore="true"
                 />
 
-                {/* Visible display element */}
+                {/* Div visible: muestra el texto formateado */}
                 {editable ? (
                     <div
-                        ref={displayRef}
+                        ref={(el) => {
+                            // Asignar a ambos refs: displayRef para sync de textContent,
+                            // visibleRef para sync de padding con el input real
+                            displayRef.current = el;
+                            visibleRef.current = el;
+                        }}
                         contentEditable
                         suppressContentEditableWarning
                         className={`
@@ -174,6 +198,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     />
                 ) : (
                     <div
+                        ref={visibleRef}
                         className={`
                             w-full px-4 py-3 border border-white/10 rounded-lg bg-[#1c2128]
                             text-base min-h-[48px] flex items-center
