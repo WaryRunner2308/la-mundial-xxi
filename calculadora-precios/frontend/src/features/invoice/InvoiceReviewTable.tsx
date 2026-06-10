@@ -294,7 +294,7 @@ export function InvoiceReviewTable({
                     <td className="px-3 py-3 align-middle text-right">
                       <span className="font-black text-[#e6edf3]"
                         style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.95rem' }}>
-                        {producto.precio.toFixed(2)}
+                        {Number(producto.precio).toFixed(2)}
                       </span>
                     </td>
 

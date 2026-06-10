@@ -102,10 +102,14 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
     const clean = text.replace(/```json|```/g, '').trim();
 
     try {
-      return JSON.parse(clean) as {
-        productos: Array<{ nombre: string; precio: number; moneda: string; unidad: string }>;
+      const parsed = JSON.parse(clean) as {
+        productos: Array<{ nombre: string; precio: number | string; moneda: string; unidad: string }>;
         proveedor: string | null;
         fecha: string | null;
+      };
+      return {
+        ...parsed,
+        productos: parsed.productos.map((p) => ({ ...p, precio: Number(p.precio) })),
       };
     } catch {
       throw new Error('El modelo no pudo estructurar la respuesta. Intenta con una imagen más clara.');
@@ -118,6 +122,7 @@ Responde ÚNICAMENTE con JSON válido sin markdown:
       const res = await fetch(
         `https://www.googleapis.com/customsearch/v1?key=${import.meta.env.VITE_GOOGLE_SEARCH_API_KEY}&cx=${import.meta.env.VITE_GOOGLE_SEARCH_CX}&q=${query}&searchType=image&num=1&imgSize=medium`
       );
+      if (!res.ok) return null;
       const data = await res.json() as { items?: Array<{ link: string }> };
       return data.items?.[0]?.link ?? null;
     } catch {
