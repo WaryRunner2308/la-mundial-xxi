@@ -237,153 +237,178 @@ function App() {
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-50 flex flex-col
-          w-16 transition-transform duration-300 ease-in-out
+          w-[200px] flex-shrink-0 transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
         style={{
           background: '#161b22',
-          borderRight: '1px solid rgba(255,255,255,0.06)',
-          boxShadow: '4px 0 24px rgba(0,0,0,0.4)',
+          borderRight: '1px solid rgba(255,255,255,0.07)',
+          boxShadow: '4px 0 32px rgba(0,0,0,0.5)',
         }}
       >
         {/* Portugal flag strip */}
         <div className="flex-shrink-0 flex h-[2px]">
-          <div style={{ flex: 2, background: '#009A3A' }} />
+          <div style={{ flex: 2, background: 'linear-gradient(90deg,#009A3A,#1ebb60)' }} />
           <div style={{ flex: 3, background: '#C8102E' }} />
         </div>
 
-        {/* Logo mark */}
-        <div className="flex-shrink-0 flex items-center justify-center pt-4 pb-3">
+        {/* Logo */}
+        <div
+          className="flex-shrink-0 flex items-center gap-3 px-4 py-4"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        >
           <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(0,154,58,0.1)', border: '1px solid rgba(0,154,58,0.18)' }}
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(0,154,58,0.12)', border: '1px solid rgba(0,154,58,0.22)' }}
           >
             <img src="/logo.png" alt="La Mundial" className="w-5 h-5 object-contain" />
           </div>
+          <div className="min-w-0">
+            <div
+              className="font-black text-[#e6edf3] uppercase leading-none truncate"
+              style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '0.92rem', letterSpacing: '0.07em' }}
+            >
+              La <span className="text-[#009A3A]">Mundial</span>
+            </div>
+            <div className="text-[#484f58] uppercase tracking-[0.14em] font-semibold mt-0.5" style={{ fontSize: '7px' }}>
+              Gestión de Precios
+            </div>
+          </div>
         </div>
 
-        {/* Nav pill */}
-        <div className="flex-1 flex flex-col items-center justify-center py-2">
-          <div
-            className="flex flex-col items-center gap-0.5 p-1.5 rounded-2xl"
-            style={{
-              background: '#1c2128',
-              border: '1px solid rgba(255,255,255,0.06)',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
-            }}
-          >
+        {/* Nav group */}
+        <div className="flex-shrink-0 px-3 pt-4 pb-2">
+          <p className="text-[9px] font-black text-[#484f58] uppercase tracking-[0.16em] mb-2 px-2">Menú</p>
+          <nav className="space-y-0.5">
             {visibleNav.map((item) => {
               const Icon = item.icon;
               const isActive =
                 location.pathname === item.path ||
                 (item.path === '/products' && location.pathname === '/');
               return (
-                <NavLink key={item.path} to={item.path} className="relative group block">
+                <NavLink key={item.path} to={item.path} className="block">
                   <div
-                    className="relative w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-colors duration-150"
-                    style={{ color: isActive ? '#009A3A' : '#484f58' }}
-                    onMouseEnter={(e) => {
-                      if (!isActive) (e.currentTarget as HTMLElement).style.color = '#8b949e';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) (e.currentTarget as HTMLElement).style.color = '#484f58';
-                    }}
+                    className="relative flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors duration-150 group"
+                    style={{ color: isActive ? '#009A3A' : '#8b949e' }}
                   >
+                    {/* Active background */}
                     {isActive && (
                       <motion.div
                         layoutId="nav-active-pill"
                         className="absolute inset-0 rounded-xl"
                         style={{
-                          background: 'linear-gradient(135deg,rgba(0,154,58,0.18) 0%,rgba(0,154,58,0.06) 100%)',
-                          border: '1px solid rgba(0,154,58,0.28)',
+                          background: 'linear-gradient(135deg,rgba(0,154,58,0.13) 0%,rgba(0,154,58,0.04) 100%)',
+                          borderTop: '1px solid rgba(0,154,58,0.18)',
+                          borderRight: '1px solid rgba(0,154,58,0.1)',
+                          borderBottom: '1px solid rgba(0,154,58,0.1)',
+                          borderLeft: '2px solid #009A3A',
                         }}
                         transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                       />
                     )}
+                    {/* Hover background */}
                     {!isActive && (
-                      <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                        style={{ background: 'rgba(255,255,255,0.04)' }} />
+                      <span
+                        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                        style={{ background: 'rgba(255,255,255,0.03)' }}
+                      />
                     )}
+                    {/* Icon */}
                     <span
-                      className="relative z-10"
-                      style={isActive ? { filter: 'drop-shadow(0 0 7px rgba(0,154,58,0.65))' } : {}}
+                      className="relative z-10 flex-shrink-0"
+                      style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(0,154,58,0.55))' } : {}}
                     >
-                      <Icon size={16} strokeWidth={2.2} />
+                      <Icon size={15} strokeWidth={2.2} />
                     </span>
-                  </div>
-                  {/* Tooltip */}
-                  <div
-                    className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg text-xs font-semibold pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-[200]"
-                    style={{
-                      background: '#1c2128',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      color: isActive ? '#009A3A' : '#e6edf3',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
-                    }}
-                  >
-                    {item.label}
+                    {/* Label */}
+                    <span
+                      className="relative z-10 font-semibold flex-1 truncate"
+                      style={{
+                        fontFamily: '"Barlow Condensed", sans-serif',
+                        fontSize: '0.9rem',
+                        letterSpacing: '0.05em',
+                        color: isActive ? '#009A3A' : 'inherit',
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                    {/* Active dot */}
+                    {isActive && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="relative z-10 w-1.5 h-1.5 rounded-full flex-shrink-0"
+                        style={{ background: '#009A3A', boxShadow: '0 0 5px rgba(0,154,58,0.7)' }}
+                      />
+                    )}
                   </div>
                 </NavLink>
               );
             })}
-          </div>
+          </nav>
         </div>
 
-        {/* Bottom: rate + logout */}
-        <div className="flex-shrink-0 flex flex-col items-center gap-1 pb-4">
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Footer: tasa + logout */}
+        <div
+          className="flex-shrink-0 px-3 pb-4 pt-3 space-y-1.5"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+        >
           {rate > 0 && (
-            <div className="relative group">
-              <button
-                onClick={() => setShowEditRate(true)}
-                className="w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-150"
-                style={{ color: '#009A3A' }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,154,58,0.1)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-              >
-                <DollarSign size={15} strokeWidth={2} />
-              </button>
-              <div
-                className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg text-xs font-semibold pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-[200]"
-                style={{
-                  background: '#1c2128',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#009A3A',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
-                }}
-              >
-                {rate.toFixed(2)} Bs/USD
+            <button
+              onClick={() => setShowEditRate(true)}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group"
+              style={{ background: '#1c2128', border: '1px solid rgba(255,255,255,0.07)' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,154,58,0.25)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)'; }}
+            >
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(0,154,58,0.1)' }}
+                >
+                  <DollarSign size={12} style={{ color: '#009A3A' }} />
+                </div>
+                <div className="text-left">
+                  <div className="text-[9px] text-[#484f58] uppercase tracking-widest font-semibold leading-none">Tasa hoy</div>
+                  <div
+                    className="font-bold text-[#009A3A] group-hover:text-[#1ebb60] transition leading-none mt-0.5"
+                    style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.72rem' }}
+                  >
+                    {rate.toFixed(2)} Bs
+                  </div>
+                </div>
               </div>
-            </div>
+              <span className="text-[9px] text-[#484f58] uppercase tracking-wider font-semibold group-hover:text-[#8b949e] transition">
+                Editar
+              </span>
+            </button>
           )}
+
           {userRole && (
-            <div className="relative group">
-              <button
-                onClick={logout}
-                className="w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-150"
-                style={{ color: '#484f58' }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(200,16,46,0.08)';
-                  (e.currentTarget as HTMLElement).style.color = '#C8102E';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = 'transparent';
-                  (e.currentTarget as HTMLElement).style.color = '#484f58';
-                }}
-              >
-                <LogOut size={15} strokeWidth={2} />
-              </button>
-              <div
-                className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg text-xs font-semibold pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-[200]"
-                style={{
-                  background: '#1c2128',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#C8102E',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
-                }}
+            <button
+              onClick={logout}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all"
+              style={{ color: 'rgba(200,16,46,0.5)' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'rgba(200,16,46,0.06)';
+                (e.currentTarget as HTMLElement).style.color = '#C8102E';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+                (e.currentTarget as HTMLElement).style.color = 'rgba(200,16,46,0.5)';
+              }}
+            >
+              <LogOut size={14} strokeWidth={2} />
+              <span
+                className="text-sm font-semibold"
+                style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.05em' }}
               >
                 Cerrar Sesión
-              </div>
-            </div>
+              </span>
+            </button>
           )}
         </div>
       </aside>
