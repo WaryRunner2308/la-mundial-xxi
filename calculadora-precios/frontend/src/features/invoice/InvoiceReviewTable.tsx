@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, ClipboardPaste, X } from 'lucide-react';
+import { Upload, ClipboardPaste, X, ImagePlus } from 'lucide-react';
 import { SecureInput } from '@/components/ui/SecureInput';
 import { useCurrencyStore } from '@/store/currencyStore';
 import type { InvoiceProduct } from './useInvoiceScanner';
@@ -197,12 +197,29 @@ function PhotoCell({ fotoUrl, index, onChangeFoto, onClearFoto }: PhotoCellProps
           onError={(e) => { (e.target as HTMLImageElement).src = ''; }}
         />
       ) : (
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center text-sm flex-shrink-0"
-          style={{ background: '#1c2128', border: '1px solid rgba(255,255,255,0.07)', color: '#484f58' }}
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition"
+          style={{
+            background: open ? 'rgba(0,154,58,0.12)' : '#1c2128',
+            border: `1px dashed ${open ? 'rgba(0,154,58,0.4)' : 'rgba(255,255,255,0.15)'}`,
+            color: open ? '#1ebb60' : '#6e7681',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.color = '#1ebb60';
+            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,154,58,0.4)';
+          }}
+          onMouseLeave={(e) => {
+            if (!open) {
+              (e.currentTarget as HTMLElement).style.color = '#6e7681';
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.15)';
+            }
+          }}
+          title="Agregar foto"
         >
-          📷
-        </div>
+          <ImagePlus size={16} />
+        </button>
       )}
       <button
         type="button"
@@ -212,7 +229,7 @@ function PhotoCell({ fotoUrl, index, onChangeFoto, onClearFoto }: PhotoCellProps
         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#009A3A'; }}
         onMouseLeave={(e) => { if (!open) (e.currentTarget as HTMLElement).style.color = '#484f58'; }}
       >
-        Cambiar
+        {fotoUrl ? 'Cambiar' : 'Agregar foto'}
       </button>
 
       <AnimatePresence>

@@ -206,7 +206,11 @@ export function useInvoiceScanner() {
           throw new Error('No se detectaron productos en la imagen. Intenta con una foto más clara.');
         }
 
-        const detectedName = result.proveedor ?? null;
+        const rawProveedor = result.proveedor;
+        const detectedName =
+          typeof rawProveedor === 'string' && rawProveedor.trim() && rawProveedor.trim().toLowerCase() !== 'null'
+            ? rawProveedor.trim()
+            : null;
         setProveedor(detectedName);
         if (detectedName) {
           const match = providers.find((p) =>
