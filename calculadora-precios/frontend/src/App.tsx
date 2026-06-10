@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { supabase } from '@/lib/supabase';
 import { parseNumericInput } from '@/utils/validateDecimal';
 import { SecureInput } from '@/components/ui/SecureInput';
 import { useAuth } from '@/contexts/AuthContext';
-import { Package, Calculator, Truck, BarChart2, TrendingDown, LogOut, Menu, X } from 'lucide-react';
+import {
+  Package, Calculator, Truck, BarChart2, TrendingDown,
+  LogOut, Menu, X, ChevronLeft, ChevronRight, DollarSign,
+} from 'lucide-react';
 
 import { ProductsPage } from '@/features/products/ProductList';
 import { MermaPage } from '@/features/merma/MermaPage';
@@ -15,7 +19,11 @@ import { ProvidersPage } from '@/features/providers/ProvidersPage';
 import { ComparatorPage } from '@/features/comparator/ComparatorPage';
 import { LandingPage } from '@/features/auth/LandingPage';
 
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+/* ─── Error Boundary ─── */
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
   constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -23,29 +31,35 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error capturado por ErrorBoundary:', error, errorInfo);
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('ErrorBoundary:', error, info);
   }
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-[#f5f8f5]">
-          <div className="max-w-md p-8 bg-white border border-[#e4ede6] rounded-2xl shadow-lg text-center">
-            <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-[#fde8ec] border border-[#C8102E]/15 flex items-center justify-center text-3xl">
+        <div className="flex items-center justify-center min-h-screen bg-[#0d1117]">
+          <div
+            className="max-w-md p-8 rounded-2xl text-center"
+            style={{ background: '#161b22', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+          >
+            <div className="w-16 h-16 mx-auto mb-5 rounded-full flex items-center justify-center text-3xl"
+              style={{ background: 'rgba(200,16,46,0.1)', border: '1px solid rgba(200,16,46,0.2)' }}>
               ⚠️
             </div>
-            <h2 className="text-2xl font-black text-[#0d1f14] mb-2" style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.06em' }}>
+            <h2 className="text-2xl font-black text-[#e6edf3] mb-2 uppercase tracking-widest"
+              style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
               ALGO SALIÓ MAL
             </h2>
-            <p className="text-[#7aaa8a] mb-6 text-sm">Ha ocurrido un error inesperado. Puedes intentar recargar la página.</p>
+            <p className="text-[#8b949e] mb-6 text-sm">Error inesperado. Intenta recargar.</p>
             <button
               onClick={() => { localStorage.clear(); window.location.reload(); }}
-              className="px-6 py-2.5 bg-[#C8102E] hover:bg-[#a00d25] text-white rounded-xl font-bold transition text-sm"
+              className="px-6 py-2.5 text-white rounded-xl font-bold transition text-sm"
+              style={{ background: 'linear-gradient(135deg,#C8102E,#a00d25)', boxShadow: '0 4px 16px rgba(200,16,46,0.3)' }}
             >
-              Reiniciar y Limpiar Datos
+              Reiniciar
             </button>
             {this.state.error && (
-              <p className="mt-4 text-xs text-[#7aaa8a] text-left font-mono">{this.state.error.message}</p>
+              <p className="mt-4 text-xs text-[#484f58] text-left font-mono">{this.state.error.message}</p>
             )}
           </div>
         </div>
@@ -55,7 +69,8 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 }
 
-function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: number) => void; onClose: () => void }) {
+/* ─── Rate Modal ─── */
+function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (r: number) => void; onClose: () => void }) {
   const [inputValue, setInputValue] = useState(rate > 0 ? rate.toString() : '');
 
   const handleSubmit = () => {
@@ -65,34 +80,50 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/30 flex items-center justify-center z-[100] p-4 backdrop-blur-sm"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 flex items-center justify-center z-[100] p-4"
+      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
       onClick={handleSubmit}
     >
-      <div
-        className="bg-white border border-[#e4ede6] rounded-2xl p-6 md:p-8 max-w-md w-full shadow-xl"
+      <motion.div
+        initial={{ scale: 0.82, opacity: 0, y: 24 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        className="max-w-md w-full rounded-2xl p-6 md:p-8"
+        style={{
+          background: '#161b22',
+          border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Portugal flag strip */}
         <div className="flex h-[3px] rounded-full overflow-hidden mb-6">
-          <div className="bg-[#009A3A]" style={{ flex: 2 }} />
-          <div className="bg-[#C8102E]" style={{ flex: 3 }} />
+          <div style={{ flex: 2, background: 'linear-gradient(90deg,#009A3A,#1ebb60)' }} />
+          <div style={{ flex: 3, background: '#C8102E' }} />
         </div>
 
         <div className="text-center mb-6">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#e8f7ed] border border-[#009A3A]/15 flex items-center justify-center text-2xl">
-            💱
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(0,154,58,0.1)', border: '1px solid rgba(0,154,58,0.2)' }}>
+            <DollarSign className="text-[#009A3A]" size={22} />
           </div>
-          <h2 className="text-2xl font-black text-[#0d1f14]" style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.08em' }}>
+          <h2 className="text-2xl font-black text-[#e6edf3] uppercase tracking-widest"
+            style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
             ¡BIENVENIDO!
           </h2>
-          <p className="text-[#7aaa8a] mt-2 text-sm">¿Cuál es la tasa de cambio de hoy?</p>
-          <p className="text-xs text-[#7aaa8a]/60 mt-1">1 USD = X Bs</p>
+          <p className="text-[#8b949e] mt-2 text-sm">¿Cuál es la tasa de cambio de hoy?</p>
+          <p className="text-xs text-[#484f58] mt-1">1 USD = X Bs</p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <span className="block text-xs font-black text-[#3d6b4f] mb-2 uppercase tracking-wider">Tasa de Cambio</span>
+            <span className="block text-xs font-black text-[#009A3A] mb-2 uppercase tracking-wider">
+              Tasa de Cambio
+            </span>
             <SecureInput
               value={inputValue}
               onChange={setInputValue}
@@ -101,23 +132,39 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (rate: n
               inputMode="decimal"
               editable
               noRing
-              displayClassName="!border-[#e4ede6] !rounded-xl !bg-[#f5f8f5]"
+              displayClassName="!border-white/10 !rounded-xl !bg-[#1c2128] !text-[#e6edf3]"
             />
           </div>
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-full py-3 bg-[#009A3A] hover:bg-[#007b2e] text-white font-bold rounded-xl shadow-md transition text-base"
-            style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.08em', fontSize: '1.05rem' }}
+            className="w-full py-3 font-bold rounded-xl text-white transition"
+            style={{
+              fontFamily: '"Barlow Condensed", sans-serif',
+              letterSpacing: '0.08em',
+              fontSize: '1.05rem',
+              background: 'linear-gradient(135deg,#009A3A,#007b2e)',
+              boxShadow: '0 4px 20px rgba(0,154,58,0.35)',
+            }}
           >
             CONTINUAR
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
+/* ─── Nav items ─── */
+const NAV_ITEMS = [
+  { path: '/products',   icon: Package,     label: 'Productos',   managerOnly: false },
+  { path: '/calculator', icon: Calculator,  label: 'Calculadora', managerOnly: false },
+  { path: '/providers',  icon: Truck,       label: 'Proveedores', managerOnly: true  },
+  { path: '/comparator', icon: BarChart2,   label: 'Comparador',  managerOnly: true  },
+  { path: '/merma',      icon: TrendingDown,label: 'Merma',       managerOnly: true  },
+];
+
+/* ─── App ─── */
 function App() {
   const { rate, setRate } = useCurrencyStore();
   const { loadFromSupabase } = useProductStore();
@@ -125,6 +172,7 @@ function App() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [showEditRate, setShowEditRate] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const location = useLocation();
 
@@ -134,165 +182,221 @@ function App() {
   useEffect(() => { if (rate === 0) setShowWelcome(true); }, [rate]);
 
   useEffect(() => {
-    supabase
-      .from('products')
-      .select('count')
-      .limit(1)
-      .then(({ error }) => {
-        if (error) {
-          console.error('🔴 Error de conexión a Supabase:', error);
-          setSupabaseError('Error de conexión a la base de datos. Revisa consola F12.');
-        } else {
-          console.log('🟢 Conexión a Supabase OK');
-          loadFromSupabase().catch(err => {
-            console.error('🔴 Error cargando productos:', err);
-            setSupabaseError('No se pudieron cargar los productos.');
-          });
-        }
-      });
+    supabase.from('products').select('count').limit(1).then(({ error }) => {
+      if (error) {
+        console.error('🔴 Supabase:', error);
+        setSupabaseError('Error de conexión a la base de datos.');
+      } else {
+        console.log('🟢 Supabase OK');
+        loadFromSupabase().catch(() => setSupabaseError('No se pudieron cargar los productos.'));
+      }
+    });
   }, [loadFromSupabase]);
-
-  const handleRateSave = (newRate: number) => setRate(newRate);
 
   if (!userRole) return <LandingPage />;
 
-  const navLinkClass = (isActive: boolean) =>
-    `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all duration-150 text-sm border ${
-      isActive
-        ? 'bg-[#e8f7ed] text-[#009A3A] border-[#009A3A]/25'
-        : 'text-[#7aaa8a] hover:bg-[#f0f5f2] hover:text-[#0d1f14] border-transparent'
-    }`;
+  const visibleNav = NAV_ITEMS.filter(item => !item.managerOnly || isGerencia);
 
   return (
-    <div className="flex min-h-screen bg-[#f5f8f5] overflow-x-hidden">
+    <div className="flex min-h-screen bg-[#0d1117] overflow-x-hidden">
 
       {/* Mobile header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-[#e4ede6] px-4 py-3 flex items-center shadow-sm">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center"
+        style={{ background: '#161b22', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="absolute bottom-0 left-0 right-0 flex h-[2px]">
-          <div className="bg-[#009A3A]" style={{ flex: 2 }} />
-          <div className="bg-[#C8102E]" style={{ flex: 3 }} />
+          <div style={{ flex: 2, background: 'linear-gradient(90deg,#009A3A,#1ebb60)' }} />
+          <div style={{ flex: 3, background: '#C8102E' }} />
         </div>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-lg text-[#7aaa8a] hover:text-[#0d1f14] hover:bg-[#f0f5f2] transition"
-          aria-label="Abrir menú"
+          className="p-2 rounded-lg text-[#8b949e] hover:text-[#e6edf3] transition"
+          style={{ background: sidebarOpen ? 'rgba(255,255,255,0.05)' : 'transparent' }}
         >
           {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
-        <span
-          className="ml-3 font-black text-[#0d1f14]"
-          style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.2rem', letterSpacing: '0.12em' }}
-        >
-          LA MUNDIAL
+        <span className="ml-3 font-black text-[#e6edf3] uppercase tracking-widest"
+          style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.1rem' }}>
+          La <span className="text-[#009A3A]">Mundial</span>
         </span>
       </div>
 
       {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-      )}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="lg:hidden fixed inset-0 z-40"
+            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Sidebar */}
-      <aside className={`
-        fixed lg:static inset-y-0 left-0 z-50
-        w-64 bg-white border-r border-[#e4ede6] flex flex-col shadow-sm
-        transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-
-        {/* Portugal Flag Strip */}
-        <div className="flex flex-shrink-0 h-[3px]">
-          <div className="bg-[#009A3A]" style={{ flex: 2 }} />
-          <div className="bg-[#C8102E]" style={{ flex: 3 }} />
+      {/* ─── Sidebar ─── */}
+      <aside
+        className={`
+          fixed lg:static inset-y-0 left-0 z-50 flex flex-col overflow-hidden
+          transition-all duration-300 ease-in-out
+          ${collapsed ? 'lg:w-16' : 'lg:w-[220px]'}
+          w-[220px]
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+        style={{
+          background: '#161b22',
+          borderRight: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '4px 0 32px rgba(0,0,0,0.4)',
+        }}
+      >
+        {/* Top gradient strip */}
+        <div className="flex-shrink-0 flex h-[3px]">
+          <div style={{ flex: 2, background: 'linear-gradient(90deg,#009A3A,#1ebb60)' }} />
+          <div style={{ flex: 3, background: '#C8102E' }} />
         </div>
 
-        {/* Logo Header */}
-        <div className="flex-shrink-0 flex items-center gap-3 px-4 py-4 border-b border-[#e4ede6]">
-          <img src="/logo.png" alt="La Mundial" className="w-9 h-9 object-contain flex-shrink-0" />
-          <div>
-            <div
-              className="text-[#0d1f14] font-black uppercase leading-none tracking-widest"
-              style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.05rem' }}
-            >
-              La Mundial
-            </div>
-            <div className="text-[#7aaa8a] uppercase tracking-widest font-semibold" style={{ fontSize: '9px' }}>
-              Gestión de Precios
+        {/* Logo + collapse toggle */}
+        <div className="flex-shrink-0 flex items-center justify-between px-3 py-4 gap-2"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="flex items-center gap-3 min-w-0 overflow-hidden">
+            <img src="/logo.png" alt="La Mundial" className="w-8 h-8 object-contain flex-shrink-0" />
+            <div className={`min-w-0 transition-all duration-300 ${collapsed ? 'lg:opacity-0 lg:w-0' : 'opacity-100'}`}>
+              <div className="font-black text-[#e6edf3] uppercase leading-none tracking-widest truncate"
+                style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '0.95rem' }}>
+                La <span className="text-[#009A3A]">Mundial</span>
+              </div>
+              <div className="text-[#484f58] uppercase tracking-widest font-semibold truncate" style={{ fontSize: '8px' }}>
+                Gestión de Precios
+              </div>
             </div>
           </div>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="hidden lg:flex flex-shrink-0 p-1.5 rounded-lg text-[#484f58] hover:text-[#009A3A] transition"
+            style={{ background: 'rgba(255,255,255,0.03)' }}
+          >
+            {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
+          </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-shrink-0 px-3 py-3 space-y-1">
-          <NavLink to="/products" className={({ isActive }) => `nav-btn animate-fade-left ${navLinkClass(isActive)}`}>
-            <span className="nav-icon"><Package size={15} strokeWidth={2.5} /></span>
-            <span className="nav-text">Productos</span>
-          </NavLink>
-          <NavLink to="/calculator" className={({ isActive }) => `nav-btn animate-fade-left-1 ${navLinkClass(isActive)}`}>
-            <span className="nav-icon"><Calculator size={15} strokeWidth={2.5} /></span>
-            <span className="nav-text">Calculadora</span>
-          </NavLink>
-          {isGerencia && (
-            <>
-              <NavLink to="/providers" className={({ isActive }) => `nav-btn animate-fade-left-2 ${navLinkClass(isActive)}`}>
-                <span className="nav-icon"><Truck size={15} strokeWidth={2.5} /></span>
-                <span className="nav-text">Proveedores</span>
+        {/* Nav */}
+        <nav className="flex-shrink-0 px-2 py-3 space-y-0.5">
+          {visibleNav.map((item, i) => {
+            const Icon = item.icon;
+            const isActive =
+              location.pathname === item.path ||
+              (item.path === '/products' && location.pathname === '/');
+            return (
+              <NavLink key={item.path} to={item.path} className="block">
+                <div
+                  className={`
+                    nav-btn animate-fade-left relative flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer
+                    transition-colors duration-150
+                    ${collapsed ? 'lg:justify-center' : ''}
+                    ${isActive ? 'text-[#009A3A]' : 'text-[#8b949e] hover:text-[#e6edf3]'}
+                  `}
+                  style={{ animationDelay: `${i * 0.06}s` }}
+                  title={collapsed ? item.label : undefined}
+                >
+                  {/* Active background pill — shared layout animation */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="nav-active-pill"
+                      className="absolute inset-0 rounded-xl"
+                      style={{
+                        background: 'linear-gradient(135deg,rgba(0,154,58,0.14) 0%,rgba(0,154,58,0.05) 100%)',
+                        border: '1px solid rgba(0,154,58,0.2)',
+                      }}
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    />
+                  )}
+
+                  <span
+                    className="nav-icon relative z-10 flex-shrink-0"
+                    style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(0,154,58,0.6))' } : {}}
+                  >
+                    <Icon size={16} strokeWidth={2.2} />
+                  </span>
+
+                  <span className={`nav-text text-sm font-semibold relative z-10 transition-all duration-300 overflow-hidden ${collapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100'}`}>
+                    {item.label}
+                  </span>
+                </div>
               </NavLink>
-              <NavLink to="/comparator" className={({ isActive }) => `nav-btn animate-fade-left-3 ${navLinkClass(isActive)}`}>
-                <span className="nav-icon"><BarChart2 size={15} strokeWidth={2.5} /></span>
-                <span className="nav-text">Comparador</span>
-              </NavLink>
-              <NavLink to="/merma" className={({ isActive }) => `nav-btn animate-fade-left-4 ${navLinkClass(isActive)}`}>
-                <span className="nav-icon"><TrendingDown size={15} strokeWidth={2.5} /></span>
-                <span className="nav-text">Merma</span>
-              </NavLink>
-            </>
-          )}
+            );
+          })}
         </nav>
 
-        {/* Mascots — colores originales + animación flotante */}
-        <div className="flex-1 flex items-center justify-center px-4 relative overflow-hidden">
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 55%, rgba(0,154,58,0.06) 0%, transparent 70%)' }}
-          />
+        {/* Mascot */}
+        <div
+          className={`flex-1 flex items-center justify-center px-4 relative overflow-hidden transition-opacity duration-300 ${collapsed ? 'lg:opacity-0' : 'opacity-100'}`}
+        >
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse 70% 55% at 50% 55%, rgba(0,154,58,0.07) 0%, transparent 70%)' }} />
           <img
             src="/logo.png"
-            alt="La Mundial XXI"
-            className="mascot-animate w-44 object-contain hidden lg:block select-none relative z-10"
+            alt="La Mundial"
+            className="mascot-animate w-32 object-contain hidden lg:block select-none relative z-10"
+            style={{ opacity: 0.75 }}
           />
         </div>
 
-        {/* Rate display + Logout */}
-        <div className="flex-shrink-0 px-4 py-3 border-t border-[#e4ede6] space-y-2">
+        {/* Bottom: rate + role + logout */}
+        <div className="flex-shrink-0 px-2 py-3 space-y-1"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
           {rate > 0 && (
             <button
               onClick={() => setShowEditRate(true)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#f5f8f5] border border-[#e4ede6] hover:border-[#009A3A]/30 transition group"
+              className={`w-full flex items-center px-3 py-2 rounded-xl transition group ${collapsed ? 'lg:justify-center' : 'justify-between'}`}
+              style={{ background: '#1c2128', border: '1px solid rgba(255,255,255,0.07)' }}
+              title={collapsed ? `${rate.toFixed(2)} Bs/USD` : undefined}
             >
-              <span className="text-[#7aaa8a] uppercase tracking-wider font-semibold" style={{ fontSize: '9px' }}>USD / Bs</span>
-              <span className="font-bold text-[#009A3A] group-hover:text-[#007b2e] transition" style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.75rem' }}>
-                {rate.toFixed(2)}
-              </span>
+              {collapsed ? (
+                <DollarSign size={14} className="text-[#009A3A] lg:mx-auto" />
+              ) : (
+                <>
+                  <span className="text-[#484f58] uppercase tracking-wider font-semibold" style={{ fontSize: '8px' }}>USD / Bs</span>
+                  <span className="font-bold text-[#009A3A] group-hover:text-[#1ebb60] transition"
+                    style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.68rem' }}>
+                    {rate.toFixed(2)}
+                  </span>
+                </>
+              )}
             </button>
           )}
+
+          {!collapsed && userRole && (
+            <div className="flex justify-center px-3 py-0.5">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                isGerencia
+                  ? 'text-[#009A3A] border border-[#009A3A]/20'
+                  : 'text-[#8b949e] border border-white/10'
+              }`} style={{ background: isGerencia ? 'rgba(0,154,58,0.08)' : 'rgba(255,255,255,0.04)' }}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isGerencia ? 'bg-[#009A3A]' : 'bg-[#484f58]'}`} />
+                {isGerencia ? 'Gerencia' : 'Invitado'}
+              </span>
+            </div>
+          )}
+
           {userRole && (
             <button
               onClick={logout}
-              className="w-full px-3 py-2 text-sm font-semibold text-[#C8102E]/50 hover:bg-[#fde8ec] hover:text-[#C8102E] rounded-xl transition-all flex items-center justify-center gap-2"
+              className={`w-full px-3 py-2 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 ${collapsed ? 'lg:justify-center' : 'justify-center'} text-[#C8102E]/40 hover:text-[#C8102E] hover:bg-[#C8102E]/8`}
+              title={collapsed ? 'Cerrar Sesión' : undefined}
             >
               <LogOut size={13} />
-              Cerrar Sesión
+              <span className={`${collapsed ? 'lg:hidden' : ''}`}>Cerrar Sesión</span>
             </button>
           )}
         </div>
-        <div className="flex-shrink-0 h-3" />
+        <div className="flex-shrink-0 h-1" />
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-[#f5f8f5] lg:pt-6 pt-16">
+      {/* ─── Main ─── */}
+      <main className="flex-1 min-w-0 p-4 md:p-6 overflow-y-auto bg-[#0d1117] lg:pt-6 pt-16">
         {supabaseError && (
-          <div className="mb-4 p-4 bg-[#fde8ec] border border-[#C8102E]/20 rounded-xl text-[#C8102E] text-sm">
+          <div className="mb-4 p-4 rounded-xl text-sm text-[#C8102E]"
+            style={{ background: 'rgba(200,16,46,0.08)', border: '1px solid rgba(200,16,46,0.2)' }}>
             ⚠️ {supabaseError}
           </div>
         )}
@@ -303,16 +407,19 @@ function App() {
             <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
             {isGerencia && (
               <>
-                <Route path="/providers" element={<ProvidersPage />} />
+                <Route path="/providers"  element={<ProvidersPage />} />
                 <Route path="/comparator" element={<ComparatorPage />} />
-                <Route path="/merma" element={<MermaPage />} />
+                <Route path="/merma"      element={<MermaPage />} />
               </>
             )}
             <Route path="/unauthorized" element={
               <div className="text-center py-16">
                 <div className="text-6xl mb-4">🔒</div>
-                <h2 className="text-2xl font-black text-[#C8102E]" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>ACCESO DENEGADO</h2>
-                <p className="text-[#7aaa8a] mt-2">No tienes permiso para esta sección.</p>
+                <h2 className="text-2xl font-black text-[#C8102E]"
+                  style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
+                  ACCESO DENEGADO
+                </h2>
+                <p className="text-[#8b949e] mt-2">No tienes permiso para esta sección.</p>
               </div>
             } />
             <Route path="*" element={<Navigate to="/products" replace />} />
@@ -320,8 +427,17 @@ function App() {
         </ErrorBoundary>
       </main>
 
-      {showWelcome && <RateModal rate={rate} setRate={handleRateSave} onClose={() => setShowWelcome(false)} />}
-      {showEditRate && <RateModal rate={rate} setRate={handleRateSave} onClose={() => setShowEditRate(false)} />}
+      {/* Modals */}
+      <AnimatePresence>
+        {showWelcome && (
+          <RateModal key="welcome" rate={rate} setRate={setRate} onClose={() => setShowWelcome(false)} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showEditRate && (
+          <RateModal key="edit" rate={rate} setRate={setRate} onClose={() => setShowEditRate(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

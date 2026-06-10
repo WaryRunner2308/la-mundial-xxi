@@ -31,11 +31,26 @@ export default {
           800: '#500612',
           900: '#280309',
         },
+        surface: {
+          DEFAULT: '#161b22',
+          raised:  '#1c2128',
+          overlay: '#21262d',
+        },
+        bg: {
+          base: '#0d1117',
+        },
       },
       fontFamily: {
         display: ['"Barlow Condensed"', 'Impact', 'sans-serif'],
         body:    ['Nunito', 'system-ui', 'sans-serif'],
         mono:    ['"JetBrains Mono"', 'monospace'],
+      },
+      boxShadow: {
+        'verde':     '0 0 20px rgba(0,154,58,0.25), 0 4px 12px rgba(0,0,0,0.4)',
+        'verde-lg':  '0 0 40px rgba(0,154,58,0.4), 0 8px 24px rgba(0,0,0,0.5)',
+        'vermelho':  '0 0 20px rgba(200,16,46,0.3), 0 4px 12px rgba(0,0,0,0.4)',
+        'glass':     '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+        'card':      '0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04)',
       },
     },
   },

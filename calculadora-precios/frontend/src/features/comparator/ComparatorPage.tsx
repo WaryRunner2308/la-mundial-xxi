@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useProductStore } from '../../store/productStore';
 import { useProviderStore } from '../../store/providerStore';
 import { ProductPriceComparison } from '../../types/provider';
 import { SecureInput } from '../../components/ui/SecureInput';
+import { Search, X, Trophy } from 'lucide-react';
 
 export function ComparatorPage() {
   const { products } = useProductStore();
@@ -13,313 +15,355 @@ export function ComparatorPage() {
   const [error, setError] = useState<string | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
-  // Obtener productos únicos por nombre
   const uniqueProductNames = Array.from(new Set(products.map((p) => p.name))).sort();
-
-  // Filtrar productos por búsqueda
   const filteredProducts = uniqueProductNames.filter((name) =>
     name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-   // Resetear índice SOLO cuando el texto de búsqueda cambia (no en cada render)
-   useEffect(() => {
-     setHighlightedIndex(-1);
-   }, [searchTerm]);
+  useEffect(() => { setHighlightedIndex(-1); }, [searchTerm]);
 
-  // Al seleccionar un producto, agrupar por proveedor
   const handleSelectProduct = (productName: string) => {
     setLoading(true);
     setError(null);
     setHighlightedIndex(-1);
-
     try {
       const productVariants = products.filter((p) => p.name === productName);
       const comparison: ProductPriceComparison = {
-        product: {
-          id: 0,
-          name: productName,
-          category: '',
-        },
+        product: { id: 0, name: productName, category: '' },
         prices: productVariants
           .filter((p) => p.providerId !== undefined)
           .map((p) => {
             const provider = providers.find((prov) => prov.id === p.providerId);
             return {
-              id: p.id,
-              product_id: p.id,
-              provider_id: p.providerId!,
-              cost_usd: p.costUSD,
-              profit_percentage: p.profitPercentage,
-              exempt_from_vat: p.exemptFromVAT,
-              photo_url: p.photoUrl,
+              id: p.id, product_id: p.id, provider_id: p.providerId!,
+              cost_usd: p.costUSD, profit_percentage: p.profitPercentage,
+              exempt_from_vat: p.exemptFromVAT, photo_url: p.photoUrl,
               updated_at: p.updatedAt ?? undefined,
               provider_name: provider?.name || 'Desconocido',
             };
           })
           .sort((a, b) => a.cost_usd - b.cost_usd),
       };
-
       setSelectedProduct(comparison);
     } catch (err: any) {
-      console.error('Error al cargar comparación:', err);
       setError('Error al cargar datos del producto');
     } finally {
       setLoading(false);
     }
   };
 
-   // Manejo de teclado en input de búsqueda (NAVEGACIÓN HÍBRIDA)
-   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-     if (filteredProducts.length === 0) return;
-
-     switch (e.key) {
-       case 'ArrowDown':
-         e.preventDefault();
-         setHighlightedIndex((prev) =>
-           prev < filteredProducts.length - 1 ? prev + 1 : prev
-         );
-         break;
-       case 'ArrowUp':
-         e.preventDefault();
-         setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1)); // ← Vuelve al input (-1)
-         break;
-       case 'Enter':
-         e.preventDefault();
-         if (highlightedIndex >= 0 && highlightedIndex < filteredProducts.length) {
-           const selectedName = filteredProducts[highlightedIndex];
-           setSearchTerm(selectedName);
-           handleSelectProduct(selectedName);
-           setHighlightedIndex(-1);
-         }
-         break;
-       case 'Escape':
-         e.preventDefault();
-         setSearchTerm('');
-         setSelectedProduct(null);
-         setHighlightedIndex(-1);
-         break;
-       default:
-         break;
-     }
-   };
-
-   // Scroll automático al ítem resaltado (móvil/teclado)
-   useEffect(() => {
-     if (highlightedIndex >= 0) {
-       const listbox = document.querySelector('[role="listbox"]');
-       if (listbox) {
-         const items = listbox.querySelectorAll('[role="option"]');
-         const activeItem = items[highlightedIndex] as HTMLElement;
-         if (activeItem) {
-           activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-         }
-       }
-     }
-   }, [highlightedIndex]);
-
-  // Limpiar al limpiar búsqueda
-  useEffect(() => {
-    if (searchTerm === '') {
-      setSelectedProduct(null);
-      setError(null);
-      setHighlightedIndex(-1);
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (filteredProducts.length === 0) return;
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex((prev) => prev < filteredProducts.length - 1 ? prev + 1 : prev);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < filteredProducts.length) {
+          const name = filteredProducts[highlightedIndex];
+          setSearchTerm(name);
+          handleSelectProduct(name);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setSearchTerm('');
+        setSelectedProduct(null);
+        setHighlightedIndex(-1);
+        break;
     }
+  };
+
+  useEffect(() => {
+    if (highlightedIndex >= 0) {
+      const listbox = document.querySelector('[role="listbox"]');
+      if (listbox) {
+        const items = listbox.querySelectorAll('[role="option"]');
+        (items[highlightedIndex] as HTMLElement)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [highlightedIndex]);
+
+  useEffect(() => {
+    if (searchTerm === '') { setSelectedProduct(null); setError(null); setHighlightedIndex(-1); }
   }, [searchTerm]);
 
-  // Encontrar precio mínimo
   const minPrice = selectedProduct?.prices.length
     ? Math.min(...selectedProduct.prices.map((p) => p.cost_usd))
     : null;
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="space-y-5"
+    >
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
+        <h1 className="font-black text-[#e6edf3] uppercase tracking-wide"
+          style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: 'clamp(1.7rem,4vw,2.4rem)', letterSpacing: '0.06em' }}>
           Comparador de Precios
         </h1>
-        <p className="text-sm md:text-base text-gray-500 mt-1">
+        <p className="text-sm text-[#8b949e] mt-1">
           Busca un producto y compara precios entre proveedores
         </p>
       </div>
 
-      {/* Buscador */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
-        <label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-2">
+      {/* Search Panel */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="rounded-2xl p-5"
+        style={{
+          background: '#161b22',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+        }}
+      >
+        <label className="block text-xs font-black text-[#009A3A] mb-2 uppercase tracking-wider">
           Buscar Producto
         </label>
-         <div className="relative">
-           <SecureInput
-             value={searchTerm}
-             onChange={(value) => {
-               setSearchTerm(value);
-               setHighlightedIndex(-1);
-             }}
-             onKeyDown={handleInputKeyDown}
-             placeholder="Ej: Malta 1.5L"
-             inputMode="text"
-             editable
-             // Cuando highlightedIndex === -1 el input tiene foco visual (anillo azul)
-             // Cuando highlightedIndex >= 0, el foco visual está en la lista (sin anillo en input)
-             displayClassName={`w-full px-4 py-3 border rounded-lg outline-none transition text-base ${
-               highlightedIndex === -1
-                 ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-                 : 'border-gray-200'
-             }`}
-           />
-          {searchTerm && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedProduct(null);
-                setHighlightedIndex(-1);
-              }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
-            >
-              ✕
-            </button>
-          )}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <Search size={15} className="text-[#8b949e]" />
+          </div>
+          <SecureInput
+            value={searchTerm}
+            onChange={(value) => { setSearchTerm(value); setHighlightedIndex(-1); }}
+            onKeyDown={handleInputKeyDown}
+            placeholder="Ej: Malta 1.5L"
+            inputMode="text"
+            editable
+            noRing
+            displayClassName={`!bg-[#1c2128] !border-white/10 !text-[#e6edf3] !rounded-xl pl-9 ${
+              highlightedIndex === -1 ? '' : '!border-white/5'
+            }`}
+          />
+          <AnimatePresence>
+            {searchTerm && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                type="button"
+                onClick={() => { setSearchTerm(''); setSelectedProduct(null); setHighlightedIndex(-1); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8b949e] hover:text-[#e6edf3] z-10 transition p-1 rounded"
+              >
+                <X size={14} />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
 
-         {/* Sugerencias - Navegación híbrida (teclado + mouse) */}
-         {searchTerm && filteredProducts.length > 0 && (
-           <ul
-             role="listbox"
-             className="mt-2 border border-gray-200 rounded-lg max-h-60 overflow-y-auto bg-white"
-           >
-             {filteredProducts.map((productName, index) => (
-               <li
-                 key={productName}
-                 onClick={() => {
-                   setSearchTerm(productName);
-                   handleSelectProduct(productName);
-                   setHighlightedIndex(-1);
-                 }}
-                 onMouseEnter={() => setHighlightedIndex(index)}
-                 className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-all ${
-                   index === highlightedIndex
-                     ? 'bg-blue-50 text-blue-700 font-medium ring-2 ring-blue-500 ring-inset'  // ← RECUADRO AZUL visible
-                     : 'hover:bg-gray-50 text-gray-700'
-                 }`}
-                 role="option"
-                 aria-selected={index === highlightedIndex}
-               >
-                 {productName}
-               </li>
-             ))}
-           </ul>
-         )}
-      </div>
+        {/* Autocomplete dropdown */}
+        <AnimatePresence>
+          {searchTerm && filteredProducts.length > 0 && (
+            <motion.ul
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              role="listbox"
+              className="mt-2 rounded-xl max-h-60 overflow-y-auto"
+              style={{ border: '1px solid rgba(255,255,255,0.08)', background: '#1c2128' }}
+            >
+              {filteredProducts.map((productName, index) => (
+                <li
+                  key={productName}
+                  onClick={() => { setSearchTerm(productName); handleSelectProduct(productName); setHighlightedIndex(-1); }}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                  role="option"
+                  aria-selected={index === highlightedIndex}
+                  className="px-4 py-3 cursor-pointer transition-colors text-sm"
+                  style={{
+                    background: index === highlightedIndex ? 'rgba(0,154,58,0.1)' : 'transparent',
+                    color: index === highlightedIndex ? '#009A3A' : '#8b949e',
+                    borderBottom: index < filteredProducts.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                    fontWeight: index === highlightedIndex ? 700 : 400,
+                    outline: index === highlightedIndex ? '1px solid rgba(0,154,58,0.25)' : 'none',
+                    outlineOffset: '-1px',
+                  }}
+                >
+                  {productName}
+                </li>
+              ))}
+            </motion.ul>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
-      {/* Resultados */}
+      {/* Loading */}
       {loading && (
         <div className="text-center py-12">
-          <div className="text-4xl mb-3">⏳</div>
-          <p className="text-gray-500">Cargando comparación...</p>
+          <div className="w-10 h-10 mx-auto mb-3 rounded-full border-2 border-[#009A3A]/30 border-t-[#009A3A] animate-spin" />
+          <p className="text-[#8b949e] text-sm">Cargando comparación...</p>
         </div>
       )}
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-          <div className="text-5xl mb-3">⚠️</div>
-          <p className="text-red-700">{error}</p>
-        </div>
-      )}
+      {/* Error */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="rounded-xl p-6 text-center"
+            style={{ background: 'rgba(200,16,46,0.08)', border: '1px solid rgba(200,16,46,0.2)' }}
+          >
+            <div className="text-4xl mb-2">⚠️</div>
+            <p className="text-[#C8102E] text-sm">{error}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {!loading && selectedProduct && selectedProduct.prices.length === 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
-          <div className="text-5xl mb-3">🔍</div>
-          <h3 className="text-lg font-semibold mb-2 text-gray-900">
-            No hay precios registrados
-          </h3>
-          <p className="text-gray-600">
-            Este producto no tiene precios asociados a proveedores. Agrega proveedores desde el formulario de productos.
-          </p>
-        </div>
-      )}
-
-      {!loading && selectedProduct && selectedProduct.prices.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg md:text-xl font-bold text-gray-800">
-              Precios de: {selectedProduct.product.name}
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {selectedProduct.prices.length} proveedor(es) encontrado(s)
+      {/* No prices */}
+      <AnimatePresence>
+        {!loading && selectedProduct && selectedProduct.prices.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="rounded-xl p-8 text-center"
+            style={{ background: '#161b22', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <div className="text-4xl mb-3">🔍</div>
+            <h3 className="text-base font-bold text-[#e6edf3] mb-2">No hay precios registrados</h3>
+            <p className="text-[#8b949e] text-sm">
+              Este producto no tiene precios asociados a proveedores. Agrega proveedores desde el formulario de productos.
             </p>
-          </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-          <div className="overflow-x-auto -mx-4">
-            <table className="w-full min-w-[300px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="h-12 px-4 text-left text-xs md:text-sm font-semibold text-gray-600">Proveedor</th>
-                  <th className="h-12 px-4 text-right text-xs md:text-sm font-semibold text-gray-600">Precio USD</th>
-                  <th className="h-12 px-4 text-right text-xs md:text-sm font-semibold text-gray-600">Margen</th>
-                  <th className="h-12 px-4 text-center text-xs md:text-sm font-semibold text-gray-600">IVA</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {selectedProduct.prices.map((price) => {
-                  const isCheapest = minPrice !== null && price.cost_usd === minPrice;
-                  return (
-                    <tr
-                      key={price.id}
-                      className={`hover:bg-gray-50 transition ${isCheapest ? 'bg-green-50' : ''}`}
-                    >
-                      <td className="p-4 align-middle">
-                        <span className="text-sm md:text-base font-medium text-gray-900">
-                          {price.provider_name}
-                        </span>
-                        {isCheapest && (
-                          <span className="ml-2 inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                            Más barato
+      {/* Results table */}
+      <AnimatePresence>
+        {!loading && selectedProduct && selectedProduct.prices.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="rounded-2xl overflow-hidden"
+            style={{
+              background: '#161b22',
+              border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div className="px-5 py-4"
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: '#1c2128' }}>
+              <h2 className="font-black text-[#e6edf3] uppercase tracking-wide"
+                style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.1rem', letterSpacing: '0.06em' }}>
+                {selectedProduct.product.name}
+              </h2>
+              <p className="text-xs text-[#8b949e] mt-0.5">
+                {selectedProduct.prices.length} proveedor(es) · ordenado por precio
+              </p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[320px]">
+                <thead style={{ background: '#21262d', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                  <tr>
+                    <th className="h-11 px-5 text-left text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle">Proveedor</th>
+                    <th className="h-11 px-5 text-right text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle">Precio USD</th>
+                    <th className="h-11 px-5 text-right text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle">Margen</th>
+                    <th className="h-11 px-5 text-center text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle">IVA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedProduct.prices.map((price, index) => {
+                    const isCheapest = minPrice !== null && price.cost_usd === minPrice;
+                    return (
+                      <motion.tr
+                        key={price.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        style={{
+                          background: isCheapest
+                            ? 'rgba(0,154,58,0.06)'
+                            : index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+                          borderLeft: isCheapest ? '3px solid #009A3A' : '3px solid transparent',
+                          borderBottom: '1px solid rgba(255,255,255,0.05)',
+                        }}
+                      >
+                        <td className="p-4 align-middle">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-[#e6edf3]">{price.provider_name}</span>
+                            {isCheapest && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-black rounded-full uppercase tracking-wider"
+                                style={{
+                                  background: 'rgba(0,154,58,0.15)',
+                                  border: '1px solid rgba(0,154,58,0.25)',
+                                  color: '#009A3A',
+                                }}
+                              >
+                                <Trophy size={9} /> Más barato
+                              </motion.span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4 align-middle text-right">
+                          <span className="font-black"
+                            style={{
+                              fontFamily: '"JetBrains Mono", monospace',
+                              fontSize: '1.1rem',
+                              color: isCheapest ? '#009A3A' : '#e6edf3',
+                            }}>
+                            ${price.cost_usd.toFixed(2)}
                           </span>
-                        )}
-                      </td>
-                      <td className="p-4 align-middle text-right">
-                        <span
-                          className={`text-lg font-bold ${isCheapest ? 'text-green-600' : 'text-gray-900'}`}
-                        >
-                          ${price.cost_usd.toFixed(2)}
-                        </span>
-                      </td>
-                      <td className="p-4 align-middle text-right text-gray-600 text-sm">
-                        {price.profit_percentage}%
-                      </td>
-                      <td className="p-4 align-middle text-center">
-                        <span
-                          className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
+                        </td>
+                        <td className="p-4 align-middle text-right text-[#8b949e] text-sm"
+                          style={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                          {price.profit_percentage}%
+                        </td>
+                        <td className="p-4 align-middle text-center">
+                          <span className={`inline-flex px-2 py-0.5 text-[10px] font-black rounded-full uppercase tracking-wider ${
                             price.exempt_from_vat
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-green-100 text-green-800'
+                              ? 'text-[#C8102E] border-[#C8102E]/25'
+                              : 'text-[#009A3A] border-[#009A3A]/25'
                           }`}
-                        >
-                          {price.exempt_from_vat ? 'Exento' : 'Sí'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                            style={{ background: price.exempt_from_vat ? 'rgba(200,16,46,0.08)' : 'rgba(0,154,58,0.08)', border: '1px solid' }}>
+                            {price.exempt_from_vat ? 'Exento' : 'Sí'}
+                          </span>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Estado inicial */}
+      {/* Initial empty state */}
       {!searchTerm && !selectedProduct && !loading && (
-        <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200">
-          <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-lg font-semibold mb-2 text-gray-900">
-            Busca un producto para comparar
-          </h3>
-          <p className="text-gray-500 max-w-md mx-auto">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-center py-16 rounded-2xl"
+          style={{ background: '#161b22', border: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <div className="text-5xl mb-4">🔍</div>
+          <h3 className="text-base font-bold text-[#e6edf3] mb-2">Busca un producto para comparar</h3>
+          <p className="text-[#8b949e] text-sm max-w-md mx-auto">
             Ingresa el nombre de un producto para ver los precios de todos los proveedores que lo ofrecen.
           </p>
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }

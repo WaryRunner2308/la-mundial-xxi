@@ -14,7 +14,7 @@ interface SecureInputProps {
     autoFocus?: boolean;
     editable?: boolean;
     displayClassName?: string;
-    noRing?: boolean; // ← NUEVA PROP: elimina efectos de foco (ring/glow)
+    noRing?: boolean;
 }
 
 export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
@@ -24,7 +24,6 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         const displayRef = useRef<HTMLDivElement>(null);
         const [isFocused, setIsFocused] = useState(false);
 
-        // Nombre único por montaje para derrotar autocompletado
         const fieldName = useRef<string>(`field_${Math.random().toString(36).substring(2, 15)}`);
 
         useImperativeHandle(ref, () => containerRef.current!);
@@ -35,15 +34,13 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
             }
         }, [autoFocus]);
 
-        // Touch/Click handler - responde inmediatamente
         const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
             if (inputRef.current) {
                 if (e.pointerType === 'touch') {
-                    e.preventDefault(); // solo en touch para evitar scroll/zoom en iOS
+                    e.preventDefault();
                 }
                 e.stopPropagation();
                 inputRef.current.focus();
-                // Coloca el cursor al final después del foco
                 requestAnimationFrame(() => {
                     if (inputRef.current) {
                         const len = inputRef.current.value.length;
@@ -69,11 +66,9 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 newValue = newValue.replace(/[^0-9]/g, '');
             }
 
-            // Calcula la posición correcta del cursor ajustando por caracteres eliminados
             const newCursor = Math.max(0, cursorBefore + (newValue.length - lengthBefore));
             onChange(newValue);
 
-            // Restaura el cursor después de que React actualice el input controlado
             requestAnimationFrame(() => {
                 if (inputRef.current) {
                     inputRef.current.setSelectionRange(newCursor, newCursor);
@@ -81,29 +76,17 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
             });
         };
 
-        // Captura todas las teclas y propaga al padre
         const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-            // Manejar Enter localmente (si hay onSubmit)
             if (e.key === 'Enter') {
                 e.preventDefault();
                 onSubmit?.();
             }
-            // SIEMPRE propagar el evento al componente padre
-            // El padre decidirá si maneja ArrowUp, ArrowDown, etc.
             onKeyDown?.(e);
         };
 
-        const handleInputFocus = () => {
-            setIsFocused(true);
-            onFocus?.();
-        };
+        const handleInputFocus = () => { setIsFocused(true); onFocus?.(); };
+        const handleInputBlur  = () => { setIsFocused(false); onBlur?.(); };
 
-        const handleInputBlur = () => {
-            setIsFocused(false);
-            onBlur?.();
-        };
-
-        // Sincronizar valor visual
         useEffect(() => {
             if (displayRef.current && displayRef.current.textContent !== value) {
                 displayRef.current.textContent = value;
@@ -115,15 +98,13 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 ref={containerRef}
                 onPointerDown={handlePointerDown}
                 className={`w-full relative ${className}`}
-                style={{ touchAction: 'manipulation' }} // Eliminar retraso de 300ms en móvil
+                style={{ touchAction: 'manipulation' }}
             >
                 {label && (
-                    <span className="block text-sm font-medium text-gray-700 mb-2">
-                        {label}
-                    </span>
+                    <span className="block text-sm font-medium text-[#8b949e] mb-2">{label}</span>
                 )}
 
-                {/* Input invisible - usa pointer-events:none para responsiveness */}
+                {/* Invisible real input */}
                 <input
                     ref={inputRef}
                     type="text"
@@ -152,7 +133,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         outline: 'none',
                         backgroundColor: 'transparent',
                         color: 'transparent',
-                        caretColor: '#3b82f6',
+                        caretColor: '#009A3A',
                         fontSize: '16px',
                         lineHeight: '1.5',
                         fontFamily: 'inherit',
@@ -164,50 +145,41 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     data-1p-ignore="true"
                 />
 
-                {/* Elemento visible */}
-                 {editable ? (
-                     <div
-                         ref={displayRef}
-                         contentEditable
-                         suppressContentEditableWarning
-                         className={`
-                             w-full px-4 py-3 border border-gray-300 rounded-lg
-                             ${noRing ? '' : 'focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}
-                             outline-none transition text-base min-h-[48px] bg-white
-                             ${isFocused && !noRing ? 'ring-2 ring-blue-500 border-blue-500' : ''}
-                             ${displayClassName}
-                         `}
-                         style={{
-                             position: 'relative',
-                             zIndex: 1,
-                             userSelect: 'text',
-                             WebkitUserSelect: 'text',
-                         }}
-                         {...(placeholder && !value ? { 'data-placeholder': placeholder } : {})}
-                     />
-                 ) : (
-                     <div
-                         className={`
-                             w-full px-4 py-3 border border-gray-300 rounded-lg bg-white
-                             text-base min-h-[48px] flex items-center
-                             ${value ? 'text-gray-900' : 'text-gray-400'}
-                             ${isFocused && !noRing ? 'ring-2 ring-blue-500 border-blue-500' : ''}
-                             ${displayClassName}
-                         `}
-                         style={{ position: 'relative', zIndex: 1 }}
-                     >
-                         {value || placeholder}
-                     </div>
-                 )}
+                {/* Visible display element */}
+                {editable ? (
+                    <div
+                        ref={displayRef}
+                        contentEditable
+                        suppressContentEditableWarning
+                        className={`
+                            w-full px-4 py-3 border border-white/10 rounded-lg
+                            ${noRing ? '' : isFocused ? 'ring-2 ring-[#009A3A]/40 border-[#009A3A]/40' : ''}
+                            outline-none transition text-base min-h-[48px] bg-[#1c2128] text-[#e6edf3]
+                            ${displayClassName}
+                        `}
+                        style={{ position: 'relative', zIndex: 1, userSelect: 'text', WebkitUserSelect: 'text' }}
+                        {...(placeholder && !value ? { 'data-placeholder': placeholder } : {})}
+                    />
+                ) : (
+                    <div
+                        className={`
+                            w-full px-4 py-3 border border-white/10 rounded-lg bg-[#1c2128]
+                            text-base min-h-[48px] flex items-center
+                            ${value ? 'text-[#e6edf3]' : 'text-[#484f58]'}
+                            ${!noRing && isFocused ? 'ring-2 ring-[#009A3A]/40 border-[#009A3A]/40' : ''}
+                            ${displayClassName}
+                        `}
+                        style={{ position: 'relative', zIndex: 1 }}
+                    >
+                        {value || placeholder}
+                    </div>
+                )}
 
-                {/* CSS anti-autofill */}
                 <style>{`
                     input:-webkit-autofill,
                     input:-webkit-autofill:hover,
                     input:-webkit-autofill:focus,
-                    input:-webkit-autofill:active,
-                    input:-webkit-autofill::first-line,
-                    input:-webkit-autofill::before {
+                    input:-webkit-autofill:active {
                         -webkit-text-fill-color: transparent !important;
                         color: transparent !important;
                         background: transparent !important;
@@ -215,7 +187,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     }
                     div[contenteditable]:empty:before {
                         content: attr(data-placeholder);
-                        color: #9ca3af;
+                        color: #484f58;
                         pointer-events: none;
                     }
                 `}</style>
