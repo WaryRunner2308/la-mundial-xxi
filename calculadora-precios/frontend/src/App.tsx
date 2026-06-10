@@ -8,7 +8,7 @@ import { SecureInput } from '@/components/ui/SecureInput';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Package, Calculator, Truck, BarChart2, TrendingDown,
-  LogOut, Menu, X, ChevronLeft, ChevronRight, DollarSign,
+  LogOut, Menu, X, DollarSign,
 } from 'lucide-react';
 
 import { ProductsPage } from '@/features/products/ProductList';
@@ -172,7 +172,6 @@ function App() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [showEditRate, setShowEditRate] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const location = useLocation();
 
@@ -237,159 +236,156 @@ function App() {
       {/* ─── Sidebar ─── */}
       <aside
         className={`
-          fixed lg:static inset-y-0 left-0 z-50 flex flex-col overflow-hidden
-          transition-all duration-300 ease-in-out
-          ${collapsed ? 'lg:w-16' : 'lg:w-[220px]'}
-          w-[220px]
+          fixed lg:static inset-y-0 left-0 z-50 flex flex-col
+          w-16 transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
         style={{
           background: '#161b22',
-          borderRight: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '4px 0 32px rgba(0,0,0,0.4)',
+          borderRight: '1px solid rgba(255,255,255,0.06)',
+          boxShadow: '4px 0 24px rgba(0,0,0,0.4)',
         }}
       >
-        {/* Top gradient strip */}
-        <div className="flex-shrink-0 flex h-[3px]">
-          <div style={{ flex: 2, background: 'linear-gradient(90deg,#009A3A,#1ebb60)' }} />
+        {/* Portugal flag strip */}
+        <div className="flex-shrink-0 flex h-[2px]">
+          <div style={{ flex: 2, background: '#009A3A' }} />
           <div style={{ flex: 3, background: '#C8102E' }} />
         </div>
 
-        {/* Logo + collapse toggle */}
-        <div className="flex-shrink-0 flex items-center justify-between px-3 py-4 gap-2"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <div className="flex items-center gap-3 min-w-0 overflow-hidden">
-            <img src="/logo.png" alt="La Mundial" className="w-8 h-8 object-contain flex-shrink-0" />
-            <div className={`min-w-0 transition-all duration-300 ${collapsed ? 'lg:opacity-0 lg:w-0' : 'opacity-100'}`}>
-              <div className="font-black text-[#e6edf3] uppercase leading-none tracking-widest truncate"
-                style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '0.95rem' }}>
-                La <span className="text-[#009A3A]">Mundial</span>
-              </div>
-              <div className="text-[#484f58] uppercase tracking-widest font-semibold truncate" style={{ fontSize: '8px' }}>
-                Gestión de Precios
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex flex-shrink-0 p-1.5 rounded-lg text-[#484f58] hover:text-[#009A3A] transition"
-            style={{ background: 'rgba(255,255,255,0.03)' }}
+        {/* Logo mark */}
+        <div className="flex-shrink-0 flex items-center justify-center pt-4 pb-3">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center"
+            style={{ background: 'rgba(0,154,58,0.1)', border: '1px solid rgba(0,154,58,0.18)' }}
           >
-            {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
-          </button>
+            <img src="/logo.png" alt="La Mundial" className="w-5 h-5 object-contain" />
+          </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-shrink-0 px-2 py-3 space-y-0.5">
-          {visibleNav.map((item, i) => {
-            const Icon = item.icon;
-            const isActive =
-              location.pathname === item.path ||
-              (item.path === '/products' && location.pathname === '/');
-            return (
-              <NavLink key={item.path} to={item.path} className="block">
-                <div
-                  className={`
-                    nav-btn animate-fade-left relative flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer
-                    transition-colors duration-150
-                    ${collapsed ? 'lg:justify-center' : ''}
-                    ${isActive ? 'text-[#009A3A]' : 'text-[#8b949e] hover:text-[#e6edf3]'}
-                  `}
-                  style={{ animationDelay: `${i * 0.06}s` }}
-                  title={collapsed ? item.label : undefined}
-                >
-                  {/* Active background pill — shared layout animation */}
-                  {isActive && (
-                    <motion.div
-                      layoutId="nav-active-pill"
-                      className="absolute inset-0 rounded-xl"
-                      style={{
-                        background: 'linear-gradient(135deg,rgba(0,154,58,0.14) 0%,rgba(0,154,58,0.05) 100%)',
-                        border: '1px solid rgba(0,154,58,0.2)',
-                      }}
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                    />
-                  )}
-
-                  <span
-                    className="nav-icon relative z-10 flex-shrink-0"
-                    style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(0,154,58,0.6))' } : {}}
+        {/* Nav pill */}
+        <div className="flex-1 flex flex-col items-center justify-center py-2">
+          <div
+            className="flex flex-col items-center gap-0.5 p-1.5 rounded-2xl"
+            style={{
+              background: '#1c2128',
+              border: '1px solid rgba(255,255,255,0.06)',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
+            }}
+          >
+            {visibleNav.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                location.pathname === item.path ||
+                (item.path === '/products' && location.pathname === '/');
+              return (
+                <NavLink key={item.path} to={item.path} className="relative group block">
+                  <div
+                    className="relative w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-colors duration-150"
+                    style={{ color: isActive ? '#009A3A' : '#484f58' }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) (e.currentTarget as HTMLElement).style.color = '#8b949e';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) (e.currentTarget as HTMLElement).style.color = '#484f58';
+                    }}
                   >
-                    <Icon size={16} strokeWidth={2.2} />
-                  </span>
-
-                  <span className={`nav-text text-sm font-semibold relative z-10 transition-all duration-300 overflow-hidden ${collapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100'}`}>
+                    {isActive && (
+                      <motion.div
+                        layoutId="nav-active-pill"
+                        className="absolute inset-0 rounded-xl"
+                        style={{
+                          background: 'linear-gradient(135deg,rgba(0,154,58,0.18) 0%,rgba(0,154,58,0.06) 100%)',
+                          border: '1px solid rgba(0,154,58,0.28)',
+                        }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    {!isActive && (
+                      <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                        style={{ background: 'rgba(255,255,255,0.04)' }} />
+                    )}
+                    <span
+                      className="relative z-10"
+                      style={isActive ? { filter: 'drop-shadow(0 0 7px rgba(0,154,58,0.65))' } : {}}
+                    >
+                      <Icon size={16} strokeWidth={2.2} />
+                    </span>
+                  </div>
+                  {/* Tooltip */}
+                  <div
+                    className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg text-xs font-semibold pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-[200]"
+                    style={{
+                      background: '#1c2128',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      color: isActive ? '#009A3A' : '#e6edf3',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+                    }}
+                  >
                     {item.label}
-                  </span>
-                </div>
-              </NavLink>
-            );
-          })}
-        </nav>
-
-        {/* Mascot */}
-        <div
-          className={`flex-1 flex items-center justify-center px-4 relative overflow-hidden transition-opacity duration-300 ${collapsed ? 'lg:opacity-0' : 'opacity-100'}`}
-        >
-          <div className="absolute inset-0 pointer-events-none"
-            style={{ background: 'radial-gradient(ellipse 70% 55% at 50% 55%, rgba(0,154,58,0.07) 0%, transparent 70%)' }} />
-          <img
-            src="/logo.png"
-            alt="La Mundial"
-            className="mascot-animate w-32 object-contain hidden lg:block select-none relative z-10"
-            style={{ opacity: 0.75 }}
-          />
+                  </div>
+                </NavLink>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Bottom: rate + role + logout */}
-        <div className="flex-shrink-0 px-2 py-3 space-y-1"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        {/* Bottom: rate + logout */}
+        <div className="flex-shrink-0 flex flex-col items-center gap-1 pb-4">
           {rate > 0 && (
-            <button
-              onClick={() => setShowEditRate(true)}
-              className={`w-full flex items-center px-3 py-2 rounded-xl transition group ${collapsed ? 'lg:justify-center' : 'justify-between'}`}
-              style={{ background: '#1c2128', border: '1px solid rgba(255,255,255,0.07)' }}
-              title={collapsed ? `${rate.toFixed(2)} Bs/USD` : undefined}
-            >
-              {collapsed ? (
-                <DollarSign size={14} className="text-[#009A3A] lg:mx-auto" />
-              ) : (
-                <>
-                  <span className="text-[#484f58] uppercase tracking-wider font-semibold" style={{ fontSize: '8px' }}>USD / Bs</span>
-                  <span className="font-bold text-[#009A3A] group-hover:text-[#1ebb60] transition"
-                    style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.68rem' }}>
-                    {rate.toFixed(2)}
-                  </span>
-                </>
-              )}
-            </button>
-          )}
-
-          {!collapsed && userRole && (
-            <div className="flex justify-center px-3 py-0.5">
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                isGerencia
-                  ? 'text-[#009A3A] border border-[#009A3A]/20'
-                  : 'text-[#8b949e] border border-white/10'
-              }`} style={{ background: isGerencia ? 'rgba(0,154,58,0.08)' : 'rgba(255,255,255,0.04)' }}>
-                <span className={`w-1.5 h-1.5 rounded-full ${isGerencia ? 'bg-[#009A3A]' : 'bg-[#484f58]'}`} />
-                {isGerencia ? 'Gerencia' : 'Invitado'}
-              </span>
+            <div className="relative group">
+              <button
+                onClick={() => setShowEditRate(true)}
+                className="w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-150"
+                style={{ color: '#009A3A' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,154,58,0.1)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              >
+                <DollarSign size={15} strokeWidth={2} />
+              </button>
+              <div
+                className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg text-xs font-semibold pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-[200]"
+                style={{
+                  background: '#1c2128',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#009A3A',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+                }}
+              >
+                {rate.toFixed(2)} Bs/USD
+              </div>
             </div>
           )}
-
           {userRole && (
-            <button
-              onClick={logout}
-              className={`w-full px-3 py-2 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 ${collapsed ? 'lg:justify-center' : 'justify-center'} text-[#C8102E]/40 hover:text-[#C8102E] hover:bg-[#C8102E]/8`}
-              title={collapsed ? 'Cerrar Sesión' : undefined}
-            >
-              <LogOut size={13} />
-              <span className={`${collapsed ? 'lg:hidden' : ''}`}>Cerrar Sesión</span>
-            </button>
+            <div className="relative group">
+              <button
+                onClick={logout}
+                className="w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-150"
+                style={{ color: '#484f58' }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(200,16,46,0.08)';
+                  (e.currentTarget as HTMLElement).style.color = '#C8102E';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = 'transparent';
+                  (e.currentTarget as HTMLElement).style.color = '#484f58';
+                }}
+              >
+                <LogOut size={15} strokeWidth={2} />
+              </button>
+              <div
+                className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg text-xs font-semibold pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-[200]"
+                style={{
+                  background: '#1c2128',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#C8102E',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+                }}
+              >
+                Cerrar Sesión
+              </div>
+            </div>
           )}
         </div>
-        <div className="flex-shrink-0 h-1" />
       </aside>
 
       {/* ─── Main ─── */}
