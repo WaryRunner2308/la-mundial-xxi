@@ -115,22 +115,21 @@ export function useInvoiceScanner() {
   }, []);
 
   const searchProductImage = useCallback(async (productName: string): Promise<string | null> => {
-    // Intento 1: Wikipedia (funciona bien para marcas conocidas)
     try {
-      const wikiQuery = encodeURIComponent(productName);
+      const query = encodeURIComponent(`${productName} producto`);
       const res = await fetch(
-        `https://en.wikipedia.org/api/rest_v1/page/summary/${wikiQuery}`
+        `https://www.googleapis.com/customsearch/v1?key=${import.meta.env.VITE_GOOGLE_SEARCH_API_KEY}&cx=${import.meta.env.VITE_GOOGLE_SEARCH_CX}&q=${query}&searchType=image&num=1&imgSize=medium`
       );
-      if (res.ok) {
-        const data = await res.json() as { thumbnail?: { source: string } };
-        if (data.thumbnail?.source) return data.thumbnail.source;
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => ({})) as { error?: { message?: string } };
+        console.error('Google Search error:', errorBody.error?.message);
+        return null;
       }
+      const data = await res.json() as { items?: Array<{ link: string }> };
+      return data.items?.[0]?.link ?? null;
     } catch {
-      // silencioso
+      return null;
     }
-
-    // Intento 2: LoremFlickr — siempre devuelve una imagen relevante de Flickr, sin API key
-    return `https://loremflickr.com/200/200/${encodeURIComponent(productName)}/all`;
   }, []);
 
   const determinarEstado = useCallback(
