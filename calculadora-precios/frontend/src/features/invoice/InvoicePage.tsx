@@ -338,6 +338,7 @@ export function InvoicePage() {
     ejecutarImportacion,
     updateProducto,
     toggleAll,
+    setIvaAll,
     reset,
   } = useInvoiceScanner();
 
@@ -487,6 +488,7 @@ export function InvoicePage() {
                 productos={productos}
                 onUpdateProducto={updateProducto}
                 onToggleAll={toggleAll}
+                onSetIvaAll={setIvaAll}
                 globalGanancia={globalGanancia}
                 onGlobalGananciaChange={setGlobalGanancia}
                 gananciaMode={gananciaMode}

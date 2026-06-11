@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, ClipboardPaste, X, ImagePlus } from 'lucide-react';
+import { Upload, ClipboardPaste, X, ImagePlus, HelpCircle } from 'lucide-react';
 import { SecureInput } from '@/components/ui/SecureInput';
 import { useCurrencyStore } from '@/store/currencyStore';
-import type { InvoiceProduct } from './useInvoiceScanner';
+import type { InvoiceProduct, IvaChoice } from './useInvoiceScanner';
 
 const IVA = 0.16;
 
@@ -44,23 +44,59 @@ function blobToPng(blob: Blob): Promise<Blob> {
   });
 }
 
-// (costo / (1 - ganancia/100)) * (1 + IVA si no exento)
-function calcularPrecioVenta(costo: number, ganancia: number, exento: boolean): number {
+// base = costo / (1 - ganancia/100)
+// ivaChoice 'yes' → base * 1.16; 'no' → base; null → base (sin definir, se muestra en gris)
+function calcularPrecioVenta(costo: number, ganancia: number, ivaChoice: IvaChoice): number {
   if (costo <= 0) return 0;
   const margen = 1 - (ganancia || 0) / 100;
   if (margen <= 0) return 0;
   const base = costo / margen;
-  return exento ? base : base * (1 + IVA);
+  return ivaChoice === 'yes' ? base * (1 + IVA) : base;
 }
 
 interface InvoiceReviewTableProps {
   productos: InvoiceProduct[];
   onUpdateProducto: (index: number, changes: Partial<InvoiceProduct>) => void;
   onToggleAll: (selected: boolean) => void;
+  onSetIvaAll: (choice: IvaChoice) => void;
   globalGanancia: string;
   onGlobalGananciaChange: (v: string) => void;
   gananciaMode: 'global' | 'individual';
   onGananciaModeChange: (mode: 'global' | 'individual') => void;
+}
+
+// Toggle SÍ / NO para IVA por fila
+function IvaToggle({ value, onChange }: { value: IvaChoice; onChange: (v: IvaChoice) => void }) {
+  return (
+    <div className="inline-flex rounded-lg overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)' }}>
+      <button
+        type="button"
+        onClick={() => onChange(value === 'yes' ? null : 'yes')}
+        className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider transition"
+        style={{
+          background: value === 'yes' ? 'rgba(0,154,58,0.18)' : 'transparent',
+          color: value === 'yes' ? '#1ebb60' : '#6e7681',
+          fontFamily: '"Barlow Condensed", sans-serif',
+          letterSpacing: '0.08em',
+        }}
+      >
+        Sí
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange(value === 'no' ? null : 'no')}
+        className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider transition"
+        style={{
+          background: value === 'no' ? 'rgba(200,16,46,0.18)' : 'transparent',
+          color: value === 'no' ? '#ef4444' : '#6e7681',
+          fontFamily: '"Barlow Condensed", sans-serif',
+          letterSpacing: '0.08em',
+        }}
+      >
+        No
+      </button>
+    </div>
+  );
 }
 
 function EstadoBadge({ estado, precioAnterior, precio, moneda }: {
@@ -327,6 +363,7 @@ export function InvoiceReviewTable({
   productos,
   onUpdateProducto,
   onToggleAll,
+  onSetIvaAll,
   globalGanancia,
   onGlobalGananciaChange,
   gananciaMode,
@@ -423,11 +460,60 @@ export function InvoiceReviewTable({
         </div>
       </div>
 
+      {/* IVA masivo */}
+      {productos.length > 0 && (
+        <div className="flex items-center gap-2 px-1 flex-wrap">
+          <span className="text-[10px] font-black text-[#484f58] uppercase tracking-widest">IVA:</span>
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => onSetIvaAll('yes')}
+            className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition"
+            style={{
+              background: 'rgba(0,154,58,0.08)',
+              color: '#1ebb60',
+              fontFamily: '"Barlow Condensed", sans-serif',
+              letterSpacing: '0.08em',
+            }}
+          >
+            Todos con IVA
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => onSetIvaAll('no')}
+            className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition"
+            style={{
+              background: 'rgba(200,16,46,0.08)',
+              color: '#ef4444',
+              fontFamily: '"Barlow Condensed", sans-serif',
+              letterSpacing: '0.08em',
+            }}
+          >
+            Todos sin IVA
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => onSetIvaAll(null)}
+            className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              color: '#6e7681',
+              fontFamily: '"Barlow Condensed", sans-serif',
+              letterSpacing: '0.08em',
+            }}
+          >
+            Limpiar
+          </motion.button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="rounded-2xl overflow-hidden"
         style={{ background: '#161b22', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px]">
+          <table className="w-full min-w-[920px]">
             <thead style={{ background: '#1c2128', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               <tr>
                 <th className="h-10 w-10 px-3 text-center">
@@ -443,6 +529,7 @@ export function InvoiceReviewTable({
                 <th className="h-10 px-3 text-right text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle whitespace-nowrap">Precio Costo</th>
                 <th className="h-10 px-3 text-right text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle whitespace-nowrap">Precio Venta</th>
                 <th className="h-10 px-3 text-center text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle">Moneda</th>
+                <th className="h-10 px-3 text-center text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle">IVA</th>
                 <th className="h-10 px-3 text-left text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle">Estado</th>
                 {gananciaMode === 'individual' && (
                   <th className="h-10 px-3 text-center text-[10px] font-black text-[#484f58] uppercase tracking-widest align-middle whitespace-nowrap">% Gan.</th>
@@ -454,7 +541,7 @@ export function InvoiceReviewTable({
               <AnimatePresence initial={false}>
                 {productos.map((producto, index) => {
                   const gananciaUsada = gananciaMode === 'global' ? gananciaGlobalNum : producto.ganancia;
-                  const precioVenta = calcularPrecioVenta(producto.precio, gananciaUsada, producto.exemptFromVAT);
+                  const precioVenta = calcularPrecioVenta(producto.precio, gananciaUsada, producto.ivaChoice);
                   const monedaSimbolo = producto.moneda === 'USD' ? '$' : 'Bs';
                   const otroMonedaSimbolo = producto.moneda === 'USD' ? 'Bs' : '$';
                   let precioVentaOtra: number | null = null;
@@ -462,6 +549,7 @@ export function InvoiceReviewTable({
                     precioVentaOtra = producto.moneda === 'USD' ? precioVenta * rate : precioVenta / rate;
                   }
                   const tieneBulto = producto.cantidadBulto !== null && producto.cantidadBulto > 1;
+                  const ivaSinDefinir = producto.ivaChoice === null;
 
                   return (
                   <motion.tr
@@ -557,24 +645,39 @@ export function InvoiceReviewTable({
                       </div>
                     </td>
 
-                    {/* Precio Venta (calculado, verde, JetBrains Mono) */}
+                    {/* Precio Venta (calculado, verde si IVA definido, gris+? si no) */}
                     <td className="px-3 py-3 align-middle text-right">
-                      <div className="flex flex-col items-end leading-tight">
-                        <span
-                          className="font-black"
-                          style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.95rem', color: '#1ebb60' }}
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={producto.ivaChoice ?? 'pending'}
+                          initial={{ opacity: 0, y: -3 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 3 }}
+                          transition={{ duration: 0.18 }}
+                          className="flex flex-col items-end leading-tight"
                         >
-                          {monedaSimbolo}{precioVenta.toFixed(2)}
-                        </span>
-                        {precioVentaOtra !== null && (
                           <span
-                            className="text-[10px] mt-0.5"
-                            style={{ fontFamily: '"JetBrains Mono", monospace', color: '#6e7681' }}
+                            className="font-black flex items-center gap-1"
+                            style={{
+                              fontFamily: '"JetBrains Mono", monospace',
+                              fontSize: '0.95rem',
+                              color: ivaSinDefinir ? '#6e7681' : '#1ebb60',
+                            }}
+                            title={ivaSinDefinir ? 'Define el IVA para confirmar el precio final' : undefined}
                           >
-                            {otroMonedaSimbolo}{precioVentaOtra.toFixed(2)}
+                            {monedaSimbolo}{precioVenta.toFixed(2)}
+                            {ivaSinDefinir && <HelpCircle size={11} style={{ color: '#fbbf24' }} />}
                           </span>
-                        )}
-                      </div>
+                          {precioVentaOtra !== null && (
+                            <span
+                              className="text-[10px] mt-0.5"
+                              style={{ fontFamily: '"JetBrains Mono", monospace', color: '#6e7681' }}
+                            >
+                              {otroMonedaSimbolo}{precioVentaOtra.toFixed(2)}
+                            </span>
+                          )}
+                        </motion.div>
+                      </AnimatePresence>
                     </td>
 
                     {/* Moneda */}
@@ -589,6 +692,14 @@ export function InvoiceReviewTable({
                       >
                         {producto.moneda}
                       </span>
+                    </td>
+
+                    {/* IVA */}
+                    <td className="px-3 py-3 align-middle text-center">
+                      <IvaToggle
+                        value={producto.ivaChoice}
+                        onChange={(choice) => onUpdateProducto(index, { ivaChoice: choice })}
+                      />
                     </td>
 
                     {/* Estado */}

@@ -4,6 +4,8 @@ import { useProviderStore } from '@/store/providerStore';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { uploadProductImage } from '@/lib/supabase';
 
+export type IvaChoice = 'yes' | 'no' | null;
+
 export interface InvoiceProduct {
   nombre: string;
   precio: number;
@@ -18,7 +20,7 @@ export interface InvoiceProduct {
   fotoUrl: string | null;
   fotoBlob: Blob | null;
   ganancia: number;
-  exemptFromVAT: boolean;
+  ivaChoice: IvaChoice;
 }
 
 export type ScanStep = 'idle' | 'scanning' | 'review' | 'importing' | 'done';
@@ -174,17 +176,17 @@ export function useInvoiceScanner() {
   }, []);
 
   const determinarEstado = useCallback(
-    (nombre: string, precio: number, moneda: string): Pick<InvoiceProduct, 'estado' | 'id' | 'precioAnterior' | 'exemptFromVAT'> => {
+    (nombre: string, precio: number, moneda: string): Pick<InvoiceProduct, 'estado' | 'id' | 'precioAnterior'> => {
       const existente = products.find(
         (p) => p.name.toLowerCase().trim() === nombre.toLowerCase().trim()
       );
-      if (!existente) return { estado: 'Nuevo', id: null, precioAnterior: null, exemptFromVAT: false };
+      if (!existente) return { estado: 'Nuevo', id: null, precioAnterior: null };
 
       const precioNuevo = moneda === 'Bs' ? precio / (rate > 0 ? rate : 1) : precio;
       const diff = Math.abs(existente.costUSD - precioNuevo);
 
-      if (diff < 0.001) return { estado: 'Sin cambios', id: existente.id, precioAnterior: existente.costUSD, exemptFromVAT: existente.exemptFromVAT };
-      return { estado: 'Actualizar precio', id: existente.id, precioAnterior: existente.costUSD, exemptFromVAT: existente.exemptFromVAT };
+      if (diff < 0.001) return { estado: 'Sin cambios', id: existente.id, precioAnterior: existente.costUSD };
+      return { estado: 'Actualizar precio', id: existente.id, precioAnterior: existente.costUSD };
     },
     [products, rate]
   );
@@ -227,7 +229,7 @@ export function useInvoiceScanner() {
             p.cantidad_bulto ?? null,
             p.nombre
           );
-          const { estado, id, precioAnterior, exemptFromVAT } = determinarEstado(p.nombre, precio, moneda);
+          const { estado, id, precioAnterior } = determinarEstado(p.nombre, precio, moneda);
           return {
             nombre: p.nombre,
             precio,
@@ -242,7 +244,7 @@ export function useInvoiceScanner() {
             fotoUrl: null,
             fotoBlob: null,
             ganancia: 30,
-            exemptFromVAT,
+            ivaChoice: null,
           };
         });
 
@@ -280,6 +282,9 @@ export function useInvoiceScanner() {
 
       const ganancia = gananciaMode === 'global' ? gananciaGlobal : producto.ganancia;
 
+      // ivaChoice 'no' → exento; cualquier otra cosa (yes o null) → con IVA por defecto
+      const exemptFromVAT = producto.ivaChoice === 'no';
+
       try {
         if (producto.estado === 'Nuevo') {
           const newId = await addProduct({
@@ -287,7 +292,7 @@ export function useInvoiceScanner() {
             cost: costUsd,
             currency: 'USD',
             profitPercentage: ganancia,
-            exemptFromVAT: producto.exemptFromVAT,
+            exemptFromVAT,
             photoUrl: null,
             providerId: proveedorId ?? null,
           });
@@ -302,7 +307,12 @@ export function useInvoiceScanner() {
           }
           creados++;
         } else if (producto.estado === 'Actualizar precio' && producto.id !== null) {
-          await updateProduct(producto.id, { cost: costUsd, currency: 'USD' });
+          const updates: { cost: number; currency: 'USD'; exemptFromVAT?: boolean } = {
+            cost: costUsd,
+            currency: 'USD',
+          };
+          if (producto.ivaChoice !== null) updates.exemptFromVAT = exemptFromVAT;
+          await updateProduct(producto.id, updates);
           if (producto.fotoBlob) {
             try {
               const file = new File([producto.fotoBlob], `product_${producto.id}.png`, { type: 'image/png' });
@@ -332,6 +342,10 @@ export function useInvoiceScanner() {
 
   const toggleAll = useCallback((selected: boolean) => {
     setProductos((prev) => prev.map((p) => ({ ...p, seleccionado: selected })));
+  }, []);
+
+  const setIvaAll = useCallback((choice: IvaChoice) => {
+    setProductos((prev) => prev.map((p) => ({ ...p, ivaChoice: choice })));
   }, []);
 
   const reset = useCallback(() => {
@@ -366,6 +380,7 @@ export function useInvoiceScanner() {
     ejecutarImportacion,
     updateProducto,
     toggleAll,
+    setIvaAll,
     reset,
   };
 }
