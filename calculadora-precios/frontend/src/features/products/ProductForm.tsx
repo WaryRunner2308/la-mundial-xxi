@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  X, Tag, Package, Percent, Store, ChevronDown,
+  ImagePlus, Upload, ClipboardPaste, Save, Loader2, Check,
+  Camera, Plus, Sparkles, AlertTriangle, Coins,
+} from 'lucide-react';
 import { useProductStore } from '../../store/productStore';
 import { useCurrencyStore } from '../../store/currencyStore';
 import { useProviderStore } from '../../store/providerStore';
-import { formatAmountWithCurrency } from '../../utils/format';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
-import { uploadProductImage } from '../../lib/supabase';
-import { validateDecimalInput, parseNumericInput } from '../../utils/validateDecimal';
+import { parseNumericInput } from '../../utils/validateDecimal';
 import { SecureInput } from '../../components/ui/SecureInput';
 
 type Currency = 'Bs' | 'USD';
@@ -95,6 +99,551 @@ function calculateLive(
   });
 }
 
+// ─────────── Helpers de UI ───────────
+
+function blobToPngBase64(blob: Blob, maxWidth = 500): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      let w = img.naturalWidth || img.width;
+      let h = img.naturalHeight || img.height;
+      if (w > maxWidth || h > maxWidth) {
+        if (w >= h) { h = Math.round((h * maxWidth) / w); w = maxWidth; }
+        else { w = Math.round((w * maxWidth) / h); h = maxWidth; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { URL.revokeObjectURL(url); reject(new Error('No canvas')); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagen inválida')); };
+    img.src = url;
+  });
+}
+
+function formatMoney(amount: number, currency: Currency): string {
+  const symbol = currency === 'USD' ? '$' : 'Bs ';
+  return `${symbol}${amount.toFixed(2)}`;
+}
+
+// ─────────── Sub-componentes ───────────
+
+interface FieldProps {
+  label: string;
+  required?: boolean;
+  icon?: React.ElementType;
+  hint?: string;
+  children: React.ReactNode;
+}
+
+function Field({ label, required, icon: Icon, hint, children }: FieldProps) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 mb-2">
+        {Icon && <Icon size={11} style={{ color: '#484f58' }} />}
+        <span className="text-[10px] font-black uppercase tracking-widest text-[#484f58]">
+          {label}{required && <span style={{ color: '#C8102E' }}> *</span>}
+        </span>
+        {hint && <span className="text-[10px] text-[#484f58] normal-case tracking-normal">— {hint}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function CurrencyToggle({ value, onChange }: { value: Currency; onChange: (v: Currency) => void }) {
+  return (
+    <div className="flex rounded-xl overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.04)' }}>
+      {(['Bs', 'USD'] as const).map((cur) => (
+        <button
+          key={cur}
+          type="button"
+          onClick={() => onChange(cur)}
+          className="px-4 py-2 text-sm font-black uppercase tracking-wider transition min-w-[52px]"
+          style={{
+            background: value === cur ? 'rgba(0,154,58,0.15)' : 'transparent',
+            color: value === cur ? '#1ebb60' : '#6e7681',
+            fontFamily: '"Barlow Condensed", sans-serif',
+            letterSpacing: '0.08em',
+          }}
+        >
+          {cur === 'Bs' ? 'Bs' : '$'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PackageToggle({ value, onChange }: { value: 'unit' | 'bulk'; onChange: (v: 'unit' | 'bulk') => void }) {
+  return (
+    <div className="flex rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)' }}>
+      {(['unit', 'bulk'] as const).map((mode) => (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => onChange(mode)}
+          className="flex-1 px-4 py-2.5 text-xs font-black uppercase tracking-wider transition"
+          style={{
+            background: value === mode ? 'rgba(0,154,58,0.15)' : 'transparent',
+            color: value === mode ? '#1ebb60' : '#6e7681',
+            fontFamily: '"Barlow Condensed", sans-serif',
+            letterSpacing: '0.08em',
+          }}
+        >
+          {mode === 'unit' ? 'Unidad' : 'Bulto'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function IvaCard({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition"
+      style={{
+        background: checked ? 'rgba(0,154,58,0.07)' : 'rgba(255,255,255,0.02)',
+        border: `1px solid ${checked ? 'rgba(0,154,58,0.25)' : 'rgba(255,255,255,0.08)'}`,
+      }}
+    >
+      <div
+        className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition"
+        style={{
+          background: checked ? '#009A3A' : 'transparent',
+          border: `1.5px solid ${checked ? '#009A3A' : 'rgba(255,255,255,0.2)'}`,
+        }}
+      >
+        {checked && <Check size={12} color="white" strokeWidth={3} />}
+      </div>
+      <span className="flex-1 text-left text-sm font-semibold" style={{ color: checked ? '#e6edf3' : '#8b949e' }}>
+        Aplicar IVA (16%)
+      </span>
+      <span
+        className="text-[9px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full"
+        style={{
+          color: checked ? '#1ebb60' : '#484f58',
+          background: checked ? 'rgba(0,154,58,0.12)' : 'rgba(255,255,255,0.04)',
+          fontFamily: '"Barlow Condensed", sans-serif',
+        }}
+      >
+        {checked ? 'ON' : 'OFF'}
+      </span>
+    </button>
+  );
+}
+
+// ─── Provider Selector (estilo dropdown del InvoicePage) ───
+
+interface ProviderPickerProps {
+  providerId: number | null | undefined;
+  onSelect: (id: number | null) => void;
+}
+
+function ProviderPicker({ providerId, onSelect }: ProviderPickerProps) {
+  const { providers, addProvider } = useProviderStore();
+  const [open, setOpen] = useState(false);
+  const [nuevoNombre, setNuevoNombre] = useState('');
+  const [creando, setCreando] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const selected = providers.find((p) => p.id === providerId) ?? null;
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setShowNew(false);
+      }
+    };
+    if (open) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const handleCrear = async () => {
+    const name = nuevoNombre.trim();
+    if (!name) return;
+    setCreando(true);
+    try {
+      const nuevo = await addProvider(name);
+      onSelect(nuevo.id);
+      setNuevoNombre('');
+      setShowNew(false);
+      setOpen(false);
+    } finally {
+      setCreando(false);
+    }
+  };
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl text-sm transition"
+        style={{
+          background: '#1c2128',
+          border: '1px solid rgba(255,255,255,0.1)',
+          color: selected ? '#e6edf3' : '#6e7681',
+          minHeight: '48px',
+        }}
+      >
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          {selected ? (
+            <>
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-black uppercase"
+                style={{ background: 'rgba(0,154,58,0.15)', color: '#1ebb60' }}
+              >
+                {selected.name.charAt(0)}
+              </div>
+              <span className="truncate font-semibold" style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.03em' }}>
+                {selected.name}
+              </span>
+            </>
+          ) : (
+            <span style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.03em' }}>
+              Seleccionar proveedor
+            </span>
+          )}
+        </div>
+        <ChevronDown
+          size={14}
+          className="transition-transform flex-shrink-0"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', color: '#484f58' }}
+        />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl overflow-hidden"
+            style={{
+              background: '#1c2128',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.55)',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => { onSelect(null); setOpen(false); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition hover:bg-white/5"
+              style={{ color: providerId == null ? '#1ebb60' : '#8b949e' }}
+            >
+              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <X size={10} />
+              </div>
+              <span style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.03em' }}>Sin proveedor</span>
+              {providerId == null && <span className="ml-auto text-[#1ebb60] text-xs">✓</span>}
+            </button>
+
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+
+            <div className="max-h-52 overflow-y-auto py-1">
+              {providers.length === 0 ? (
+                <p className="px-4 py-3 text-xs text-[#484f58]">No hay proveedores registrados</p>
+              ) : (
+                providers.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => { onSelect(p.id); setOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition hover:bg-white/5"
+                    style={{ color: providerId === p.id ? '#1ebb60' : '#e6edf3' }}
+                  >
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-black uppercase"
+                      style={{
+                        background: providerId === p.id ? 'rgba(0,154,58,0.2)' : 'rgba(255,255,255,0.08)',
+                        color: providerId === p.id ? '#1ebb60' : '#484f58',
+                      }}
+                    >
+                      {p.name.charAt(0)}
+                    </div>
+                    <span className="flex-1 truncate" style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.03em' }}>
+                      {p.name}
+                    </span>
+                    {providerId === p.id && <span className="ml-auto text-[#1ebb60] text-xs">✓</span>}
+                  </button>
+                ))
+              )}
+            </div>
+
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+
+            {!showNew ? (
+              <button
+                type="button"
+                onClick={() => { setShowNew(true); setTimeout(() => inputRef.current?.focus(), 50); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition hover:bg-white/5"
+                style={{ color: '#1ebb60' }}
+              >
+                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(0,154,58,0.12)', border: '1px solid rgba(0,154,58,0.2)' }}>
+                  <Plus size={10} style={{ color: '#1ebb60' }} />
+                </div>
+                <span style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.03em' }}>
+                  Agregar nuevo proveedor
+                </span>
+              </button>
+            ) : (
+              <div className="px-3 py-2.5 flex items-center gap-2">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={nuevoNombre}
+                  onChange={(e) => setNuevoNombre(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleCrear(); if (e.key === 'Escape') { setShowNew(false); setNuevoNombre(''); } }}
+                  placeholder="Nombre del proveedor"
+                  className="flex-1 bg-transparent text-sm text-[#e6edf3] outline-none placeholder-[#484f58]"
+                  style={{ fontFamily: '"Barlow Condensed", sans-serif' }}
+                />
+                <button
+                  type="button"
+                  onClick={handleCrear}
+                  disabled={!nuevoNombre.trim() || creando}
+                  className="px-2.5 py-1 rounded-lg text-xs font-black uppercase transition disabled:opacity-40"
+                  style={{
+                    background: 'rgba(0,154,58,0.15)',
+                    color: '#1ebb60',
+                    border: '1px solid rgba(0,154,58,0.2)',
+                    fontFamily: '"Barlow Condensed", sans-serif',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {creando ? '...' : 'Crear'}
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Photo Uploader (subir o pegar) ───
+
+interface PhotoUploaderProps {
+  preview: string | null;
+  onChange: (base64: string) => void;
+  onClear: () => void;
+}
+
+function PhotoUploader({ preview, onChange, onClear }: PhotoUploaderProps) {
+  const pickerRef = useRef<HTMLInputElement>(null);
+  const pasteRef = useRef<HTMLDivElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [pasteHover, setPasteHover] = useState(false);
+
+  const procesar = async (blob: Blob) => {
+    setBusy(true);
+    try {
+      const base64 = await blobToPngBase64(blob, 500);
+      onChange(base64);
+    } catch (err) {
+      console.error('Error procesando imagen:', err);
+      alert('Error al procesar la imagen. Intenta con otra.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handlePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (f) procesar(f);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const blob = item.getAsFile();
+        if (blob) { e.preventDefault(); procesar(blob); return; }
+      }
+    }
+  };
+
+  return (
+    <div className="flex gap-3 items-stretch">
+      {/* Preview */}
+      <div className="flex-shrink-0">
+        {preview ? (
+          <div className="relative w-[104px] h-[104px]">
+            <img
+              src={preview}
+              alt=""
+              className="w-full h-full rounded-2xl object-cover"
+              style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+            />
+            <button
+              type="button"
+              onClick={onClear}
+              className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full flex items-center justify-center transition"
+              style={{ background: '#C8102E', color: 'white', boxShadow: '0 2px 8px rgba(200,16,46,0.5)' }}
+            >
+              <X size={12} strokeWidth={3} />
+            </button>
+          </div>
+        ) : (
+          <div
+            className="w-[104px] h-[104px] rounded-2xl flex items-center justify-center"
+            style={{
+              background: '#0d1117',
+              border: '1px dashed rgba(255,255,255,0.15)',
+              color: '#484f58',
+            }}
+          >
+            <Camera size={28} />
+          </div>
+        )}
+      </div>
+
+      {/* Opciones */}
+      <div className="flex-1 flex flex-col gap-2 min-w-0">
+        <button
+          type="button"
+          onClick={() => pickerRef.current?.click()}
+          disabled={busy}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black transition disabled:opacity-50"
+          style={{
+            background: 'rgba(0,154,58,0.1)',
+            border: '1px solid rgba(0,154,58,0.2)',
+            color: '#1ebb60',
+            fontFamily: '"Barlow Condensed", sans-serif',
+            letterSpacing: '0.08em',
+          }}
+        >
+          <Upload size={13} />
+          SUBIR ARCHIVO
+        </button>
+
+        <div
+          ref={pasteRef}
+          tabIndex={0}
+          onPaste={handlePaste}
+          onMouseEnter={() => setPasteHover(true)}
+          onMouseLeave={() => setPasteHover(false)}
+          className="flex-1 w-full flex flex-col items-center justify-center gap-0.5 px-3 py-2 rounded-xl cursor-text outline-none transition"
+          style={{
+            border: `1.5px dashed ${pasteHover ? '#1ebb60' : 'rgba(255,255,255,0.15)'}`,
+            background: pasteHover ? 'rgba(0,154,58,0.05)' : 'transparent',
+            color: pasteHover ? '#1ebb60' : '#8b949e',
+            minHeight: '52px',
+          }}
+        >
+          <ClipboardPaste size={14} />
+          <span
+            className="text-[10px] font-black uppercase"
+            style={{ fontFamily: '"Barlow Condensed", sans-serif', letterSpacing: '0.07em' }}
+          >
+            Pegar (Ctrl+V)
+          </span>
+        </div>
+        {busy && (
+          <span className="text-[10px] text-[#8b949e] text-center">Procesando…</span>
+        )}
+      </div>
+
+      <input
+        ref={pickerRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        onChange={handlePick}
+        className="hidden"
+      />
+    </div>
+  );
+}
+
+// ─── Live Preview ───
+
+interface LivePreviewProps {
+  results: LiveResults;
+  rate: number;
+}
+
+function LivePreview({ results, rate }: LivePreviewProps) {
+  const otraCurrency: Currency = results.currency === 'USD' ? 'Bs' : 'USD';
+  return (
+    <div
+      className="relative rounded-2xl p-5 overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, rgba(0,154,58,0.08), rgba(30,187,96,0.03))',
+        border: '1px solid rgba(0,154,58,0.18)',
+      }}
+    >
+      <div
+        className="absolute top-0 left-0 right-0 h-[2px]"
+        style={{ background: 'linear-gradient(90deg, #009A3A, #1ebb60, transparent)' }}
+      />
+      <div className="flex items-center gap-2 mb-4">
+        <Sparkles size={13} style={{ color: '#1ebb60' }} />
+        <span
+          className="text-[10px] font-black uppercase tracking-widest"
+          style={{ color: '#1ebb60', fontFamily: '"Barlow Condensed", sans-serif' }}
+        >
+          Cálculo en vivo
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <p className="text-[9px] font-black uppercase tracking-widest text-[#6e7681]">Precio Final</p>
+          <p
+            className="font-black leading-none"
+            style={{ color: '#1ebb60', fontFamily: '"JetBrains Mono", monospace', fontSize: '1.55rem' }}
+          >
+            {formatMoney(results.priceWithVAT, results.currency)}
+          </p>
+          {rate > 0 && results.priceWithVATConverted !== undefined && (
+            <p
+              className="text-[11px]"
+              style={{ color: '#6e7681', fontFamily: '"JetBrains Mono", monospace' }}
+            >
+              ≈ {formatMoney(results.priceWithVATConverted, otraCurrency)}
+            </p>
+          )}
+        </div>
+        <div className="space-y-1">
+          <p className="text-[9px] font-black uppercase tracking-widest text-[#6e7681]">Ganancia</p>
+          <p
+            className="font-black leading-none"
+            style={{ color: '#fbbf24', fontFamily: '"JetBrains Mono", monospace', fontSize: '1.55rem' }}
+          >
+            {formatMoney(results.utility, results.currency)}
+          </p>
+          {rate > 0 && results.utilityConverted !== undefined && (
+            <p
+              className="text-[11px]"
+              style={{ color: '#6e7681', fontFamily: '"JetBrains Mono", monospace' }}
+            >
+              ≈ {formatMoney(results.utilityConverted, otraCurrency)}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────── Componente Principal ───────────
+
 export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductFormProps) {
   const { providers, fetchProviders } = useProviderStore();
   const [formData, setFormData] = useState<FormData>({
@@ -108,10 +657,9 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     packageType: 'unit',
     unitsPerBulk: '',
   });
-   const [liveResults, setLiveResults] = useState<LiveResults | null>(null);
-   const [isUploading, setIsUploading] = useState(false);
-   const [isSubmitting, setIsSubmitting] = useState(false);
-   const [showConfirm, setShowConfirm] = useState(false);
+  const [liveResults, setLiveResults] = useState<LiveResults | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const rate = useCurrencyStore((state) => state.rate);
   const addProduct = useProductStore((state) => state.addProduct);
@@ -177,57 +725,29 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
 
   const handleUnitsChange = (value: string) => {
     setFormData(prev => ({ ...prev, unitsPerBulk: value }));
+    calculateLive({ ...formData, unitsPerBulk: value }, rate, setLiveResults);
   };
 
-  const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newCurrency = e.target.value as Currency;
+  const handleCurrencyChange = (newCurrency: Currency) => {
     setFormData(prev => ({ ...prev, currency: newCurrency }));
     calculateLive({ ...formData, currency: newCurrency }, rate, setLiveResults);
-  };
-
-  const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const providerId = e.target.value ? parseInt(e.target.value, 10) : null;
-    setFormData(prev => ({ ...prev, providerId }));
   };
 
   const handlePackageTypeChange = (value: 'unit' | 'bulk') => {
     setFormData(prev => ({
       ...prev,
       packageType: value,
-      unitsPerBulk: value === 'unit' ? '' : prev.unitsPerBulk
+      unitsPerBulk: value === 'unit' ? '' : prev.unitsPerBulk,
     }));
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.checked;
+  const handleIvaToggle = (newValue: boolean) => {
     setFormData(prev => ({ ...prev, aplicarIVA: newValue }));
     calculateLive({ ...formData, aplicarIVA: newValue }, rate, setLiveResults);
   };
 
-  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validar tamaño máximo (5MB)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      alert('La imagen es demasiado grande. Máximo 5MB.');
-      e.target.value = '';
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const base64 = await imageToBase64(file, 300);
-      setFormData(prev => ({ ...prev, photoPreview: base64 }));
-    } catch (error) {
-      console.error('Error al procesar imagen:', error);
-      alert('Error al cargar la imagen. Verifique que sea un archivo válido (JPEG, PNG, WebP). Intente con otra.');
-      // Limpiar input
-      e.target.value = '';
-    } finally {
-      setIsUploading(false);
-    }
+  const handlePhotoBase64 = (base64: string) => {
+    setFormData(prev => ({ ...prev, photoPreview: base64 }));
   };
 
   const handleRemovePhoto = () => {
@@ -261,14 +781,10 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
 
     const costPerUnit = getCostPerUnit(formData);
     const profit = parseNumericInput(formData.profitPercentage);
-    const divisor = 1 - (profit / 100);
-    const priceBase = costPerUnit / divisor;
-    const utility = priceBase - costPerUnit;
-    const priceWithVAT = formData.aplicarIVA ? priceBase * 1.16 : priceBase;
 
     setIsSubmitting(true);
     try {
-       if (productToEdit) {
+      if (productToEdit) {
         await updateProduct(productToEdit.id, {
           name: formData.name,
           cost: costPerUnit,
@@ -299,344 +815,267 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
     }
   };
 
-  const handleSubmit = (e: React.MouseEvent) => {
-    e.preventDefault();
-    submitForm();
-  };
-
-  function imageToBase64(file: File, maxWidth = 300): Promise<string> {
-    return new Promise((resolve, reject) => {
-      // Validar tipo de archivo
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!validTypes.includes(file.type)) {
-        reject(new Error(`Tipo de archivo no soportado: ${file.type}. Use JPEG, PNG o WebP.`));
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error('Error al leer el archivo'));
-      reader.readAsDataURL(file);
-
-      reader.onload = () => {
-        const img = new Image();
-        img.onerror = () => reject(new Error('El archivo no es una imagen válida'));
-        img.src = reader.result as string;
-
-        img.onload = () => {
-          try {
-            const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-
-            if (width > maxWidth) {
-              height = Math.round((height * maxWidth) / width);
-              width = maxWidth;
-            }
-
-            // Validar dimensiones mínimas
-            if (width < 1 || height < 1) {
-              reject(new Error('Dimensiones de imagen inválidas'));
-              return;
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              reject(new Error('No se pudo crear contexto de canvas'));
-              return;
-            }
-
-            ctx.drawImage(img, 0, 0, width, height);
-            const base64 = canvas.toDataURL('image/jpeg', 0.7);
-            resolve(base64);
-          } catch (err: any) {
-            reject(new Error(`Error procesando imagen: ${err.message}`));
-          }
-        };
-      };
-    });
-  }
-
-  if (!isOpen) return null;
+  const hintCostoUnitario =
+    formData.packageType === 'bulk' &&
+    formData.cost &&
+    formData.unitsPerBulk &&
+    parseNumericInput(formData.unitsPerBulk) > 0
+      ? getCostPerUnit(formData)
+      : null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleCancel}>
-      <div className="bg-white rounded-2xl p-6 md:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-
-        {/* Input fantasma global para capturar autocompletado */}
-        <input
-          type="text"
-          name={`global_decoy_${Date.now()}`}
-          autoComplete="new-password"
-          style={{ position: 'absolute', left: '-1000px', top: '-1000px', opacity: 0, height: 0, width: 0 }}
-          tabIndex={-1}
-          readOnly
-        />
-
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {productToEdit ? 'Editar Producto' : 'Agregar Producto Nuevo'}
-          </h2>
-        </div>
-
-        {/* Nombre */}
-        <div className="mb-6">
-          <span className="block text-sm font-medium text-gray-700 mb-2">
-            Nombre del Producto *
-          </span>
-          <SecureInput
-            value={formData.name}
-            onChange={handleNameChange}
-            onSubmit={submitForm}
-            placeholder="Ej: Malta 1.5L"
-            inputMode="text"
-            editable
-          />
-        </div>
-
-        {/* Costo con selector de moneda */}
-        <div className="mb-6">
-          <span className="block text-sm font-medium text-gray-700 mb-2">
-            Costo *
-          </span>
-          <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-            <div className="flex-1 min-w-0">
-               <SecureInput
-                 value={formData.cost}
-                 onChange={handleCostChange}
-                 onSubmit={submitForm}
-                 placeholder="0.00"
-                 inputMode="decimal"
-                 editable
-                 displayClassName="border-0 rounded-none focus:ring-0 focus:border-none bg-white text-base min-h-[48px] flex-1"
-               />
-            </div>
-            <select
-              value={formData.currency}
-              onChange={handleCurrencyChange}
-              className="w-20 md:w-32 px-4 py-3 border-0 rounded-none focus:ring-0 focus:border-none bg-gray-50 text-gray-700 text-sm md:text-base font-medium cursor-pointer shrink-0"
-            >
-              <option value="Bs">Bs</option>
-              <option value="USD">$</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Selector de Tipo de Empaque */}
-        <div className="mb-6">
-          <span className="block text-sm font-medium text-gray-700 mb-2">
-            Tipo de empaque
-          </span>
-          <div className="flex gap-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="pkg_type"
-                value="unit"
-                checked={formData.packageType === 'unit'}
-                onChange={() => handlePackageTypeChange('unit')}
-                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium text-gray-700">Unidad</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="pkg_type"
-                value="bulk"
-                checked={formData.packageType === 'bulk'}
-                onChange={() => handlePackageTypeChange('bulk')}
-                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium text-gray-700">Bulto</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Unidades por Bulto */}
-        {formData.packageType === 'bulk' && (
-          <div className="mb-6">
-            <span className="block text-sm font-medium text-gray-700 mb-2">
-              Unidades por bulto *
-            </span>
-            <SecureInput
-              value={formData.unitsPerBulk}
-              onChange={handleUnitsChange}
-              onSubmit={submitForm}
-              placeholder="Ej: 10"
-              inputMode="numeric"
-              editable
-            />
-            {formData.cost && formData.unitsPerBulk && parseNumericInput(formData.unitsPerBulk) > 0 && (
-              <p className="mt-2 text-sm text-blue-600 font-medium">
-                💡 Costo unitario resultante: {formatAmountWithCurrency(
-                  getCostPerUnit(formData),
-                  formData.currency
-                )}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* % Ganancia */}
-        <div className="mb-6">
-          <span className="block text-sm font-medium text-gray-700 mb-2">
-            % Ganancia *
-          </span>
-            <SecureInput
-              value={formData.profitPercentage}
-              onChange={handleProfitChange}
-              onSubmit={submitForm}
-              placeholder="Ej: 30"
-              inputMode="decimal"
-              editable
-            />
-        </div>
-
-        {/* Proveedor */}
-        <div className="mb-6">
-          <span className="block text-sm font-medium text-gray-700 mb-2">
-            Proveedor
-          </span>
-          <select
-            value={formData.providerId ?? ''}
-            onChange={handleProviderChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base bg-white"
-          >
-            <option value="">Seleccionar proveedor</option>
-            {providers.map((provider) => (
-              <option key={provider.id} value={provider.id}>
-                {provider.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* IVA Checkbox */}
-        <div className="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-50 mb-6">
-          <input
-            id="aplicarIVA"
-            type="checkbox"
-            checked={formData.aplicarIVA}
-            onChange={handleCheckboxChange}
-            className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-          />
-          <span className="ml-3 text-sm font-medium text-gray-700 cursor-pointer flex-1" onClick={() => setFormData(prev => ({ ...prev, aplicarIVA: !prev.aplicarIVA }))}>
-            Aplicar IVA (16%)
-          </span>
-        </div>
-
-        {/* Foto del Producto */}
-        <div className="mb-6">
-          <span className="block text-sm font-medium text-gray-700 mb-2">
-            Foto del Producto (opcional)
-          </span>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoChange}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-          />
-          {isUploading && (
-            <p className="text-xs text-gray-500 mt-1">Procesando imagen...</p>
-          )}
-          {formData.photoPreview && (
-            <div className="mt-4 p-2 bg-gray-50 rounded-lg relative inline-block">
-              <img src={formData.photoPreview} alt="Preview" className="w-32 h-32 object-cover rounded-lg shadow-md" />
-              <button
-                type="button"
-                onClick={handleRemovePhoto}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md transition"
-                title="Eliminar imagen"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Cálculo en Vivo */}
-        {liveResults && rate > 0 && (
-          <div className="p-6 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl border shadow-sm mb-6">
-            <h4 className="text-lg font-semibold mb-4 text-emerald-800">📊 Cálculo en Vivo</h4>
-            <div className="grid md:grid-cols-2 gap-4 text-sm">
-              <div className="text-center p-6 bg-white rounded-xl shadow-sm border-2 border-blue-100">
-                <span className="block text-gray-600 mb-2 text-lg">Precio Final</span>
-                <span className="block font-bold text-3xl text-blue-600">
-                  {formatAmountWithCurrency(liveResults.priceWithVAT, liveResults.currency)}
-                </span>
-                {rate > 0 && liveResults.priceWithVATConverted !== undefined && (
-                  <span className="block text-sm text-gray-500 mt-1">
-                    {formatAmountWithCurrency(liveResults.priceWithVATConverted, liveResults.currency === 'Bs' ? 'USD' : 'Bs')}
-                  </span>
-                )}
-              </div>
-              <div className="text-center p-6 bg-white rounded-xl shadow-sm border-2 border-emerald-100">
-                <span className="block text-gray-600 mb-2 text-lg">Ganancia</span>
-                <span className="block font-bold text-3xl text-emerald-600">
-                  {formatAmountWithCurrency(liveResults.utility, liveResults.currency)}
-                </span>
-                {rate > 0 && liveResults.utilityConverted !== undefined && (
-                  <span className="block text-sm text-gray-500">
-                    {formatAmountWithCurrency(liveResults.utilityConverted, liveResults.currency === 'Bs' ? 'USD' : 'Bs')}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {liveResults && rate === 0 && (
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-6">
-            <p className="text-sm text-yellow-700">
-              ⚠️ La tasa de cambio no está configurada. Los valores se muestran solo en la moneda original.
-            </p>
-          </div>
-        )}
-
-        {/* Botones */}
-        <div className="flex gap-4 pt-4">
-          <button
-            type="button"
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
             onClick={handleCancel}
-            disabled={isSubmitting}
-            className="flex-1 h-12 px-6 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="flex-1 h-12 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg shadow-lg text-white font-semibold transition disabled:opacity-70 disabled:cursor-wait flex items-center justify-center gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Guardando...
-              </>
-            ) : (
-              productToEdit ? '💾 Actualizar Producto' : '💾 Guardar Producto'
-            )}
-          </button>
-        </div>
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.97 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              className="rounded-3xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden"
+              style={{
+                background: '#161b22',
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 24px 64px rgba(0,0,0,0.65)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Strip Portugal */}
+              <div className="flex h-[2px] flex-shrink-0">
+                <div style={{ flex: 2, background: 'linear-gradient(90deg,#009A3A,#1ebb60)' }} />
+                <div style={{ flex: 3, background: '#C8102E' }} />
+              </div>
 
-        {/* Modal de confirmación */}
-        <ConfirmationModal
-          isOpen={showConfirm}
-          title="Confirmar cancelación"
-          message="¿Estás seguro de cancelar? Se perderán los datos ingresados."
-          confirmText="Sí, cancelar"
-          cancelText="Continuar editando"
-          onConfirm={handleConfirmCancel}
-          onCancel={handleContinueEdit}
-        />
-      </div>
-    </div>
+              {/* Header */}
+              <div
+                className="px-6 py-5 flex items-center justify-between flex-shrink-0"
+                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[#484f58]">
+                    {productToEdit ? 'Modificar' : 'Crear nuevo'}
+                  </p>
+                  <h2
+                    className="font-black uppercase text-[#e6edf3] leading-none mt-1"
+                    style={{
+                      fontFamily: '"Barlow Condensed", sans-serif',
+                      fontSize: '1.75rem',
+                      letterSpacing: '0.07em',
+                    }}
+                  >
+                    {productToEdit ? 'Editar' : 'Nuevo'}{' '}
+                    <span style={{ color: '#009A3A' }}>Producto</span>
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="p-2 rounded-xl transition flex-shrink-0"
+                  style={{ background: 'rgba(255,255,255,0.04)', color: '#8b949e' }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.color = '#e6edf3';
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.color = '#8b949e';
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+                <Field icon={Tag} label="Nombre del producto" required>
+                  <SecureInput
+                    value={formData.name}
+                    onChange={handleNameChange}
+                    onSubmit={submitForm}
+                    placeholder="Ej: Malta 1.5L"
+                    inputMode="text"
+                    editable
+                    displayClassName="!min-h-[46px] !py-2.5 !rounded-xl !text-sm"
+                  />
+                </Field>
+
+                <Field icon={Coins} label="Costo" required>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <SecureInput
+                        value={formData.cost}
+                        onChange={handleCostChange}
+                        onSubmit={submitForm}
+                        placeholder="0.00"
+                        inputMode="decimal"
+                        editable
+                        displayClassName="!min-h-[46px] !py-2.5 !rounded-xl !text-sm"
+                      />
+                    </div>
+                    <CurrencyToggle value={formData.currency} onChange={handleCurrencyChange} />
+                  </div>
+                </Field>
+
+                <Field icon={Package} label="Tipo de empaque">
+                  <PackageToggle value={formData.packageType} onChange={handlePackageTypeChange} />
+                  <AnimatePresence>
+                    {formData.packageType === 'bulk' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <SecureInput
+                          value={formData.unitsPerBulk}
+                          onChange={handleUnitsChange}
+                          onSubmit={submitForm}
+                          placeholder="Unidades por bulto (ej: 12)"
+                          inputMode="numeric"
+                          editable
+                          displayClassName="!min-h-[42px] !py-2 !rounded-xl !text-sm"
+                        />
+                        {hintCostoUnitario !== null && (
+                          <p
+                            className="mt-2 text-[11px] flex items-center gap-1.5"
+                            style={{ color: '#1ebb60', fontFamily: '"JetBrains Mono", monospace' }}
+                          >
+                            <span>↳</span> Costo unitario: {formatMoney(hintCostoUnitario, formData.currency)}
+                          </p>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Field>
+
+                <Field icon={Percent} label="% Ganancia" required>
+                  <SecureInput
+                    value={formData.profitPercentage}
+                    onChange={handleProfitChange}
+                    onSubmit={submitForm}
+                    placeholder="Ej: 30"
+                    inputMode="decimal"
+                    editable
+                    displayClassName="!min-h-[46px] !py-2.5 !rounded-xl !text-sm"
+                  />
+                </Field>
+
+                <Field icon={Store} label="Proveedor">
+                  <ProviderPicker
+                    providerId={formData.providerId ?? null}
+                    onSelect={(id) => setFormData(prev => ({ ...prev, providerId: id }))}
+                  />
+                </Field>
+
+                <IvaCard checked={formData.aplicarIVA} onChange={handleIvaToggle} />
+
+                <Field icon={ImagePlus} label="Foto del producto" hint="opcional">
+                  <PhotoUploader
+                    preview={formData.photoPreview}
+                    onChange={handlePhotoBase64}
+                    onClear={handleRemovePhoto}
+                  />
+                </Field>
+
+                {liveResults && rate > 0 && <LivePreview results={liveResults} rate={rate} />}
+
+                {liveResults && rate === 0 && (
+                  <div
+                    className="flex gap-2.5 p-3 rounded-xl"
+                    style={{
+                      background: 'rgba(251,191,36,0.06)',
+                      border: '1px solid rgba(251,191,36,0.18)',
+                    }}
+                  >
+                    <AlertTriangle size={14} style={{ color: '#fbbf24', flexShrink: 0, marginTop: 1 }} />
+                    <p className="text-[11px]" style={{ color: '#fbbf24' }}>
+                      Tasa de cambio no configurada — solo se muestran valores en la moneda original.
+                    </p>
+                  </div>
+                )}
+
+                {/* Padding inferior para que el scroll no quede pegado al borde */}
+                <div className="h-2" />
+              </div>
+
+              {/* Footer */}
+              <div
+                className="px-6 py-4 flex gap-3 flex-shrink-0"
+                style={{
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(0,0,0,0.25)',
+                }}
+              >
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.97 }}
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={isSubmitting}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition disabled:opacity-50"
+                  style={{
+                    fontFamily: '"Barlow Condensed", sans-serif',
+                    letterSpacing: '0.06em',
+                    color: '#8b949e',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                  }}
+                >
+                  CANCELAR
+                </motion.button>
+
+                <motion.button
+                  whileHover={!isSubmitting ? { scale: 1.02, y: -1 } : undefined}
+                  whileTap={!isSubmitting ? { scale: 0.97 } : undefined}
+                  type="button"
+                  onClick={submitForm}
+                  disabled={isSubmitting}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white transition disabled:cursor-wait"
+                  style={{
+                    fontFamily: '"Barlow Condensed", sans-serif',
+                    letterSpacing: '0.06em',
+                    background: 'linear-gradient(135deg,#009A3A,#007b2e)',
+                    boxShadow: '0 4px 18px rgba(0,154,58,0.35)',
+                    opacity: isSubmitting ? 0.85 : 1,
+                  }}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={15} className="animate-spin" />
+                      GUARDANDO...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={15} />
+                      {productToEdit ? 'ACTUALIZAR' : 'GUARDAR'}
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <ConfirmationModal
+        isOpen={showConfirm}
+        title="Confirmar cancelación"
+        message="¿Estás seguro de cancelar? Se perderán los datos ingresados."
+        confirmText="Sí, cancelar"
+        cancelText="Continuar editando"
+        onConfirm={handleConfirmCancel}
+        onCancel={handleContinueEdit}
+      />
+    </>
   );
 }

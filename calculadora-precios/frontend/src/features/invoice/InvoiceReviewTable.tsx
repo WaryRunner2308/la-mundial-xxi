@@ -580,11 +580,11 @@ export function InvoiceReviewTable({
                     {/* Moneda */}
                     <td className="px-3 py-3 align-middle text-center">
                       <span
-                        className="inline-flex px-2 py-0.5 text-[10px] font-black rounded-full border uppercase tracking-wider"
+                        className="inline-flex px-2 py-0.5 text-[10px] font-black rounded-full uppercase tracking-wider"
                         style={
                           producto.moneda === 'USD'
-                            ? { color: '#60a5fa', background: 'rgba(96,165,250,0.08)', borderColor: 'rgba(96,165,250,0.2)' }
-                            : { color: '#fbbf24', background: 'rgba(251,191,36,0.08)', borderColor: 'rgba(251,191,36,0.2)' }
+                            ? { color: '#60a5fa', background: 'rgba(96,165,250,0.08)' }
+                            : { color: '#fbbf24', background: 'rgba(251,191,36,0.08)' }
                         }
                       >
                         {producto.moneda}
