@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { SecureInput } from '@/components/ui/SecureInput';
 import { Eye, Lock, ShieldCheck, ChevronRight } from 'lucide-react';
+import { DiagonalMarquee } from './DiagonalMarquee';
 
 export function LandingPage() {
   const { login } = useAuth();
@@ -29,6 +30,9 @@ export function LandingPage() {
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       style={{ background: '#0d1117' }}
     >
+      {/* Marquee diagonal "LA MUNDIAL" */}
+      <DiagonalMarquee />
+
       {/* Atmospheric glows */}
       <div className="absolute inset-0 pointer-events-none" style={{
         background: [
