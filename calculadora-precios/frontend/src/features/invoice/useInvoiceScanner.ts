@@ -20,6 +20,10 @@ export interface InvoiceProduct {
   estado: 'Nuevo' | 'Actualizar precio' | 'Sin cambios';
   id: number | null;
   precioAnterior: number | null;
+  gananciaAnterior: number | null;
+  // Con descuento activo: 'mantener' conserva el precio de venta anterior y guarda
+  // el costo SIN descuento (la promo no altera el costo real del producto)
+  descuentoPv: 'mantener' | 'bajar';
   fotoUrl: string | null;
   fotoBlob: Blob | null;
   ganancia: number;
@@ -259,17 +263,19 @@ export function useInvoiceScanner() {
   }, []);
 
   const determinarEstado = useCallback(
-    (nombre: string, precio: number, moneda: string): Pick<InvoiceProduct, 'estado' | 'id' | 'precioAnterior'> => {
+    (nombre: string, precio: number, moneda: string): Pick<InvoiceProduct, 'estado' | 'id' | 'precioAnterior' | 'gananciaAnterior'> => {
       const existente = products.find(
         (p) => p.name.toLowerCase().trim() === nombre.toLowerCase().trim()
       );
-      if (!existente) return { estado: 'Nuevo', id: null, precioAnterior: null };
+      if (!existente) return { estado: 'Nuevo', id: null, precioAnterior: null, gananciaAnterior: null };
 
       const precioNuevo = moneda === 'Bs' ? precio / (rate > 0 ? rate : 1) : precio;
       const diff = Math.abs(existente.costUSD - precioNuevo);
 
-      if (diff < 0.001) return { estado: 'Sin cambios', id: existente.id, precioAnterior: existente.costUSD };
-      return { estado: 'Actualizar precio', id: existente.id, precioAnterior: existente.costUSD };
+      if (diff < 0.001) {
+        return { estado: 'Sin cambios', id: existente.id, precioAnterior: existente.costUSD, gananciaAnterior: existente.profitPercentage };
+      }
+      return { estado: 'Actualizar precio', id: existente.id, precioAnterior: existente.costUSD, gananciaAnterior: existente.profitPercentage };
     },
     [products, rate]
   );
@@ -284,8 +290,8 @@ export function useInvoiceScanner() {
         prev.map((p) => {
           const precio = p.precioOriginal * factor;
           const precioTotal = p.precioTotalOriginal !== null ? p.precioTotalOriginal * factor : null;
-          const { estado, id, precioAnterior } = determinarEstado(p.nombre, precio, p.moneda);
-          return { ...p, precio, precioTotal, estado, id, precioAnterior };
+          const { estado, id, precioAnterior, gananciaAnterior } = determinarEstado(p.nombre, precio, p.moneda);
+          return { ...p, precio, precioTotal, estado, id, precioAnterior, gananciaAnterior };
         })
       );
     },
@@ -351,7 +357,7 @@ export function useInvoiceScanner() {
             p.cantidad_bulto ?? null,
             p.nombre
           );
-          const { estado, id, precioAnterior } = determinarEstado(p.nombre, precio, moneda);
+          const { estado, id, precioAnterior, gananciaAnterior } = determinarEstado(p.nombre, precio, moneda);
           return {
             nombre: p.nombre,
             precio,
@@ -365,6 +371,8 @@ export function useInvoiceScanner() {
             estado,
             id,
             precioAnterior,
+            gananciaAnterior,
+            descuentoPv: 'mantener' as const,
             fotoUrl: null,
             fotoBlob: null,
             ganancia: 30,
@@ -398,13 +406,21 @@ export function useInvoiceScanner() {
     let creados = 0;
     let actualizados = 0;
     const gananciaGlobal = parseFloat(globalGanancia) || 30;
+    const pctDescuento = conDescuento ? parseFloat(descuento) || 0 : 0;
+    const descuentoActivo = pctDescuento > 0 && pctDescuento < 100;
 
     for (let i = 0; i < seleccionados.length; i++) {
       const producto = seleccionados[i];
+      // Con descuento, 'mantener' guarda el costo SIN descuento: la promo de esta
+      // factura no debe alterar el costo real del producto en la lista
+      const costoBase =
+        descuentoActivo && producto.descuentoPv === 'mantener'
+          ? producto.precioOriginal
+          : producto.precio;
       const costUsd =
         producto.moneda === 'Bs'
-          ? producto.precio / (rate > 0 ? rate : 1)
-          : producto.precio;
+          ? costoBase / (rate > 0 ? rate : 1)
+          : costoBase;
 
       const ganancia = gananciaMode === 'global' ? gananciaGlobal : producto.ganancia;
 
@@ -460,7 +476,7 @@ export function useInvoiceScanner() {
     const result = { creados, actualizados };
     setImportResult(result);
     return result;
-  }, [productos, proveedorId, rate, addProduct, updateProduct, globalGanancia, gananciaMode]);
+  }, [productos, proveedorId, rate, addProduct, updateProduct, globalGanancia, gananciaMode, conDescuento, descuento]);
 
   const updateProducto = useCallback((index: number, changes: Partial<InvoiceProduct>) => {
     setProductos((prev) => prev.map((p, i) => (i === index ? { ...p, ...changes } : p)));

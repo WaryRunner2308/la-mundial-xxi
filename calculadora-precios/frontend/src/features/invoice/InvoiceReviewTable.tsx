@@ -611,7 +611,34 @@ export function InvoiceReviewTable({
               <AnimatePresence initial={false}>
                 {productos.map((producto, index) => {
                   const gananciaUsada = gananciaMode === 'global' ? gananciaGlobalNum : producto.ganancia;
-                  const precioVenta = calcularPrecioVenta(producto.precio, gananciaUsada, producto.ivaChoice);
+                  const descuentoFila = descuentoAplicado > 0 && descuentoAplicado < 100;
+                  // Solo productos existentes con datos previos pueden elegir mantener/bajar el PV
+                  const eligePv = descuentoFila && producto.estado === 'Actualizar precio'
+                    && producto.precioAnterior !== null && producto.gananciaAnterior !== null;
+                  const mantienePv = eligePv && producto.descuentoPv === 'mantener';
+
+                  let precioVenta: number;
+                  if (mantienePv) {
+                    // Precio de venta anterior del producto (costo y ganancia guardados, en USD)
+                    const margenPrev = 1 - (producto.gananciaAnterior ?? 0) / 100;
+                    let pvUsd = margenPrev > 0 ? (producto.precioAnterior ?? 0) / margenPrev : 0;
+                    if (producto.ivaChoice === 'yes') pvUsd *= 1 + IVA;
+                    precioVenta = producto.moneda === 'Bs' ? pvUsd * (rate > 0 ? rate : 1) : pvUsd;
+                  } else {
+                    // Los productos nuevos con descuento se guardan con el costo sin descuento,
+                    // así que su PV también se calcula sobre esa base
+                    const costoBasePv = descuentoFila && producto.estado === 'Nuevo'
+                      ? producto.precioOriginal
+                      : producto.precio;
+                    precioVenta = calcularPrecioVenta(costoBasePv, gananciaUsada, producto.ivaChoice);
+                  }
+                  // Puntos de margen extra al mantener el PV pagando el costo con descuento
+                  const extraPct = mantienePv
+                    ? (descuentoAplicado * (100 - (producto.gananciaAnterior ?? 0))) / 100
+                    : 0;
+                  const costoAGuardar = descuentoFila && producto.descuentoPv === 'mantener'
+                    ? producto.precioOriginal
+                    : producto.precio;
                   const monedaSimbolo = producto.moneda === 'USD' ? '$' : 'Bs';
                   const otroMonedaSimbolo = producto.moneda === 'USD' ? 'Bs' : '$';
                   let precioVentaOtra: number | null = null;
@@ -749,6 +776,50 @@ export function InvoiceReviewTable({
                           )}
                         </motion.div>
                       </AnimatePresence>
+
+                      {/* Con descuento: elegir si mantener el PV anterior o bajarlo */}
+                      {eligePv && (
+                        <div className="flex flex-col items-end gap-1 mt-1.5">
+                          <div className="inline-flex rounded-md overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                            <button
+                              type="button"
+                              onClick={() => onUpdateProducto(index, { descuentoPv: 'mantener' })}
+                              title="Mantener el precio de venta anterior y ganar más en esta factura"
+                              className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider transition"
+                              style={{
+                                background: mantienePv ? 'rgba(251,191,36,0.18)' : 'transparent',
+                                color: mantienePv ? '#fbbf24' : '#6e7681',
+                                fontFamily: '"Barlow Condensed", sans-serif',
+                                letterSpacing: '0.08em',
+                              }}
+                            >
+                              Mantener
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onUpdateProducto(index, { descuentoPv: 'bajar' })}
+                              title="Bajar el precio de venta con el costo descontado"
+                              className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider transition"
+                              style={{
+                                background: !mantienePv ? 'rgba(0,154,58,0.18)' : 'transparent',
+                                color: !mantienePv ? '#1ebb60' : '#6e7681',
+                                fontFamily: '"Barlow Condensed", sans-serif',
+                                letterSpacing: '0.08em',
+                              }}
+                            >
+                              Bajar
+                            </button>
+                          </div>
+                          {mantienePv && extraPct > 0 && (
+                            <span
+                              className="text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap"
+                              style={{ color: '#fbbf24', background: 'rgba(251,191,36,0.08)' }}
+                            >
+                              +{extraPct.toFixed(0)}% extra en esta factura
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     {/* Moneda */}
@@ -786,7 +857,7 @@ export function InvoiceReviewTable({
                           <EstadoBadge
                             estado={producto.estado}
                             precioAnterior={producto.precioAnterior}
-                            precio={producto.precio}
+                            precio={costoAGuardar}
                             moneda={producto.moneda}
                           />
                         </motion.div>
