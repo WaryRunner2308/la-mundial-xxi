@@ -83,10 +83,6 @@ input:-webkit-autofill:focus {
   animation-direction: reverse;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .lm-marquee-track { animation: none; }
-}
-
 /* ===== ANIMATIONS ===== */
 
 @keyframes fadeInUp {

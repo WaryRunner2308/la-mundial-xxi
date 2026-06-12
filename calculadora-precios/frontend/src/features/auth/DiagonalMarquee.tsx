@@ -19,13 +19,13 @@ interface RowSpec {
   opacity: number;
 }
 
-// 10 líneas: color y dirección alternados, mezcla de letras rellenas y solo contorno,
+// Color y dirección alternados, mezcla de letras rellenas y solo contorno,
 // velocidades y fases distintas para que el fondo se sienta vivo y no mecánico.
-const ROWS: RowSpec[] = Array.from({ length: 10 }, (_, i) => ({
+const ROWS: RowSpec[] = Array.from({ length: 14 }, (_, i) => ({
   rgb: i % 2 === 0 ? VERDE : ROJO,
   outlined: i % 4 === 1 || i % 4 === 2,
   reverse: i % 2 === 1,
-  speed: 48 + ((i * 13) % 36),
+  speed: 22 + ((i * 9) % 22),
   delay: -(i * 7),
   opacity: 0.75 + ((i * 3) % 5) * 0.05,
 }));
@@ -39,14 +39,13 @@ export function DiagonalMarquee() {
     >
       {/* Capa rotada sobredimensionada para cubrir toda la pantalla en diagonal */}
       <div
-        className="absolute flex flex-col justify-center"
+        className="absolute flex flex-col justify-evenly"
         style={{
-          top: '-30%',
-          left: '-30%',
-          width: '160%',
-          height: '160%',
-          transform: 'rotate(-16deg)',
-          gap: 'clamp(0.6rem, 2.2vh, 1.6rem)',
+          top: '-50%',
+          left: '-50%',
+          width: '200%',
+          height: '200%',
+          transform: 'rotate(-30deg)',
         }}
       >
         {ROWS.map((row, i) => {
