@@ -72,8 +72,8 @@ const MAX_IMG_SIDE = 2048;
 // Las fotos de celular (12MP+ en PNG) saturan la API y hacen fallar la lectura;
 // 2048px JPEG conserva el texto legible con ~10x menos peso.
 async function prepararImagen(blob: Blob): Promise<Blob> {
+  const url = URL.createObjectURL(blob);
   try {
-    const url = URL.createObjectURL(blob);
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const image = new Image();
       image.onload = () => resolve(image);
@@ -89,18 +89,16 @@ async function prepararImagen(blob: Blob): Promise<Blob> {
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      URL.revokeObjectURL(url);
-      return blob;
-    }
+    if (!ctx) return blob;
     ctx.drawImage(img, 0, 0, w, h);
     const jpeg = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, 'image/jpeg', 0.85)
     );
-    URL.revokeObjectURL(url);
     return jpeg ?? blob;
   } catch {
     return blob;
+  } finally {
+    URL.revokeObjectURL(url);
   }
 }
 
@@ -218,7 +216,10 @@ export function useInvoiceScanner() {
       };
       const choice = data.choices?.[0];
       if (choice?.finish_reason === 'length') {
-        throw new Error('La respuesta quedó incompleta: la factura es muy larga.');
+        // Con temperature 0 el mismo modelo truncará igual: no tiene sentido reintentar
+        const err = new Error('La respuesta quedó incompleta: la factura es muy larga.');
+        (err as Error & { noRetry?: boolean }).noRetry = true;
+        throw err;
       }
       const text = choice?.message?.content ?? '';
 
@@ -248,6 +249,7 @@ export function useInvoiceScanner() {
           return await intentarConModelo(model);
         } catch (err) {
           lastError = err instanceof Error ? err : new Error(String(err));
+          if ((lastError as Error & { noRetry?: boolean }).noRetry) break;
         }
       }
     }
