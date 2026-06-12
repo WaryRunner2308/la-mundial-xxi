@@ -188,7 +188,7 @@ export function LandingPage() {
           transition={{ delay: 0.5 }}
           className="text-center text-[#484f58] text-xs uppercase tracking-widest"
         >
-          LA MUNDIAL XXI · 2025
+          LA MUNDIAL XXI
         </motion.p>
       </div>
 

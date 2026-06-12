@@ -56,7 +56,7 @@ const ROWS: RowSpec[] = Array.from({ length: 14 }, (_, i) => ({
   rgb: i % 2 === 0 ? VERDE : ROJO,
   outlined: i % 4 === 1 || i % 4 === 2,
   reverse: i % 2 === 1,
-  speed: 22 + ((i * 9) % 22),
+  speed: 30 + ((i * 9) % 23),
   delay: -(i * 7),
   opacity: 0.75 + ((i * 3) % 5) * 0.05,
 }));
@@ -96,7 +96,7 @@ export function DiagonalMarquee() {
               key={i}
               className="lm-marquee-row"
               style={{
-                fontSize: 'clamp(2.1rem, 6vw, 4.2rem)',
+                fontSize: 'clamp(2.9rem, 7vw, 4.2rem)',
                 letterSpacing: '0.1em',
                 opacity: row.opacity,
                 ...textStyle,
