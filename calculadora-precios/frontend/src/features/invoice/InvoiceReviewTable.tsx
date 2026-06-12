@@ -63,6 +63,10 @@ interface InvoiceReviewTableProps {
   onGlobalGananciaChange: (v: string) => void;
   gananciaMode: 'global' | 'individual';
   onGananciaModeChange: (mode: 'global' | 'individual') => void;
+  conDescuento: boolean;
+  onConDescuentoChange: (on: boolean) => void;
+  descuento: string;
+  onDescuentoChange: (v: string) => void;
 }
 
 // Toggle SÍ / NO para IVA por fila
@@ -368,6 +372,10 @@ export function InvoiceReviewTable({
   onGlobalGananciaChange,
   gananciaMode,
   onGananciaModeChange,
+  conDescuento,
+  onConDescuentoChange,
+  descuento,
+  onDescuentoChange,
 }: InvoiceReviewTableProps) {
   const allSelected = productos.length > 0 && productos.every((p) => p.seleccionado);
   const someSelected = productos.some((p) => p.seleccionado);
@@ -391,10 +399,72 @@ export function InvoiceReviewTable({
     }
   }, [productos]);
 
+  // Re-sincroniza los strings de costo cuando cambia el descuento aplicado
+  // (los precios de todas las filas se recalculan en el hook)
+  const productosRef = React.useRef(productos);
+  productosRef.current = productos;
+  const descuentoAplicado = conDescuento ? parseFloat(descuento) || 0 : 0;
+  React.useEffect(() => {
+    setPrecioStrs(productosRef.current.map((p) => p.precio.toFixed(2)));
+  }, [descuentoAplicado]);
+
   const gananciaGlobalNum = parseFloat(globalGanancia) || 0;
 
   return (
     <div className="space-y-3">
+      {/* Descuento de factura */}
+      <div className="flex items-center gap-2 px-1 flex-wrap">
+        <span className="text-[10px] font-black text-[#484f58] uppercase tracking-widest">
+          ¿La factura tiene descuento?
+        </span>
+        <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+          {([true, false] as const).map((opt) => (
+            <button
+              key={String(opt)}
+              onClick={() => onConDescuentoChange(opt)}
+              className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider transition"
+              style={{
+                background: conDescuento === opt ? 'rgba(251,191,36,0.15)' : 'transparent',
+                color: conDescuento === opt ? '#fbbf24' : '#484f58',
+                fontFamily: '"Barlow Condensed", sans-serif',
+                letterSpacing: '0.08em',
+              }}
+            >
+              {opt ? 'Sí' : 'No'}
+            </button>
+          ))}
+        </div>
+
+        {conDescuento && (
+          <motion.div
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: 'auto' }}
+            className="flex items-center gap-1.5"
+          >
+            <div className="w-20">
+              <SecureInput
+                value={descuento}
+                onChange={onDescuentoChange}
+                inputMode="decimal"
+                editable
+                noRing
+                placeholder="0"
+                displayClassName="!min-h-[32px] !py-1 !px-2 !text-sm !rounded-lg !border-white/10"
+              />
+            </div>
+            <span className="text-[#8b949e] text-sm font-bold">%</span>
+            {descuentoAplicado > 0 && descuentoAplicado < 100 && (
+              <span
+                className="text-[10px] font-bold px-2 py-1 rounded-lg"
+                style={{ color: '#fbbf24', background: 'rgba(251,191,36,0.08)' }}
+              >
+                Costos rebajados {descuentoAplicado}%
+              </span>
+            )}
+          </motion.div>
+        )}
+      </div>
+
       {/* Header toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-1">
         <div className="flex items-center gap-3">
@@ -632,7 +702,8 @@ export function InvoiceReviewTable({
                               });
                               const num = parseFloat(v);
                               if (!isNaN(num) && num >= 0) {
-                                onUpdateProducto(index, { precio: num });
+                                // El valor escrito a mano pasa a ser la nueva base del descuento
+                                onUpdateProducto(index, { precio: num, precioOriginal: num });
                               }
                             }}
                             inputMode="decimal"

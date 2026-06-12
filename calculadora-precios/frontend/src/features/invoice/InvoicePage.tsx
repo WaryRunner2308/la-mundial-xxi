@@ -334,6 +334,10 @@ export function InvoicePage() {
     setGlobalGanancia,
     gananciaMode,
     setGananciaMode,
+    conDescuento,
+    toggleDescuento,
+    descuento,
+    setDescuento,
     scanImage,
     ejecutarImportacion,
     updateProducto,
@@ -493,6 +497,10 @@ export function InvoicePage() {
                 onGlobalGananciaChange={setGlobalGanancia}
                 gananciaMode={gananciaMode}
                 onGananciaModeChange={setGananciaMode}
+                conDescuento={conDescuento}
+                onConDescuentoChange={toggleDescuento}
+                descuento={descuento}
+                onDescuentoChange={setDescuento}
               />
             </motion.div>
           )}

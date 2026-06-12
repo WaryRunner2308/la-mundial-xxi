@@ -10,6 +10,9 @@ export interface InvoiceProduct {
   nombre: string;
   precio: number;
   precioTotal: number | null;
+  // Base sobre la que se aplica el descuento de factura; nunca lleva descuento acumulado
+  precioOriginal: number;
+  precioTotalOriginal: number | null;
   moneda: 'USD' | 'Bs';
   unidad: string;
   cantidadBulto: number | null;
@@ -55,6 +58,60 @@ REGLAS ESTRICTAS:
 
 RESPONDE ÚNICAMENTE con este JSON (sin texto adicional, sin markdown, sin explicaciones):
 {"productos":[{"nombre":"NOMBRE EXACTO","precio":0.00,"moneda":"USD","unidad":"unidad","cantidad_bulto":null}],"proveedor":"nombre o null","fecha":"YYYY-MM-DD o null"}`;
+
+// Modelos de visión en orden de preferencia: si el primero falla se intenta el siguiente.
+const VISION_MODELS = [
+  'google/gemini-2.5-flash',
+  'google/gemini-2.0-flash-001',
+  'meta-llama/llama-3.2-11b-vision-instruct',
+];
+
+const MAX_IMG_SIDE = 2048;
+
+// Redimensiona y comprime la imagen antes de enviarla a la IA.
+// Las fotos de celular (12MP+ en PNG) saturan la API y hacen fallar la lectura;
+// 2048px JPEG conserva el texto legible con ~10x menos peso.
+async function prepararImagen(blob: Blob): Promise<Blob> {
+  try {
+    const url = URL.createObjectURL(blob);
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error('No se pudo cargar la imagen'));
+      image.src = url;
+    });
+    const w0 = img.naturalWidth || img.width;
+    const h0 = img.naturalHeight || img.height;
+    const scale = Math.min(1, MAX_IMG_SIDE / Math.max(w0, h0));
+    const w = Math.round(w0 * scale);
+    const h = Math.round(h0 * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      URL.revokeObjectURL(url);
+      return blob;
+    }
+    ctx.drawImage(img, 0, 0, w, h);
+    const jpeg = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', 0.85)
+    );
+    URL.revokeObjectURL(url);
+    return jpeg ?? blob;
+  } catch {
+    return blob;
+  }
+}
+
+// Extrae el primer objeto JSON aunque el modelo agregue texto o fences alrededor.
+function extraerJson(text: string): string {
+  const sinFences = text.replace(/```json|```/g, '').trim();
+  const start = sinFences.indexOf('{');
+  const end = sinFences.lastIndexOf('}');
+  if (start >= 0 && end > start) return sinFences.slice(start, end + 1);
+  return sinFences;
+}
 
 // Detecta unidades por bulto a partir del nombre del producto.
 // Convención venezolana: "1X12" = 12 unidades; "2X6" = 12; "X6" = 6; "12UND" = 12.
@@ -116,52 +173,63 @@ export function useInvoiceScanner() {
   const [globalGanancia, setGlobalGanancia] = useState('30');
   const [gananciaMode, setGananciaMode] = useState<'global' | 'individual'>('global');
   const [importResult, setImportResult] = useState<{ creados: number; actualizados: number } | null>(null);
+  const [conDescuento, setConDescuento] = useState(false);
+  const [descuento, setDescuentoStr] = useState('');
 
   const callGeminiVision = useCallback(async (imageBlob: Blob) => {
+    const prepared = await prepararImagen(imageBlob);
     const base64 = await new Promise<string>((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve((reader.result as string).split(',')[1]);
-      reader.readAsDataURL(imageBlob);
+      reader.readAsDataURL(prepared);
     });
-    const mimeType = imageBlob.type || 'image/png';
+    const mimeType = prepared.type || 'image/jpeg';
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://la-mundial-xxi.vercel.app',
-        'X-Title': 'La Mundial',
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.2-11b-vision-instruct',
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
-            { type: 'text', text: INVOICE_PROMPT },
-          ],
-        }],
-        max_tokens: 1500,
-        temperature: 0,
-      }),
-    });
+    const intentarConModelo = async (model: string) => {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+          'HTTP-Referer': 'https://la-mundial-xxi.vercel.app',
+          'X-Title': 'La Mundial',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+              { type: 'text', text: INVOICE_PROMPT },
+            ],
+          }],
+          max_tokens: 8000,
+          temperature: 0,
+        }),
+      });
 
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({})) as { error?: { message?: string } };
-      throw new Error(errData?.error?.message ?? `Error OpenRouter: ${response.status}`);
-    }
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({})) as { error?: { message?: string } };
+        throw new Error(errData?.error?.message ?? `Error OpenRouter: ${response.status}`);
+      }
 
-    const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-    const text = data.choices?.[0]?.message?.content ?? '';
-    const clean = text.replace(/```json|```/g, '').trim();
+      const data = await response.json() as {
+        choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
+      };
+      const choice = data.choices?.[0];
+      if (choice?.finish_reason === 'length') {
+        throw new Error('La respuesta quedó incompleta: la factura es muy larga.');
+      }
+      const text = choice?.message?.content ?? '';
 
-    try {
-      const parsed = JSON.parse(clean) as {
+      const parsed = JSON.parse(extraerJson(text)) as {
         productos: Array<{ nombre: string; precio: number | string; moneda: string; unidad: string; cantidad_bulto?: number | string | null }>;
         proveedor: string | null;
         fecha: string | null;
       };
+      if (!Array.isArray(parsed.productos)) {
+        throw new Error('La respuesta no contiene productos.');
+      }
       return {
         ...parsed,
         productos: parsed.productos.map((p) => ({
@@ -170,9 +238,22 @@ export function useInvoiceScanner() {
           cantidad_bulto: p.cantidad_bulto != null ? Number(p.cantidad_bulto) || null : null,
         })),
       };
-    } catch {
-      throw new Error('El modelo no pudo estructurar la respuesta. Intenta con una imagen más clara.');
+    };
+
+    // 2 intentos por modelo, en orden de preferencia, antes de rendirse
+    let lastError: Error | null = null;
+    for (const model of VISION_MODELS) {
+      for (let intento = 0; intento < 2; intento++) {
+        try {
+          return await intentarConModelo(model);
+        } catch (err) {
+          lastError = err instanceof Error ? err : new Error(String(err));
+        }
+      }
     }
+    throw new Error(
+      `No se pudo leer la factura (${lastError?.message ?? 'error desconocido'}). Intenta con una foto más clara y bien iluminada.`
+    );
   }, []);
 
   const determinarEstado = useCallback(
@@ -189,6 +270,45 @@ export function useInvoiceScanner() {
       return { estado: 'Actualizar precio', id: existente.id, precioAnterior: existente.costUSD };
     },
     [products, rate]
+  );
+
+  // Aplica el % de descuento sobre el costo ORIGINAL de cada fila (nunca acumula)
+  // y recalcula el estado Nuevo/Actualizar/Sin cambios con el costo resultante.
+  const recalcularConDescuento = useCallback(
+    (pctRaw: string) => {
+      const pct = parseFloat(pctRaw);
+      const factor = !isNaN(pct) && pct > 0 && pct < 100 ? 1 - pct / 100 : 1;
+      setProductos((prev) =>
+        prev.map((p) => {
+          const precio = p.precioOriginal * factor;
+          const precioTotal = p.precioTotalOriginal !== null ? p.precioTotalOriginal * factor : null;
+          const { estado, id, precioAnterior } = determinarEstado(p.nombre, precio, p.moneda);
+          return { ...p, precio, precioTotal, estado, id, precioAnterior };
+        })
+      );
+    },
+    [determinarEstado]
+  );
+
+  const setDescuento = useCallback(
+    (v: string) => {
+      setDescuentoStr(v);
+      recalcularConDescuento(v);
+    },
+    [recalcularConDescuento]
+  );
+
+  const toggleDescuento = useCallback(
+    (on: boolean) => {
+      setConDescuento(on);
+      if (on) {
+        recalcularConDescuento(descuento);
+      } else {
+        setDescuentoStr('');
+        recalcularConDescuento('');
+      }
+    },
+    [descuento, recalcularConDescuento]
   );
 
   const scanImage = useCallback(
@@ -234,6 +354,8 @@ export function useInvoiceScanner() {
             nombre: p.nombre,
             precio,
             precioTotal,
+            precioOriginal: precio,
+            precioTotalOriginal: precioTotal,
             moneda,
             unidad: p.unidad,
             cantidadBulto,
@@ -248,6 +370,8 @@ export function useInvoiceScanner() {
           };
         });
 
+        setConDescuento(false);
+        setDescuentoStr('');
         setProductos(mapped);
         setStep('review');
       } catch (err: unknown) {
@@ -357,6 +481,8 @@ export function useInvoiceScanner() {
     setImportProgress(0);
     setImportTotal(0);
     setImportResult(null);
+    setConDescuento(false);
+    setDescuentoStr('');
   }, []);
 
   return {
@@ -376,6 +502,10 @@ export function useInvoiceScanner() {
     setGlobalGanancia,
     gananciaMode,
     setGananciaMode,
+    conDescuento,
+    toggleDescuento,
+    descuento,
+    setDescuento,
     scanImage,
     ejecutarImportacion,
     updateProducto,

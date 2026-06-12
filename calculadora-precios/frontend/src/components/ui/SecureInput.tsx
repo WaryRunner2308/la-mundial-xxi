@@ -116,6 +116,15 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 inputRef.current.style.paddingRight = cs.paddingRight;
                 inputRef.current.style.paddingTop    = cs.paddingTop;
                 inputRef.current.style.paddingBottom = cs.paddingBottom;
+                // El caret vive en el input invisible: si su tipografía o alineación no
+                // coinciden con el div visible (ej: !text-center !text-xs en la tabla),
+                // el caret aparece desplazado y "salta" al escribir. Igualamos todo.
+                inputRef.current.style.textAlign     = cs.textAlign;
+                inputRef.current.style.fontSize      = cs.fontSize;
+                inputRef.current.style.fontFamily    = cs.fontFamily;
+                inputRef.current.style.fontWeight    = cs.fontWeight;
+                inputRef.current.style.letterSpacing = cs.letterSpacing;
+                inputRef.current.style.lineHeight    = cs.lineHeight;
             }
             // Restaura posición de cursor después del commit de React, antes del paint
             if (inputRef.current && savedCursor.current !== null) {
