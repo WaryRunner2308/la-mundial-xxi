@@ -5,7 +5,38 @@ import React from 'react';
  * Animación 100% CSS (solo transform) para que sea fluida en PC y celular.
  */
 
-const PHRASE = Array.from({ length: 14 }, () => 'LA MUNDIAL').join('   ·   ') + '   ·   ';
+const SEP = '  ·  ';
+const PHRASE = Array.from({ length: 14 }, () => 'LA MUNDIAL').join(SEP) + SEP;
+
+// Estilos embebidos en el componente: la app no importa archivos CSS
+// (usa Tailwind por CDN), asi que esto garantiza que la animacion siempre cargue.
+const MARQUEE_CSS = `
+@keyframes lmMarqueeScroll {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+.lm-marquee-row {
+  display: flex;
+  white-space: nowrap;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+}
+.lm-marquee-track {
+  display: flex;
+  flex-shrink: 0;
+  animation: lmMarqueeScroll var(--lm-speed, 60s) linear infinite;
+  animation-delay: var(--lm-delay, 0s);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+.lm-marquee-track.lm-reverse {
+  animation-direction: reverse;
+}
+`;
 
 const VERDE = '0,154,58';
 const ROJO = '200,16,46';
@@ -37,6 +68,8 @@ export function DiagonalMarquee() {
       className="absolute inset-0 overflow-hidden pointer-events-none select-none"
       style={{ contain: 'strict' }}
     >
+      <style>{MARQUEE_CSS}</style>
+
       {/* Capa rotada sobredimensionada para cubrir toda la pantalla en diagonal */}
       <div
         className="absolute flex flex-col justify-evenly"

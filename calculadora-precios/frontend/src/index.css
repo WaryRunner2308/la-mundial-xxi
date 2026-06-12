@@ -51,38 +51,6 @@ input:-webkit-autofill:focus {
 ::-webkit-scrollbar-thumb { background: rgba(0,154,58,0.2); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0,154,58,0.4); }
 
-/* ===== DIAGONAL MARQUEE (Landing) ===== */
-
-@keyframes lmMarqueeScroll {
-  from { transform: translate3d(0, 0, 0); }
-  to   { transform: translate3d(-50%, 0, 0); }
-}
-
-.lm-marquee-row {
-  display: flex;
-  overflow: visible;
-  white-space: nowrap;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900;
-  text-transform: uppercase;
-  line-height: 1;
-  user-select: none;
-  pointer-events: none;
-}
-
-.lm-marquee-track {
-  display: flex;
-  flex-shrink: 0;
-  animation: lmMarqueeScroll var(--lm-speed, 60s) linear infinite;
-  animation-delay: var(--lm-delay, 0s);
-  will-change: transform;
-  backface-visibility: hidden;
-}
-
-.lm-marquee-track.lm-reverse {
-  animation-direction: reverse;
-}
-
 /* ===== ANIMATIONS ===== */
 
 @keyframes fadeInUp {
