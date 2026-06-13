@@ -198,7 +198,7 @@ function RateModal({ rate, setRate, onClose, mandatory = false }: {
               </div>
               <button
                 type="button"
-                onClick={() => { setInputValue(bcv.rate.toFixed(2)); setRateError(''); }}
+                onClick={() => { setRate(bcv.rate); onClose(); }}
                 className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg text-[#009A3A] transition hover:text-white flex-shrink-0"
                 style={{ background: 'rgba(0,154,58,0.12)', border: '1px solid rgba(0,154,58,0.3)' }}
               >
