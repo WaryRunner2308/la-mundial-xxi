@@ -34,7 +34,7 @@ export function ConfirmationModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 flex items-center justify-center z-[100] p-4"
+          className="fixed inset-0 flex items-center justify-center z-[220] p-4"
           style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
           onClick={onCancel}
         >

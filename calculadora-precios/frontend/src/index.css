@@ -46,10 +46,20 @@ input:-webkit-autofill:focus {
 }
 
 /* ===== SCROLLBAR DARK ===== */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0,154,58,0.2); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0,154,58,0.4); }
+/* Estándar (Firefox + Chromium/Opera modernos): evita el scrollbar nativo blanco */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,154,58,0.45) #1c2128;
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #1c2128; }
+::-webkit-scrollbar-thumb {
+  background: rgba(0,154,58,0.35);
+  border-radius: 8px;
+  border: 2px solid #1c2128;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(0,154,58,0.6); }
+::-webkit-scrollbar-corner { background: #1c2128; }
 
 /* ===== ANIMATIONS ===== */
 
