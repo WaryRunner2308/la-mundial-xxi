@@ -185,7 +185,10 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                     data-1p-ignore="true"
                 />
 
-                {/* Div visible: muestra el texto formateado */}
+                {/* Div visible: muestra el texto formateado.
+                    NO es contentEditable: en iOS un contentEditable puede robar el foco
+                    (toque largo / doble tap), lo que abría el teclado de letras y
+                    duplicaba el caret. La edición real vive solo en el input invisible. */}
                 {editable ? (
                     <div
                         ref={(el) => {
@@ -194,15 +197,14 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                             displayRef.current = el;
                             visibleRef.current = el;
                         }}
-                        contentEditable
-                        suppressContentEditableWarning
+                        data-secure-display
                         className={`
                             w-full px-4 py-3 border border-white/10 rounded-lg
                             ${noRing ? '' : isFocused ? 'ring-2 ring-[#009A3A]/40 border-[#009A3A]/40' : ''}
                             outline-none transition text-base min-h-[48px] bg-[#1c2128] text-[#e6edf3]
                             ${displayClassName}
                         `}
-                        style={{ position: 'relative', zIndex: 1, userSelect: 'text', WebkitUserSelect: 'text' }}
+                        style={{ position: 'relative', zIndex: 1, userSelect: 'none', WebkitUserSelect: 'none' }}
                         {...(placeholder && !value ? { 'data-placeholder': placeholder } : {})}
                     />
                 ) : (
@@ -231,7 +233,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         background: transparent !important;
                         transition: background-color 5000s ease-in-out 0s !important;
                     }
-                    div[contenteditable]:empty:before {
+                    div[data-secure-display]:empty:before {
                         content: attr(data-placeholder);
                         color: #484f58;
                         pointer-events: none;

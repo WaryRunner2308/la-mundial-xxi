@@ -71,12 +71,27 @@ class ErrorBoundary extends React.Component<
 }
 
 /* ─── Rate Modal ─── */
-function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (r: number) => void; onClose: () => void }) {
+function RateModal({ rate, setRate, onClose, mandatory = false }: {
+  rate: number;
+  setRate: (r: number) => void;
+  onClose: () => void;
+  mandatory?: boolean;
+}) {
   const [inputValue, setInputValue] = useState(rate > 0 ? rate.toString() : '');
+  const [rateError, setRateError] = useState('');
 
   const handleSubmit = () => {
     const parsed = parseNumericInput(inputValue);
-    if (parsed > 0) setRate(parsed);
+    if (parsed > 0) {
+      setRate(parsed);
+      onClose();
+      return;
+    }
+    // Obligatorio: sin tasa válida no se cierra ni se puede usar la app
+    if (mandatory) {
+      setRateError('Debes ingresar la tasa del día para continuar.');
+      return;
+    }
     onClose();
   };
 
@@ -87,7 +102,7 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (r: numb
       exit={{ opacity: 0 }}
       className="fixed inset-0 flex items-center justify-center z-[100] p-4"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
-      onClick={handleSubmit}
+      onClick={mandatory ? undefined : handleSubmit}
     >
       <motion.div
         initial={{ scale: 0.82, opacity: 0, y: 24 }}
@@ -127,7 +142,7 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (r: numb
             </span>
             <SecureInput
               value={inputValue}
-              onChange={setInputValue}
+              onChange={(v) => { setInputValue(v); setRateError(''); }}
               onSubmit={handleSubmit}
               placeholder="Ej: 40.50"
               inputMode="decimal"
@@ -136,6 +151,12 @@ function RateModal({ rate, setRate, onClose }: { rate: number; setRate: (r: numb
               displayClassName="!border-white/10 !rounded-xl !bg-[#1c2128] !text-[#e6edf3]"
             />
           </div>
+          {rateError && (
+            <div className="p-3 rounded-xl text-sm flex items-center gap-2 text-[#C8102E]"
+              style={{ background: 'rgba(200,16,46,0.08)', border: '1px solid rgba(200,16,46,0.2)' }}>
+              <span>⚠️</span> {rateError}
+            </div>
+          )}
           <button
             type="button"
             onClick={handleSubmit}
@@ -180,6 +201,9 @@ function App() {
   const isGerencia = userRole === 'gerencia';
 
   useEffect(() => { setSidebarOpen(false); }, [location]);
+  // La tasa del día es obligatoria: el aviso sale SIEMPRE al entrar a un modo
+  // (invitado o gerencia) y no se puede cerrar sin ingresar una tasa válida.
+  useEffect(() => { if (userRole) setShowWelcome(true); }, [userRole]);
   useEffect(() => { if (rate === 0) setShowWelcome(true); }, [rate]);
 
   useEffect(() => {
@@ -240,6 +264,7 @@ function App() {
         className={`
           fixed lg:static inset-y-0 left-0 z-50 flex flex-col
           w-[200px] flex-shrink-0 self-start
+          rounded-r-2xl lg:rounded-none overflow-hidden
           transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
@@ -423,7 +448,7 @@ function App() {
       {/* Modals */}
       <AnimatePresence>
         {showWelcome && (
-          <RateModal key="welcome" rate={rate} setRate={setRate} onClose={() => setShowWelcome(false)} />
+          <RateModal key="welcome" rate={rate} setRate={setRate} mandatory onClose={() => setShowWelcome(false)} />
         )}
       </AnimatePresence>
       <AnimatePresence>
