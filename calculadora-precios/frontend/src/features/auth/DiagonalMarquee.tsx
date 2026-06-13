@@ -6,7 +6,6 @@ import React from 'react';
  */
 
 const SEP = '  ·  ';
-const PHRASE = Array.from({ length: 14 }, () => 'LA MUNDIAL').join(SEP) + SEP;
 
 // Estilos embebidos en el componente: la app no importa archivos CSS
 // (usa Tailwind por CDN), asi que esto garantiza que la animacion siempre cargue.
@@ -61,11 +60,25 @@ const ROWS: RowSpec[] = Array.from({ length: 14 }, (_, i) => ({
   opacity: 0.75 + ((i * 3) % 5) * 0.05,
 }));
 
-export function DiagonalMarquee() {
+interface DiagonalMarqueeProps {
+  /** Palabra que se repite en las líneas */
+  word?: string;
+  /** Ángulo de las líneas: -30 = diagonal (landing), 0 = horizontal */
+  angle?: number;
+  /** true = capa fija al viewport (fondo de la app); false = absoluta al contenedor */
+  fixed?: boolean;
+}
+
+export function DiagonalMarquee({ word = 'LA MUNDIAL', angle = -30, fixed = false }: DiagonalMarqueeProps) {
+  const phrase = React.useMemo(
+    () => Array.from({ length: 14 }, () => word).join(SEP) + SEP,
+    [word],
+  );
+
   return (
     <div
       aria-hidden="true"
-      className="absolute inset-0 overflow-hidden pointer-events-none select-none"
+      className={`${fixed ? 'fixed' : 'absolute'} inset-0 overflow-hidden pointer-events-none select-none`}
       style={{ contain: 'strict' }}
     >
       <style>{MARQUEE_CSS}</style>
@@ -78,7 +91,7 @@ export function DiagonalMarquee() {
           left: '-50%',
           width: '200%',
           height: '200%',
-          transform: 'rotate(-30deg)',
+          transform: `rotate(${angle}deg)`,
         }}
       >
         {ROWS.map((row, i) => {
@@ -111,8 +124,8 @@ export function DiagonalMarquee() {
                   } as React.CSSProperties
                 }
               >
-                <span>{PHRASE}</span>
-                <span>{PHRASE}</span>
+                <span>{phrase}</span>
+                <span>{phrase}</span>
               </div>
             </div>
           );

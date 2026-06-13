@@ -18,6 +18,7 @@ import { CalculatorPage } from '@/features/calculator/CalculatorPage';
 import { ProvidersPage } from '@/features/providers/ProvidersPage';
 import { ComparatorPage } from '@/features/comparator/ComparatorPage';
 import { LandingPage } from '@/features/auth/LandingPage';
+import { DiagonalMarquee } from '@/features/auth/DiagonalMarquee';
 import { InvoicePage } from '@/features/invoice/InvoicePage';
 
 /* ─── Error Boundary ─── */
@@ -225,6 +226,9 @@ function App() {
   return (
     <div className="flex min-h-screen bg-[#0d1117] overflow-x-hidden">
 
+      {/* Fondo animado: la palabra del modo activo en marquee horizontal */}
+      <DiagonalMarquee word={isGerencia ? 'GERENCIA' : 'INVITADO'} angle={0} fixed />
+
       {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center"
         style={{ background: '#161b22', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -262,9 +266,9 @@ function App() {
       {/* ─── Sidebar ─── */}
       <aside
         className={`
-          fixed lg:static inset-y-0 left-0 z-50 flex flex-col
+          fixed lg:relative inset-y-0 left-0 z-50 flex flex-col
           w-[200px] flex-shrink-0 self-start
-          rounded-r-2xl lg:rounded-none overflow-hidden
+          rounded-r-2xl overflow-hidden
           transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
@@ -410,7 +414,7 @@ function App() {
       </aside>
 
       {/* ─── Main ─── */}
-      <main className="flex-1 min-w-0 p-4 md:p-6 overflow-y-auto bg-[#0d1117] lg:pt-6 pt-16">
+      <main className="relative flex-1 min-w-0 p-4 md:p-6 overflow-y-auto lg:pt-6 pt-16">
         {supabaseError && (
           <div className="mb-4 p-4 rounded-xl text-sm text-[#C8102E]"
             style={{ background: 'rgba(200,16,46,0.08)', border: '1px solid rgba(200,16,46,0.2)' }}>
