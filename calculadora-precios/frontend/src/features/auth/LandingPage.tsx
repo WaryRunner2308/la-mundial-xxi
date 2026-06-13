@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { SecureInput } from '@/components/ui/SecureInput';
-import { Eye, Lock, ShieldCheck, ChevronRight } from 'lucide-react';
+import { Eye, EyeOff, Lock, ShieldCheck, ChevronRight } from 'lucide-react';
 import { DiagonalMarquee } from './DiagonalMarquee';
 
 export function LandingPage() {
@@ -10,6 +10,8 @@ export function LandingPage() {
   const [showLogin, setShowLogin] = useState(false);
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   const handleInvitado = () => login('invitado');
 
@@ -23,6 +25,7 @@ export function LandingPage() {
     setShowLogin(false);
     setError('');
     setCredentials({ username: '', password: '' });
+    setShowPassword(false);
   };
 
   return (
@@ -241,6 +244,7 @@ export function LandingPage() {
                   <SecureInput
                     value={credentials.username}
                     onChange={(value) => setCredentials({ ...credentials, username: value })}
+                    onSubmit={() => passwordRef.current?.focus()}
                     placeholder=""
                     inputMode="text"
                     editable
@@ -253,20 +257,32 @@ export function LandingPage() {
                   <label className="block text-xs font-black text-[#009A3A] mb-2 uppercase tracking-wider">
                     Contraseña
                   </label>
-                  <input
-                    type="password"
-                    value={credentials.password}
-                    onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl text-[#e6edf3] text-base min-h-[48px] outline-none transition"
-                    style={{
-                      background: '#1c2128',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      fontFamily: 'inherit',
-                    }}
-                    onFocus={(e) => { e.target.style.borderColor = 'rgba(0,154,58,0.4)'; }}
-                    onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; }}
-                    autoComplete="current-password"
-                  />
+                  <div className="relative">
+                    <input
+                      ref={passwordRef}
+                      type={showPassword ? 'text' : 'password'}
+                      value={credentials.password}
+                      onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                      className="w-full px-4 py-3 pr-12 rounded-xl text-[#e6edf3] text-base min-h-[48px] outline-none transition"
+                      style={{
+                        background: '#1c2128',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        fontFamily: 'inherit',
+                      }}
+                      onFocus={(e) => { e.target.style.borderColor = 'rgba(0,154,58,0.4)'; }}
+                      onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[#484f58] hover:text-[#e6edf3] transition"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
 
                 <AnimatePresence>
