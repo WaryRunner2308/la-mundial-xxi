@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCurrencyStore } from '@/store/currencyStore';
@@ -6,9 +6,10 @@ import { supabase } from '@/lib/supabase';
 import { parseNumericInput } from '@/utils/validateDecimal';
 import { SecureInput } from '@/components/ui/SecureInput';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchBcvRate, formatBcvDate, type BcvRate } from '@/services/bcvRate';
 import {
   Package, Calculator, Truck, BarChart2, TrendingDown,
-  Menu, X, DollarSign, ScanLine,
+  Menu, X, DollarSign, ScanLine, Loader2, Landmark,
 } from 'lucide-react';
 
 import { ProductsPage } from '@/features/products/ProductList';
@@ -80,6 +81,28 @@ function RateModal({ rate, setRate, onClose, mandatory = false }: {
 }) {
   const [inputValue, setInputValue] = useState(rate > 0 ? rate.toString() : '');
   const [rateError, setRateError] = useState('');
+  const [bcv, setBcv] = useState<BcvRate | null>(null);
+  const [bcvStatus, setBcvStatus] = useState<'loading' | 'ok' | 'error'>('loading');
+  const userTouched = useRef(false);
+
+  // Al abrir, consulta la tasa oficial BCV y pre-llena el campo si está vacío.
+  // Si la API falla o no hay internet, el modal sigue funcionando en modo manual.
+  useEffect(() => {
+    let active = true;
+    fetchBcvRate().then((result) => {
+      if (!active) return;
+      if (result) {
+        setBcv(result);
+        setBcvStatus('ok');
+        if (!userTouched.current) {
+          setInputValue((prev) => (prev === '' ? result.rate.toFixed(2) : prev));
+        }
+      } else {
+        setBcvStatus('error');
+      }
+    });
+    return () => { active = false; };
+  }, []);
 
   const handleSubmit = () => {
     const parsed = parseNumericInput(inputValue);
@@ -143,15 +166,52 @@ function RateModal({ rate, setRate, onClose, mandatory = false }: {
             </span>
             <SecureInput
               value={inputValue}
-              onChange={(v) => { setInputValue(v); setRateError(''); }}
+              onChange={(v) => { userTouched.current = true; setInputValue(v); setRateError(''); }}
               onSubmit={handleSubmit}
-              placeholder="Ej: 40.50"
+              placeholder="Ej: 582.69"
               inputMode="decimal"
               editable
               noRing
               displayClassName="!border-white/10 !rounded-xl !bg-[#1c2128] !text-[#e6edf3]"
             />
           </div>
+
+          {/* Tasa oficial BCV (DolarApi) — informativa, siempre editable a mano */}
+          {bcvStatus === 'loading' && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs text-[#8b949e]"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <Loader2 size={13} className="animate-spin text-[#009A3A]" />
+              Consultando tasa oficial BCV…
+            </div>
+          )}
+          {bcvStatus === 'ok' && bcv && (
+            <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl"
+              style={{ background: 'rgba(0,154,58,0.07)', border: '1px solid rgba(0,154,58,0.2)' }}>
+              <div className="flex items-center gap-2 min-w-0">
+                <Landmark size={13} className="text-[#009A3A] flex-shrink-0" />
+                <span className="text-xs text-[#8b949e] truncate">
+                  BCV{formatBcvDate(bcv.updatedAt) ? ` (${formatBcvDate(bcv.updatedAt)})` : ''}:{' '}
+                  <span className="font-bold text-[#009A3A]" style={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                    {bcv.rate.toFixed(2)} Bs
+                  </span>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setInputValue(bcv.rate.toFixed(2)); setRateError(''); }}
+                className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg text-[#009A3A] transition hover:text-white flex-shrink-0"
+                style={{ background: 'rgba(0,154,58,0.12)', border: '1px solid rgba(0,154,58,0.3)' }}
+              >
+                Usar
+              </button>
+            </div>
+          )}
+          {bcvStatus === 'error' && (
+            <p className="text-[11px] text-[#484f58] px-1">
+              No se pudo consultar la tasa BCV automáticamente. Ingrésala manualmente.
+            </p>
+          )}
+
           {rateError && (
             <div className="p-3 rounded-xl text-sm flex items-center gap-2 text-[#C8102E]"
               style={{ background: 'rgba(200,16,46,0.08)', border: '1px solid rgba(200,16,46,0.2)' }}>
