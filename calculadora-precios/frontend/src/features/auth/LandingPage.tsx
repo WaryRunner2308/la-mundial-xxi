@@ -13,12 +13,23 @@ export function LandingPage() {
   const [showPassword, setShowPassword] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
 
+  const [loading, setLoading] = useState(false);
+
   const handleInvitado = () => login('invitado');
 
-  const handleGerenciaSubmit = (e: React.FormEvent) => {
+  const handleGerenciaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = login('gerencia', credentials.username, credentials.password);
-    if (!success) setError('Credenciales incorrectas. Verifica usuario y contraseña.');
+    if (loading) return;
+    setError('');
+    setLoading(true);
+    try {
+      const success = await login('gerencia', credentials.username, credentials.password);
+      if (!success) setError('Credenciales incorrectas. Verifica usuario y contraseña.');
+    } catch {
+      setError('No se pudo conectar. Revisa tu internet e intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancelarLogin = () => {
@@ -312,7 +323,8 @@ export function LandingPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-3 text-white font-bold rounded-xl transition text-sm"
+                    disabled={loading}
+                    className="flex-1 px-4 py-3 text-white font-bold rounded-xl transition text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                     style={{
                       fontFamily: '"Barlow Condensed", sans-serif',
                       letterSpacing: '0.08em',
@@ -320,7 +332,7 @@ export function LandingPage() {
                       boxShadow: '0 4px 20px rgba(200,16,46,0.35)',
                     }}
                   >
-                    ENTRAR
+                    {loading ? 'ENTRANDO…' : 'ENTRAR'}
                   </button>
                 </div>
               </form>
