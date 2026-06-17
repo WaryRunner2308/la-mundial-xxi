@@ -8,7 +8,7 @@ import { DiagonalMarquee } from './DiagonalMarquee';
 export function LandingPage() {
   const { login } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
-  const [credentials, setCredentials] = useState({ username: '', password: '' });
+  const [credentials, setCredentials] = useState({ username: 'pumpo', password: '' });
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -35,7 +35,7 @@ export function LandingPage() {
   const handleCancelarLogin = () => {
     setShowLogin(false);
     setError('');
-    setCredentials({ username: '', password: '' });
+    setCredentials({ username: 'pumpo', password: '' });
     setShowPassword(false);
   };
 
@@ -273,7 +273,7 @@ export function LandingPage() {
                       ref={passwordRef}
                       type={showPassword ? 'text' : 'password'}
                       value={credentials.password}
-                      onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                      onChange={(e) => setCredentials({ ...credentials, password: e.target.value.replace(/[^0-9]/g, '') })}
                       className="w-full px-4 py-3 pr-12 rounded-xl text-[#e6edf3] text-base min-h-[48px] outline-none transition"
                       style={{
                         background: '#1c2128',
@@ -283,6 +283,9 @@ export function LandingPage() {
                       onFocus={(e) => { e.target.style.borderColor = 'rgba(0,154,58,0.4)'; }}
                       onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; }}
                       autoComplete="current-password"
+                      autoFocus
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                     />
                     <button
                       type="button"
