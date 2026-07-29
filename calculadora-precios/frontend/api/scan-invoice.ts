@@ -29,12 +29,8 @@ REGLAS ESTRICTAS:
 RESPONDE ÚNICAMENTE con este JSON (sin texto adicional, sin markdown, sin explicaciones):
 {"productos":[{"nombre":"NOMBRE EXACTO","precio":0.00,"moneda":"USD","unidad":"unidad","cantidad_bulto":null}],"proveedor":"nombre o null","fecha":"YYYY-MM-DD o null"}`;
 
-// Modelos de visión en orden de preferencia: si el primero falla se intenta el siguiente.
-const VISION_MODELS = [
-  'google/gemini-2.5-flash',
-  'google/gemini-2.0-flash-001',
-  'meta-llama/llama-3.2-11b-vision-instruct',
-];
+// Modelos de Gemini en orden de preferencia: si el primero falla se intenta el siguiente.
+const VISION_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
 
 function extraerJson(text: string): string {
   const sinFences = text.replace(/```json|```/g, '').trim();
@@ -78,9 +74,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    res.status(500).json({ error: 'El servidor no tiene configurada la clave de OpenRouter.' });
+    res.status(500).json({ error: 'El servidor no tiene configurada la clave de Gemini.' });
     return;
   }
 
@@ -91,44 +87,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const intentarConModelo = async (model: string) => {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://la-mundial-xxi.vercel.app',
-        'X-Title': 'La Mundial',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
-            { type: 'text', text: INVOICE_PROMPT },
-          ],
-        }],
-        max_tokens: 8000,
-        temperature: 0,
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: mimeType, data: base64 } },
+              { text: INVOICE_PROMPT },
+            ],
+          }],
+          generationConfig: {
+            temperature: 0,
+            maxOutputTokens: 8000,
+            responseMimeType: 'application/json',
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({})) as { error?: { message?: string } };
-      throw new Error(errData?.error?.message ?? `Error OpenRouter: ${response.status}`);
+      throw new Error(errData?.error?.message ?? `Error Gemini: ${response.status}`);
     }
 
     const data = await response.json() as {
-      choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }>;
     };
-    const choice = data.choices?.[0];
-    if (choice?.finish_reason === 'length') {
+    const candidate = data.candidates?.[0];
+    if (candidate?.finishReason === 'MAX_TOKENS') {
       // Con temperature 0 el mismo modelo truncará igual: no tiene sentido reintentar
       const err = new Error('La respuesta quedó incompleta: la factura es muy larga.');
       (err as Error & { noRetry?: boolean }).noRetry = true;
       throw err;
     }
-    const text = choice?.message?.content ?? '';
+    const text = candidate?.content?.parts?.[0]?.text ?? '';
 
     const parsed = JSON.parse(extraerJson(text)) as {
       productos: Array<{ nombre: string; precio: number | string; moneda: string; unidad: string; cantidad_bulto?: number | string | null }>;

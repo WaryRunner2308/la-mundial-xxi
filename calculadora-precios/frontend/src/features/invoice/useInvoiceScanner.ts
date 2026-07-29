@@ -6,7 +6,7 @@ import { supabase, uploadProductImage } from '@/lib/supabase';
 import { useToastStore } from '@/store/toastStore';
 
 // El escaneo corre en una función servidor (frontend/api/scan-invoice.ts) que
-// guarda la clave de OpenRouter fuera del cliente. Se llama por URL absoluta
+// guarda la clave de Gemini fuera del cliente. Se llama por URL absoluta
 // porque la app de escritorio (Electron) carga los archivos desde disco
 // (file://), no desde este dominio.
 const SCAN_INVOICE_URL = 'https://la-mundial-xxi.vercel.app/api/scan-invoice';
