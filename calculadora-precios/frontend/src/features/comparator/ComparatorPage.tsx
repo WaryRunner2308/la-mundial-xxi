@@ -45,7 +45,7 @@ export function ComparatorPage() {
           .sort((a, b) => a.cost_usd - b.cost_usd),
       };
       setSelectedProduct(comparison);
-    } catch (err: any) {
+    } catch {
       setError('Error al cargar datos del producto');
     } finally {
       setLoading(false);

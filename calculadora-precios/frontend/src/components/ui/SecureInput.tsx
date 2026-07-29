@@ -141,7 +141,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 style={{ touchAction: 'manipulation' }}
             >
                 {label && (
-                    <span className="block text-sm font-medium text-[#8b949e] mb-2">{label}</span>
+                    <label htmlFor={fieldName.current} className="block text-sm font-medium text-[#8b949e] mb-2">{label}</label>
                 )}
 
                 {/* Input invisible: recibe el input real, muestra solo el caret */}

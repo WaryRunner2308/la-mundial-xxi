@@ -187,6 +187,7 @@ export function ProvidersPage() {
                                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,154,58,0.1)'; }}
                                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                                 title="Editar"
+                                aria-label={`Editar proveedor ${provider.name}`}
                               >
                                 <Pencil size={13} strokeWidth={2} />
                               </motion.button>
@@ -198,6 +199,7 @@ export function ProvidersPage() {
                                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(200,16,46,0.1)'; }}
                                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                                 title="Eliminar"
+                                aria-label={`Eliminar proveedor ${provider.name}`}
                               >
                                 <Trash2 size={13} strokeWidth={2} />
                               </motion.button>

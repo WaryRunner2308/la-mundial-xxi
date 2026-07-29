@@ -6,6 +6,7 @@ import { CameraCapture } from './CameraCapture';
 import { InvoiceReviewTable } from './InvoiceReviewTable';
 import { useInvoiceScanner, LOADING_MESSAGES } from './useInvoiceScanner';
 import { useProviderStore } from '@/store/providerStore';
+import { useToastStore } from '@/store/toastStore';
 
 /* ─── Loading spinner con mensajes rotativos ─── */
 function ScanningOverlay({ messageIdx }: { messageIdx: number }) {
@@ -94,28 +95,6 @@ function ImportingOverlay({ progress, total }: { progress: number; total: number
           style={{ background: 'linear-gradient(90deg,#009A3A,#1ebb60)' }}
         />
       </div>
-    </motion.div>
-  );
-}
-
-/* ─── Toast final ─── */
-function Toast({ message }: { message: string }) {
-  return (
-    <motion.div
-      initial={{ y: 80, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 80, opacity: 0 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] px-6 py-3.5 rounded-2xl font-bold text-white text-sm"
-      style={{
-        fontFamily: '"Barlow Condensed", sans-serif',
-        letterSpacing: '0.05em',
-        background: 'linear-gradient(135deg,#009A3A,#007b2e)',
-        boxShadow: '0 8px 32px rgba(0,154,58,0.45)',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {message}
     </motion.div>
   );
 }
@@ -349,13 +328,11 @@ export function InvoicePage() {
   const { fetchProviders } = useProviderStore();
   useEffect(() => { fetchProviders(); }, []);
 
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-
   const handleImport = async () => {
     const result = await ejecutarImportacion();
     if (!result) return;
     setStep('done');
-    setToastMsg(`✅ ${result.creados} creados · ${result.actualizados} actualizados`);
+    useToastStore.getState().show(`✅ ${result.creados} creados · ${result.actualizados} actualizados`, 'success');
   };
 
   useEffect(() => {
@@ -594,11 +571,6 @@ export function InvoicePage() {
             </motion.button>
           </motion.div>
         )}
-      </AnimatePresence>
-
-      {/* ─── Toast final ─── */}
-      <AnimatePresence>
-        {toastMsg && step === 'done' && <Toast key="toast" message={toastMsg} />}
       </AnimatePresence>
     </motion.div>
   );

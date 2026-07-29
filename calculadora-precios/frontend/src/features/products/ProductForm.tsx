@@ -11,6 +11,7 @@ import { useProviderStore } from '../../store/providerStore';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import { parseNumericInput } from '../../utils/validateDecimal';
 import { SecureInput } from '../../components/ui/SecureInput';
+import { useToastStore } from '../../store/toastStore';
 
 type Currency = 'Bs' | 'USD';
 
@@ -278,6 +279,8 @@ function ProviderPicker({ providerId, onSelect }: ProviderPickerProps) {
       setNuevoNombre('');
       setShowNew(false);
       setOpen(false);
+    } catch {
+      useToastStore.getState().show('No se pudo crear el proveedor. Inténtalo de nuevo.', 'error');
     } finally {
       setCreando(false);
     }
@@ -456,7 +459,7 @@ function PhotoUploader({ preview, onChange, onClear }: PhotoUploaderProps) {
       onChange(base64);
     } catch (err) {
       console.error('Error procesando imagen:', err);
-      alert('Error al procesar la imagen. Intenta con otra.');
+      useToastStore.getState().show('Error al procesar la imagen. Intenta con otra.', 'error');
     } finally {
       setBusy(false);
     }
@@ -774,8 +777,12 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
   };
 
   const submitForm = async () => {
-    if (!formData.name || !formData.cost || !formData.profitPercentage) {
-      alert('Complete todos los campos requeridos');
+    const faltantes: string[] = [];
+    if (!formData.name) faltantes.push('Nombre');
+    if (!formData.cost) faltantes.push('Costo');
+    if (!formData.profitPercentage) faltantes.push('% de ganancia');
+    if (faltantes.length > 0) {
+      useToastStore.getState().show(`Falta completar: ${faltantes.join(', ')}`, 'error');
       return;
     }
 
@@ -807,9 +814,10 @@ export function ProductForm({ isOpen, onClose, productToEdit, onSave }: ProductF
       }
       onSave?.();
       onClose();
-    } catch (error: any) {
-      console.error('❌ Error completo al guardar:', error);
-      alert(`Error al guardar: ${error.message}\n\nRevisa la consola (F12) para detalles.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error desconocido.';
+      console.error('Error al guardar producto:', error);
+      useToastStore.getState().show(`No se pudo guardar el producto: ${message}`, 'error');
     } finally {
       setIsSubmitting(false);
     }

@@ -21,6 +21,7 @@ import { ComparatorPage } from '@/features/comparator/ComparatorPage';
 import { LandingPage } from '@/features/auth/LandingPage';
 import { DiagonalMarquee } from '@/features/auth/DiagonalMarquee';
 import { InvoicePage } from '@/features/invoice/InvoicePage';
+import { ToastHost } from '@/components/ui/Toast';
 
 /* ─── Error Boundary ─── */
 class ErrorBoundary extends React.Component<
@@ -262,18 +263,17 @@ function App() {
   const isGerencia = userRole === 'gerencia';
 
   useEffect(() => { setSidebarOpen(false); }, [location]);
-  // La tasa del día es obligatoria: el aviso sale SIEMPRE al entrar a un modo
-  // (invitado o gerencia) y no se puede cerrar sin ingresar una tasa válida.
-  useEffect(() => { if (userRole) setShowWelcome(true); }, [userRole]);
-  useEffect(() => { if (rate === 0) setShowWelcome(true); }, [rate]);
+  // La tasa del día es obligatoria: el aviso sale al entrar a un modo (invitado
+  // o gerencia) solo si todavia no se cargo una tasa hoy (currencyStore la
+  // persiste con fecha), y no se puede cerrar sin ingresar una tasa válida.
+  useEffect(() => { if (userRole && rate === 0) setShowWelcome(true); }, [userRole, rate]);
 
   useEffect(() => {
     supabase.from('products').select('count').limit(1).then(({ error }) => {
       if (error) {
-        console.error('🔴 Supabase:', error);
+        console.error('Supabase:', error);
         setSupabaseError('Error de conexión a la base de datos.');
       } else {
-        console.log('🟢 Supabase OK');
         loadFromSupabase().catch(() => setSupabaseError('No se pudieron cargar los productos.'));
       }
     });
@@ -486,12 +486,19 @@ function App() {
             <Route path="/" element={<ProductsPage onEditRate={() => setShowEditRate(true)} userRole={userRole} />} />
             <Route path="/products" element={<ProductsPage onEditRate={() => setShowEditRate(true)} userRole={userRole} />} />
             <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
-            {isGerencia && (
+            {isGerencia ? (
               <>
                 <Route path="/providers"       element={<ProvidersPage />} />
                 <Route path="/comparator"      element={<ComparatorPage />} />
                 <Route path="/merma"           element={<MermaPage />} />
                 <Route path="/import-invoice"  element={<InvoicePage />} />
+              </>
+            ) : (
+              <>
+                <Route path="/providers"       element={<Navigate to="/unauthorized" replace />} />
+                <Route path="/comparator"      element={<Navigate to="/unauthorized" replace />} />
+                <Route path="/merma"           element={<Navigate to="/unauthorized" replace />} />
+                <Route path="/import-invoice"  element={<Navigate to="/unauthorized" replace />} />
               </>
             )}
             <Route path="/unauthorized" element={
@@ -520,6 +527,7 @@ function App() {
           <RateModal key="edit" rate={rate} setRate={setRate} onClose={() => setShowEditRate(false)} />
         )}
       </AnimatePresence>
+      <ToastHost />
     </div>
   );
 }

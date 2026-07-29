@@ -249,10 +249,8 @@ export function LandingPage() {
 
               <form onSubmit={handleGerenciaSubmit} className="space-y-4" autoComplete="off" noValidate>
                 <div>
-                  <label className="block text-xs font-black text-[#009A3A] mb-2 uppercase tracking-wider">
-                    Usuario
-                  </label>
                   <SecureInput
+                    label="Usuario"
                     value={credentials.username}
                     onChange={(value) => setCredentials({ ...credentials, username: value })}
                     onSubmit={() => passwordRef.current?.focus()}
@@ -260,16 +258,18 @@ export function LandingPage() {
                     inputMode="text"
                     editable
                     noRing
+                    className="[&_label]:text-xs [&_label]:font-black [&_label]:text-[#009A3A] [&_label]:uppercase [&_label]:tracking-wider"
                     displayClassName="!border-white/10 !rounded-xl !bg-[#1c2128] !text-[#e6edf3]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black text-[#009A3A] mb-2 uppercase tracking-wider">
+                  <label htmlFor="gerencia-password" className="block text-xs font-black text-[#009A3A] mb-2 uppercase tracking-wider">
                     Contraseña
                   </label>
                   <div className="relative">
                     <input
+                      id="gerencia-password"
                       ref={passwordRef}
                       type={showPassword ? 'text' : 'password'}
                       value={credentials.password}

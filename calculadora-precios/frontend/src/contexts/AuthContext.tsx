@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { useToastStore } from '../store/toastStore';
 
 type UserRole = 'gerencia' | 'invitado' | null;
 
@@ -21,10 +22,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TIMEOUT_INVITADO = 4 * 60 * 1000; // 4 minutos
 const TIMEOUT_GERENCIA = 10 * 60 * 1000; // 10 minutos
+const WARNING_BEFORE_EXPIRY = 30 * 1000; // aviso 30s antes de cerrar sesion
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isMounted = useRef(true);
   const userRoleRef = useRef<UserRole>(null);
 
@@ -39,20 +42,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    if (warningTimerRef.current) {
+      clearTimeout(warningTimerRef.current);
+      warningTimerRef.current = null;
+    }
   };
 
-  const startTimer = (role: 'gerencia' | 'invitado') => {
+  // Unico punto que cierra la sesion por expiracion (antes estaba copiado 3 veces).
+  const expireSession = () => {
+    if (!isMounted.current) return;
+    setUserRole(null);
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('lastActivity');
+    supabase.auth.signOut().catch(() => {});
+  };
+
+  // Arranca el timer de cierre y, si alcanza el tiempo, uno de aviso previo.
+  // remainingMs permite retomar una sesion ya empezada (ej. al recargar la pagina).
+  const startTimer = (role: 'gerencia' | 'invitado', remainingMs?: number) => {
     clearTimer();
-    const timeout = role === 'gerencia' ? TIMEOUT_GERENCIA : TIMEOUT_INVITADO;
-    console.log(`🕒 Temporizador iniciado (${role}): ${timeout / 60000} min`);
-    timerRef.current = setTimeout(() => {
-      if (isMounted.current) {
-        console.log('⏰ Sesión expirada');
-        setUserRole(null);
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('lastActivity');
-      }
-    }, timeout);
+    const timeout = remainingMs ?? getTimeoutForRole(role);
+    timerRef.current = setTimeout(expireSession, timeout);
+
+    const warnIn = timeout - WARNING_BEFORE_EXPIRY;
+    if (warnIn > 0) {
+      warningTimerRef.current = setTimeout(() => {
+        useToastStore.getState().show('Tu sesión está por expirar. Mueve el mouse o toca la pantalla para seguir conectado.', 'info');
+      }, warnIn);
+    }
   };
 
   // Cargar sesión al iniciar (una vez)
@@ -66,7 +83,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (savedRole === 'gerencia') {
         const { data } = await supabase.auth.getSession();
         if (!data.session) {
-          console.log('⏰ Sesión de gerencia no válida al cargar');
           localStorage.removeItem('userRole');
           localStorage.removeItem('lastActivity');
           return;
@@ -77,25 +93,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const now = Date.now();
         const lastActive = savedActivity ? parseInt(savedActivity, 10) : now;
         const elapsed = now - lastActive;
-        const maxTimeout = savedRole === 'gerencia' ? TIMEOUT_GERENCIA : TIMEOUT_INVITADO;
+        const maxTimeout = getTimeoutForRole(savedRole);
 
         if (elapsed >= maxTimeout) {
-          console.log('⏰ Sesión expirada al cargar');
           localStorage.removeItem('userRole');
           localStorage.removeItem('lastActivity');
           supabase.auth.signOut().catch(() => {});
         } else if (isMounted.current) {
           setUserRole(savedRole);
-          const remaining = maxTimeout - elapsed;
-          console.log(`⏰ Tiempo restante: ${remaining / 60000} min`);
-          timerRef.current = setTimeout(() => {
-            if (isMounted.current) {
-              setUserRole(null);
-              localStorage.removeItem('userRole');
-              localStorage.removeItem('lastActivity');
-              supabase.auth.signOut().catch(() => {});
-            }
-          }, remaining);
+          startTimer(savedRole, maxTimeout - elapsed);
         }
       }
     })();
@@ -108,17 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const currentRole = userRoleRef.current;
       if (currentRole) {
         localStorage.setItem('lastActivity', Date.now().toString());
-        clearTimer();
-        const timeout = getTimeoutForRole(currentRole);
-        console.log(`🔄 Actividad - reiniciando temporizador (${timeout / 60000} min)`);
-        timerRef.current = setTimeout(() => {
-          if (isMounted.current) {
-            console.log('⏰ Tiempo agotado por inactividad');
-            setUserRole(null);
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('lastActivity');
-          }
-        }, timeout);
+        startTimer(currentRole);
       }
     };
     events.forEach(ev => window.addEventListener(ev, handler));
@@ -172,7 +168,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('lastActivity', Date.now().toString());
       clearTimer();
       startTimer('invitado');
-      console.log('✅ Sesión Invitado iniciada');
       return true;
     }
 
@@ -188,7 +183,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        console.log('❌ Credenciales incorrectas');
         return false;
       }
 
@@ -197,7 +191,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('lastActivity', Date.now().toString());
       clearTimer();
       startTimer('gerencia');
-      console.log('✅ Sesión Gerencia iniciada');
       return true;
     }
 
@@ -211,7 +204,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('lastActivity');
     // Cierra también la sesión autenticada de Supabase (si la hay).
     supabase.auth.signOut().catch(() => {});
-    console.log('🚪 Sesión cerrada');
   };
 
   const isAuthenticated = userRole !== null;

@@ -40,19 +40,52 @@ interface ProductStore {
   loadFromSupabase: () => Promise<void>;
 }
 
+interface DbProductInsert {
+  name: string;
+  category: string;
+  cost_usd: number;
+  original_currency: Currency;
+  profit_percentage: number;
+  exempt_from_vat: boolean;
+  photo_url: string | null;
+  provider_id?: number;
+}
+
+interface DbProductUpdate {
+  name?: string;
+  cost_usd?: number;
+  profit_percentage?: number;
+  exempt_from_vat?: boolean;
+  photo_url?: string | null;
+  original_currency?: Currency;
+  provider_id?: number | null;
+}
+
+interface DbProductRow {
+  id: number;
+  name: string;
+  category: string | null;
+  cost_usd: number;
+  original_currency: string;
+  profit_percentage: number;
+  exempt_from_vat: boolean;
+  photo_url: string | null;
+  provider_id?: number;
+  updated_at: string | null;
+}
+
 export const useProductStore = create<ProductStore>((set, get) => ({
   products: [],
   loading: false,
   error: null,
 
   addProduct: async (product) => {
-    console.log('🔵 [Supabase] Agregando:', product.name);
     const rate = useCurrencyStore.getState().rate;
     const costUSD = product.currency === 'USD'
       ? product.cost
       : (rate > 0 ? product.cost / rate : 0);
 
-     const dbData: any = {
+     const dbData: DbProductInsert = {
         name: product.name,
         category: '',
         cost_usd: costUSD,
@@ -74,7 +107,6 @@ export const useProductStore = create<ProductStore>((set, get) => ({
         .single();
 
       if (error) throw error;
-      console.log('🟢 [Supabase] ID recibido:', data.id);
 
       const newProduct: Product = {
         id: data.id,
@@ -91,24 +123,22 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
       set((s) => ({ products: [...s.products, newProduct] }));
       return data.id as number;
-    } catch (err: any) {
-      console.error('🔴 [Supabase] Excepción addProduct:', err);
+    } catch (err) {
+      console.error('[Supabase] Excepción addProduct:', err);
       throw err;
     }
   },
 
   removeProduct: async (id) => {
-    console.log('🔵 [Supabase] Eliminando ID:', id);
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (error) {
-      console.error('🔴 [Supabase] ERROR delete:', error);
+      console.error('[Supabase] ERROR delete:', error);
       throw error;
     }
     set((s) => ({ products: s.products.filter((p) => p.id !== id) }));
   },
 
   updateProduct: async (id: number, updates: Partial<ProductData>) => {
-    console.log('🔵 [Supabase] Actualizando ID:', id);
     let updatedCostUSD: number | undefined;
 
     // Si hay actualizaciones de cost o currency, convertir a costUSD
@@ -125,7 +155,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       }
     }
 
-    const dbUpdate: any = {};
+    const dbUpdate: DbProductUpdate = {};
     if (updates.name !== undefined) dbUpdate.name = updates.name;
     if (updatedCostUSD !== undefined) dbUpdate.cost_usd = updatedCostUSD;
     if (updates.profitPercentage !== undefined) dbUpdate.profit_percentage = updates.profitPercentage;
@@ -140,7 +170,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
     const { error } = await supabase.from('products').update(dbUpdate).eq('id', id);
     if (error) {
-      console.error('🔴 [Supabase] ERROR update:', error);
+      console.error('[Supabase] ERROR update:', error);
       throw error;
     }
 
@@ -163,7 +193,6 @@ export const useProductStore = create<ProductStore>((set, get) => ({
   setProducts: (products) => set({ products }),
 
   loadFromSupabase: async () => {
-    console.log('🔵 [Supabase] Cargando todos...');
     set({ loading: true, error: null });
     try {
       const { data, error } = await supabase
@@ -175,7 +204,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
       if (error) throw error;
 
-      const products: Product[] = (data || []).map((item: any) => ({
+      const products: Product[] = ((data || []) as DbProductRow[]).map((item) => ({
         id: item.id,
         name: item.name,
         category: item.category || '',
@@ -188,11 +217,11 @@ export const useProductStore = create<ProductStore>((set, get) => ({
         updatedAt: item.updated_at,
       }));
 
-      console.log('🟢 [Supabase] Cargados:', products.length);
       set({ products, loading: false });
-    } catch (err: any) {
-      console.error('🔴 [Supabase] ERROR load:', err);
-      set({ error: err.message, loading: false });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error desconocido al cargar productos.';
+      console.error('[Supabase] ERROR load:', err);
+      set({ error: message, loading: false });
       throw err;
     }
   },

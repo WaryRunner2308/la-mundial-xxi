@@ -41,21 +41,25 @@ CREATE POLICY "products_select_publico"
   ON public.products FOR SELECT
   USING (true);
 
--- Crear / editar / borrar: SOLO usuarios autenticados (gerencia).
+-- Crear / editar / borrar: SOLO el usuario de gerencia (pumpo@lamundial.app).
+-- "TO authenticated" no basta por sí solo: si el proyecto llega a permitir
+-- registro público, cualquier cuenta nueva quedaría "authenticated" y podría
+-- escribir. El check por email ata el permiso a la cuenta real de gerencia.
 CREATE POLICY "products_insert_gerencia"
   ON public.products FOR INSERT
   TO authenticated
-  WITH CHECK (true);
+  WITH CHECK (auth.jwt() ->> 'email' = 'pumpo@lamundial.app');
 
 CREATE POLICY "products_update_gerencia"
   ON public.products FOR UPDATE
   TO authenticated
-  USING (true) WITH CHECK (true);
+  USING (auth.jwt() ->> 'email' = 'pumpo@lamundial.app')
+  WITH CHECK (auth.jwt() ->> 'email' = 'pumpo@lamundial.app');
 
 CREATE POLICY "products_delete_gerencia"
   ON public.products FOR DELETE
   TO authenticated
-  USING (true);
+  USING (auth.jwt() ->> 'email' = 'pumpo@lamundial.app');
 
 
 -- ─── 4) Políticas tabla PROVEEDORES ────────────────────────────────────────
@@ -66,21 +70,22 @@ CREATE POLICY "proveedores_select_publico"
 CREATE POLICY "proveedores_insert_gerencia"
   ON public.proveedores FOR INSERT
   TO authenticated
-  WITH CHECK (true);
+  WITH CHECK (auth.jwt() ->> 'email' = 'pumpo@lamundial.app');
 
 CREATE POLICY "proveedores_update_gerencia"
   ON public.proveedores FOR UPDATE
   TO authenticated
-  USING (true) WITH CHECK (true);
+  USING (auth.jwt() ->> 'email' = 'pumpo@lamundial.app')
+  WITH CHECK (auth.jwt() ->> 'email' = 'pumpo@lamundial.app');
 
 CREATE POLICY "proveedores_delete_gerencia"
   ON public.proveedores FOR DELETE
   TO authenticated
-  USING (true);
+  USING (auth.jwt() ->> 'email' = 'pumpo@lamundial.app');
 
 
 -- ─── 5) Storage: bucket "product-images" ───────────────────────────────────
--- Lectura pública de las fotos; subir/borrar solo gerencia (authenticated).
+-- Lectura pública de las fotos; subir/borrar solo gerencia (mismo check de email).
 DROP POLICY IF EXISTS "product_images_read_publico"   ON storage.objects;
 DROP POLICY IF EXISTS "product_images_write_gerencia" ON storage.objects;
 DROP POLICY IF EXISTS "product_images_update_gerencia" ON storage.objects;
@@ -93,18 +98,18 @@ CREATE POLICY "product_images_read_publico"
 CREATE POLICY "product_images_write_gerencia"
   ON storage.objects FOR INSERT
   TO authenticated
-  WITH CHECK (bucket_id = 'product-images');
+  WITH CHECK (bucket_id = 'product-images' AND auth.jwt() ->> 'email' = 'pumpo@lamundial.app');
 
 CREATE POLICY "product_images_update_gerencia"
   ON storage.objects FOR UPDATE
   TO authenticated
-  USING (bucket_id = 'product-images')
-  WITH CHECK (bucket_id = 'product-images');
+  USING (bucket_id = 'product-images' AND auth.jwt() ->> 'email' = 'pumpo@lamundial.app')
+  WITH CHECK (bucket_id = 'product-images' AND auth.jwt() ->> 'email' = 'pumpo@lamundial.app');
 
 CREATE POLICY "product_images_delete_gerencia"
   ON storage.objects FOR DELETE
   TO authenticated
-  USING (bucket_id = 'product-images');
+  USING (bucket_id = 'product-images' AND auth.jwt() ->> 'email' = 'pumpo@lamundial.app');
 
 
 -- ============================================================================

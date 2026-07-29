@@ -44,8 +44,8 @@ export function ProviderForm({ isOpen, onClose, onSave, editingProvider }: Provi
       }
       onSave?.();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Error al guardar proveedor');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar proveedor');
     } finally {
       setLoading(false);
     }
@@ -111,10 +111,8 @@ export function ProviderForm({ isOpen, onClose, onSave, editingProvider }: Provi
 
             <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off" noValidate>
               <div>
-                <span className="block text-xs font-black text-[#009A3A] mb-2 uppercase tracking-wider">
-                  Nombre del Proveedor *
-                </span>
                 <SecureInput
+                  label="Nombre del Proveedor *"
                   value={name}
                   onChange={(v) => { setName(v); setError(null); }}
                   onSubmit={handleSubmit}
@@ -122,6 +120,7 @@ export function ProviderForm({ isOpen, onClose, onSave, editingProvider }: Provi
                   inputMode="text"
                   editable
                   noRing
+                  className="[&_label]:text-xs [&_label]:font-black [&_label]:text-[#009A3A] [&_label]:uppercase [&_label]:tracking-wider"
                   displayClassName="!border-white/10 !rounded-xl !bg-[#1c2128] !text-[#e6edf3]"
                   autoFocus
                 />

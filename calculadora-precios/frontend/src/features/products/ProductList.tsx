@@ -10,6 +10,7 @@ import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 import { SecureInput } from '@/components/ui/SecureInput';
 import { Search, X, Pencil, Trash2, Plus, FilterX, LogOut, ScanLine } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToastStore } from '@/store/toastStore';
 
 type Currency = 'Bs' | 'USD';
 
@@ -562,7 +563,7 @@ export function ProductsPage({
         onConfirm={async () => {
           if (productToDelete) {
             try { await removeProduct(productToDelete.id); }
-            catch { alert('Error al eliminar el producto. Inténtalo de nuevo.'); }
+            catch { useToastStore.getState().show('Error al eliminar el producto. Inténtalo de nuevo.', 'error'); }
             finally { setProductToDelete(null); }
           }
         }}

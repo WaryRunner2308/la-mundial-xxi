@@ -41,7 +41,7 @@ npx electron .
 ## 🔧 Stack Tecnológico
 
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS
-- **Backend**: Java Spring Boot + SQLite (planeado)
+- **Backend**: Supabase (Postgres + Auth + Storage)
 - **Escritorio**: Electron
 - **Estado**: Zustand
 - **UI**: ShadCN UI components

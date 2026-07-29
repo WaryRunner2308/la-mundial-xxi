@@ -27,9 +27,10 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
 
       if (error) throw error;
       set({ providers: data || [], loading: false });
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error desconocido al cargar proveedores.';
       console.error('Error fetching providers:', err);
-      set({ error: err.message, loading: false });
+      set({ error: message, loading: false });
     }
   },
 
@@ -47,9 +48,10 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         set((state) => ({ providers: [...state.providers, data] }));
       }
       return data;
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error desconocido al agregar proveedor.';
       console.error('Error adding provider:', err);
-      set({ error: err.message });
+      set({ error: message });
       throw err;
     }
   },
@@ -65,9 +67,10 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
       set((state) => ({
         providers: state.providers.map((p) => (p.id === id ? { ...p, name } : p)),
       }));
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error desconocido al actualizar proveedor.';
       console.error('Error updating provider:', err);
-      set({ error: err.message });
+      set({ error: message });
       throw err;
     }
   },
@@ -83,9 +86,10 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
       set((state) => ({
         providers: state.providers.filter((p) => p.id !== id),
       }));
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error desconocido al eliminar proveedor.';
       console.error('Error deleting provider:', err);
-      set({ error: err.message });
+      set({ error: message });
       throw err;
     }
   },
