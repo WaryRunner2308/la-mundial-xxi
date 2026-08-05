@@ -88,12 +88,30 @@ nota pida otra cosa (texto, explicaciones, resúmenes, otro formato).`;
 // problema de cuota pero en realidad es un modelo que ya no existe. Se cubren
 // varias generaciones a propósito: si una se retira o se queda sin cuota, la
 // siguiente responde.
+// Verificado en los logs de produccion (2026-08-05): con esta clave,
+// gemini-2.5-flash y gemini-2.5-flash-lite responden "no longer available to new
+// users". Los 3.x si responden. No agregar 2.x de vuelta sin comprobarlo.
 const VISION_MODELS = [
   'gemini-3.6-flash',
   'gemini-3.5-flash',
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
+  'gemini-3.5-flash-lite',
 ];
+
+// Presupuesto de salida. Estaba en 8000 y era LA causa de los fallos: los
+// modelos 3.x razonan antes de responder y esos tokens de razonamiento gastan el
+// presupuesto, así que el JSON se cortaba a medias y salía "la factura es muy
+// larga" incluso con facturas cortas. Una factura de 60 renglones ocupa ~2000
+// tokens de JSON; el resto es colchón para el razonamiento.
+const MAX_OUTPUT_TOKENS = 32768;
+
+// Además se le pide al modelo que razone lo mínimo: leer una factura no necesita
+// cadena de pensamiento, y así el presupuesto se va al JSON.
+const THINKING_LEVEL = 'minimal';
+
+// Cortes de tiempo. Sin esto el usuario esperaba minutos: cada intento podía
+// quedarse colgado y se acumulaban 3 modelos x 2 intentos.
+const TIMEOUT_POR_INTENTO_MS = 40_000;
+const PLAZO_TOTAL_MS = 100_000;
 
 // Cuántos intentos por modelo. Un 429 (sin cuota / rate limit) no mejora
 // repitiendo el mismo modelo: conviene saltar al siguiente, que tiene su propia
@@ -106,8 +124,11 @@ function resumirErrorGemini(mensaje: string): string {
   if (/quota|rate limit|RESOURCE_EXHAUSTED|429/i.test(mensaje)) {
     return 'El servicio de IA agotó su cuota por ahora. Espera un momento y vuelve a intentar.';
   }
-  if (/not found|does not exist|unsupported|404/i.test(mensaje)) {
+  if (/not found|does not exist|unsupported|no longer available|404/i.test(mensaje)) {
     return 'El modelo de IA configurado ya no está disponible. Hay que actualizarlo en el servidor.';
+  }
+  if (/presupuesto de respuesta|tardó demasiado|plazo/i.test(mensaje)) {
+    return 'La factura resultó muy larga para leerla de una. Prueba fotografiando la mitad, o usa el recorte para tomar solo una parte.';
   }
   if (/API key|permission|PERMISSION_DENIED|401|403/i.test(mensaje)) {
     return 'La clave del servicio de IA no es válida o no tiene permisos.';
@@ -176,34 +197,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const prompt = construirPrompt(limpiarNotas(notas));
 
-  const intentarConModelo = async (model: string) => {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { inline_data: { mime_type: mimeType, data: base64 } },
-              { text: prompt },
-            ],
-          }],
-          generationConfig: {
-            temperature: 0,
-            maxOutputTokens: 8000,
-            responseMimeType: 'application/json',
+  const intentarConModelo = async (model: string, conThinking = true) => {
+    const generationConfig: Record<string, unknown> = {
+      temperature: 0,
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      responseMimeType: 'application/json',
+    };
+    if (conThinking) generationConfig.thinkingLevel = THINKING_LEVEL;
+
+    // Corta el intento si Gemini no responde en tiempo, en vez de dejar al
+    // usuario esperando indefinidamente.
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), TIMEOUT_POR_INTENTO_MS);
+
+    let response: Response;
+    try {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
           },
-        }),
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { inline_data: { mime_type: mimeType, data: base64 } },
+                { text: prompt },
+              ],
+            }],
+            generationConfig,
+          }),
+          signal: abort.signal,
+        }
+      );
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error(`El modelo ${model} tardó demasiado en responder.`);
       }
-    );
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({})) as { error?: { message?: string } };
-      throw new Error(errData?.error?.message ?? `Error Gemini: ${response.status}`);
+      const mensaje = errData?.error?.message ?? `Error Gemini: ${response.status}`;
+      // Si el modelo no conoce thinkingLevel, se repite sin ese campo en vez de
+      // descartar un modelo que por lo demás sirve.
+      if (conThinking && response.status === 400 && /thinking/i.test(mensaje)) {
+        return intentarConModelo(model, false);
+      }
+      throw new Error(mensaje);
     }
 
     const data = await response.json() as {
@@ -211,8 +257,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
     const candidate = data.candidates?.[0];
     if (candidate?.finishReason === 'MAX_TOKENS') {
-      // Con temperature 0 el mismo modelo truncará igual: no tiene sentido reintentar
-      const err = new Error('La respuesta quedó incompleta: la factura es muy larga.');
+      // Con temperature 0 el mismo modelo truncará igual: no tiene sentido
+      // repetirlo, se pasa al siguiente.
+      const err = new Error(
+        `El modelo ${model} agotó el presupuesto de respuesta (${MAX_OUTPUT_TOKENS} tokens).`
+      );
       (err as Error & { noRetry?: boolean }).noRetry = true;
       throw err;
     }
@@ -257,8 +306,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // que si el primero se caía por otro motivo no quedaba rastro de por qué.
   const fallosPorModelo: string[] = [];
 
+  const inicio = Date.now();
+
   for (const model of VISION_MODELS) {
     for (let intento = 0; intento < INTENTOS_POR_MODELO; intento++) {
+      // Se deja de intentar al pasar el plazo: es mejor un error a tiempo que
+      // dejar al usuario esperando sin saber si sigue trabajando.
+      if (Date.now() - inicio > PLAZO_TOTAL_MS) {
+        fallosPorModelo.push('(se agotó el plazo total, quedaron modelos sin probar)');
+        break;
+      }
       try {
         const result = await intentarConModelo(model);
         res.status(200).json(result);
@@ -271,7 +328,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Sin cuota o modelo retirado: repetir el mismo modelo no cambia nada,
         // se pasa directo al siguiente que tiene su propia cuota.
         const sinCuota = /quota|rate limit|RESOURCE_EXHAUSTED|429/i.test(mensaje);
-        const noExiste = /not found|does not exist|unsupported|404/i.test(mensaje);
+        const noExiste = /not found|does not exist|unsupported|no longer available|404/i.test(mensaje);
         if ((lastError as Error & { noRetry?: boolean }).noRetry || sinCuota || noExiste) break;
       }
     }
