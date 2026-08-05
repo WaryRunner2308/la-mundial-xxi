@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, FileText, ChevronRight, Loader2, ScanLine, Store,
-  TrendingUp, TrendingDown, Trash2, RotateCcw,
+  TrendingUp, TrendingDown, Trash2, RotateCcw, StickyNote,
 } from 'lucide-react';
 import {
   useInvoiceHistoryStore,
@@ -67,6 +67,24 @@ const COLUMNAS = ['Nombre', 'Precio Costo', 'Precio Venta', 'Moneda', 'IVA', '% 
 function DetalleFactura({ factura }: { factura: InvoiceHistoryEntry }) {
   return (
     <div className="px-3 pb-4 pt-1">
+      {/* Indicaciones que se le dieron a la IA ese día */}
+      {factura.notas && (
+        <div
+          className="mb-3 rounded-xl px-3 py-2.5"
+          style={{ background: 'rgba(251,191,36,0.05)', border: '1px solid rgba(251,191,36,0.2)' }}
+        >
+          <div className="flex items-center gap-1.5 mb-1">
+            <StickyNote size={11} style={{ color: AMBAR }} />
+            <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: AMBAR }}>
+              Notas dadas a la IA
+            </span>
+          </div>
+          <p className="text-[12px] text-[#8b949e] whitespace-pre-line leading-relaxed">
+            {factura.notas}
+          </p>
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
         <table className="w-full text-left" style={{ borderCollapse: 'collapse', minWidth: '680px' }}>
           <thead>

@@ -163,8 +163,10 @@ export function useInvoiceScanner() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [conDescuento, setConDescuento] = useState(false);
   const [descuento, setDescuentoStr] = useState('');
+  // Indicaciones que el encargado le dejó a la IA para esta factura
+  const [notas, setNotas] = useState('');
 
-  const callGeminiVision = useCallback(async (imageBlob: Blob) => {
+  const callGeminiVision = useCallback(async (imageBlob: Blob, notas: string) => {
     const prepared = await prepararImagen(imageBlob);
     const base64 = await new Promise<string>((resolve) => {
       const reader = new FileReader();
@@ -185,12 +187,19 @@ export function useInvoiceScanner() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({ base64, mimeType }),
+      body: JSON.stringify({ base64, mimeType, notas }),
     });
 
     const data = await response.json().catch(() => ({})) as {
       error?: string;
-      productos?: Array<{ nombre: string; precio: number | string; moneda: string; unidad: string; cantidad_bulto?: number | string | null }>;
+      productos?: Array<{
+        nombre: string;
+        precio: number | string;
+        moneda: string;
+        unidad: string;
+        cantidad_bulto?: number | string | null;
+        exento_iva?: boolean | null;
+      }>;
       proveedor?: string | null;
       fecha?: string | null;
     };
@@ -207,6 +216,7 @@ export function useInvoiceScanner() {
         ...p,
         precio: Number(p.precio),
         cantidad_bulto: p.cantidad_bulto != null ? Number(p.cantidad_bulto) || null : null,
+        exento_iva: p.exento_iva === true ? true : p.exento_iva === false ? false : null,
       })),
       proveedor: data.proveedor ?? null,
       fecha: data.fecha ?? null,
@@ -292,17 +302,19 @@ export function useInvoiceScanner() {
   );
 
   const scanImage = useCallback(
-    async (imageBlob: Blob) => {
+    async (imageBlob: Blob, notasCrudas = '') => {
       setError(null);
       setStep('scanning');
       setLoadingMessageIdx(0);
+      const notasFactura = notasCrudas.trim();
+      setNotas(notasFactura);
 
       const msgInterval = setInterval(() => {
         setLoadingMessageIdx((prev) => (prev + 1) % LOADING_MESSAGES.length);
       }, 2000);
 
       try {
-        const result = await callGeminiVision(imageBlob);
+        const result = await callGeminiVision(imageBlob, notasFactura);
 
         if (!result?.productos || result.productos.length === 0) {
           throw new Error('No se detectaron productos en la imagen. Intenta con una foto más clara.');
@@ -345,7 +357,9 @@ export function useInvoiceScanner() {
             fotoUrl: null,
             fotoBlob: null,
             ganancia: 30,
-            ivaChoice: null,
+            // La IA solo marca el IVA cuando la factura lo dice claro o cuando las
+            // notas lo piden; si no, queda sin definir para elegirlo a mano.
+            ivaChoice: p.exento_iva === true ? 'no' : p.exento_iva === false ? 'yes' : null,
           };
         });
 
@@ -511,6 +525,7 @@ export function useInvoiceScanner() {
         proveedorNombre: nombreProveedor,
         proveedorId: proveedorId ?? null,
         tasa: rate,
+        notas: notas || null,
         descuento: descuentoActivo ? pctDescuento : null,
         totalItems: items.length,
         creados,
@@ -528,7 +543,7 @@ export function useInvoiceScanner() {
     const result = { creados, actualizados, cambiosPrecio };
     setImportResult(result);
     return result;
-  }, [productos, proveedorId, proveedor, providers, rate, addProduct, updateProduct, globalGanancia, gananciaMode, conDescuento, descuento]);
+  }, [productos, proveedorId, proveedor, providers, rate, notas, addProduct, updateProduct, globalGanancia, gananciaMode, conDescuento, descuento]);
 
   const updateProducto = useCallback((index: number, changes: Partial<InvoiceProduct>) => {
     setProductos((prev) => prev.map((p, i) => (i === index ? { ...p, ...changes } : p)));
@@ -553,6 +568,7 @@ export function useInvoiceScanner() {
     setImportResult(null);
     setConDescuento(false);
     setDescuentoStr('');
+    setNotas('');
   }, []);
 
   return {
@@ -576,6 +592,7 @@ export function useInvoiceScanner() {
     toggleDescuento,
     descuento,
     setDescuento,
+    notas,
     scanImage,
     ejecutarImportacion,
     updateProducto,

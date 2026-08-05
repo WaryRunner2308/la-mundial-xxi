@@ -1,9 +1,13 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Camera, X, Image, Scan } from 'lucide-react';
+import { Upload, Camera, X, Image, Scan, StickyNote } from 'lucide-react';
+
+// Igual que el límite del servidor (api/scan-invoice.ts). Si se cambia allá,
+// cambiarlo aquí: el servidor recorta y el usuario no vería por qué.
+const MAX_NOTAS = 1200;
 
 interface CameraCaptureProps {
-  onCapture: (blob: Blob) => void;
+  onCapture: (blob: Blob, notas: string) => void;
 }
 
 export function CameraCapture({ onCapture }: CameraCaptureProps) {
@@ -16,6 +20,8 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  // Indicaciones libres para la IA sobre ESTA factura
+  const [notas, setNotas] = useState('');
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -95,8 +101,8 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   const handleDragLeave = useCallback(() => setIsDragging(false), []);
 
   const handleConfirm = useCallback(() => {
-    if (previewBlob) onCapture(previewBlob);
-  }, [previewBlob, onCapture]);
+    if (previewBlob) onCapture(previewBlob, notas);
+  }, [previewBlob, notas, onCapture]);
 
   const handleClear = useCallback(() => {
     setPreview(null);
@@ -240,6 +246,59 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
               >
                 <X size={14} />
               </button>
+            </div>
+
+            {/* Notas para la IA — se leen antes de analizar la factura */}
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{ background: '#161b22', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <div
+                className="flex items-center gap-2 px-4 py-2.5"
+                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <StickyNote size={13} style={{ color: '#fbbf24' }} />
+                <span
+                  className="font-black uppercase tracking-widest"
+                  style={{ color: '#fbbf24', fontSize: '10px' }}
+                >
+                  Notas para la IA
+                </span>
+                <span className="text-[10px] text-[#484f58] ml-auto">Opcional</span>
+              </div>
+
+              <textarea
+                value={notas}
+                onChange={(e) => setNotas(e.target.value.slice(0, MAX_NOTAS))}
+                rows={3}
+                maxLength={MAX_NOTAS}
+                placeholder={
+                  'Indícale algo sobre esta factura. Ejemplos:\n' +
+                  '• La mantequilla Mavesa de 250g no llegó, ignórala.\n' +
+                  '• Los productos de limpieza llevan IVA, los alimentos no.'
+                }
+                className="w-full px-4 py-3 bg-transparent text-[13px] text-[#e6edf3] outline-none resize-y placeholder-[#484f58]"
+                style={{ minHeight: '76px' }}
+              />
+
+              <div
+                className="flex items-center justify-between gap-3 px-4 py-2"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <p className="text-[10px] text-[#484f58]">
+                  La IA lee esto antes de leer la factura. No cambia el resultado a texto:
+                  sigue devolviendo la lista de precios.
+                </p>
+                <span
+                  className="text-[10px] flex-shrink-0"
+                  style={{
+                    fontFamily: '"JetBrains Mono", monospace',
+                    color: notas.length >= MAX_NOTAS ? '#C8102E' : '#484f58',
+                  }}
+                >
+                  {notas.length}/{MAX_NOTAS}
+                </span>
+              </div>
             </div>
 
             <div className="flex gap-3">
