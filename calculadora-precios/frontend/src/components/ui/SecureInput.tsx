@@ -72,6 +72,9 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         // visibleRef: apunta al div visible activo (editable o estático) — usado para sincronizar padding
         const visibleRef = useRef<HTMLDivElement | null>(null);
 
+        // Último toque fue con el dedo: decide si el caret va al final del valor
+        const ultimoTouch = useRef(false);
+
         const [isFocused, setIsFocused] = useState(false);
         // Cursor deseado tras cada onChange — restaurado en useLayoutEffect antes del paint
         const savedCursor = useRef<number | null>(null);
@@ -91,19 +94,29 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
             // Antes del foco: es el único momento en que Safari respeta el
             // maximum-scale y decide no hacer zoom.
             fijarEscala();
-            if (e.pointerType === 'touch') {
-                // En touch: prevenir default + foco + cursor al final (comportamiento esperado en móvil)
-                e.preventDefault();
-                inputRef.current.focus();
-                requestAnimationFrame(() => {
-                    if (inputRef.current) {
-                        const len = inputRef.current.value.length;
-                        inputRef.current.setSelectionRange(len, len);
-                    }
-                });
-            } else {
-                // En mouse: el input (z-index:9999) recibe el click directamente,
-                // el browser posiciona el cursor donde se hizo clic. Solo evitamos propagación.
+            // Se recuerda para poner el caret al final solo en móvil (en ratón se
+            // respeta el punto donde se hizo clic).
+            ultimoTouch.current = e.pointerType === 'touch';
+
+            // NO se llama focus() a mano en touch, y NO se hace preventDefault.
+            //
+            // CAUSA RAÍZ de un bug de foco en tablas: con foco manual aquí había DOS
+            // rutas de foco compitiendo. La manual enfocaba esta casilla en el
+            // pointerdown; acto seguido el navegador hacía scroll-into-view y abría
+            // el teclado, la pantalla se movía, y el evento `click` (que llega
+            // después) apuntaba al elemento que quedó bajo el dedo: el input de la
+            // fila de ABAJO, que se robaba el foco. Si caía en un hueco entre filas,
+            // el foco se perdía del todo.
+            //
+            // El foco nativo se ancla al elemento del pointerdown y no se mueve con
+            // el scroll posterior, así que dejarlo al navegador es lo correcto. El
+            // input invisible cubre todo el recuadro (absolute + pointerEvents auto),
+            // por lo que el toque le llega directo.
+            //
+            // El focus manual venía de cuando el div visible era contentEditable y
+            // robaba el foco. Ese div ya no es editable, así que el parche sobraba.
+            if (e.pointerType !== 'touch') {
+                // En ratón solo se evita que el contenedor propague el clic
                 e.stopPropagation();
             }
         }, []);
@@ -142,7 +155,20 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
 
         // También al enfocar, no solo al tocar: cubre el foco por teclado (Tab) y
         // el autoFocus, donde no hay pointerdown.
-        const handleInputFocus = () => { fijarEscala(); setIsFocused(true); onFocus?.(); };
+        const handleInputFocus = () => {
+            fijarEscala();
+            setIsFocused(true);
+            // Caret al final en móvil, que es lo esperado al tocar un campo con
+            // valor. Va aquí y no en el pointerdown para no tener que enfocar a
+            // mano: el navegador ya enfocó, esto solo coloca el caret.
+            if (ultimoTouch.current && inputRef.current) {
+                const len = inputRef.current.value.length;
+                requestAnimationFrame(() => {
+                    inputRef.current?.setSelectionRange(len, len);
+                });
+            }
+            onFocus?.();
+        };
         const handleInputBlur  = () => { setIsFocused(false); liberarEscala(); onBlur?.(); };
 
         // Sincroniza el contenido del div contenteditable con el value prop
