@@ -46,6 +46,8 @@ function blobToPng(blob: Blob): Promise<Blob> {
 interface InvoiceReviewTableProps {
   productos: InvoiceProduct[];
   onUpdateProducto: (index: number, changes: Partial<InvoiceProduct>) => void;
+  /** Costo corregido a mano: recalcula venta, bulto, descuento y estado */
+  onPrecioChange: (index: number, valorCrudo: string) => void;
   onToggleAll: (selected: boolean) => void;
   onSetIvaAll: (choice: IvaChoice) => void;
   globalGanancia: string;
@@ -371,6 +373,7 @@ function PhotoCell({ fotoUrl, index, onChangeFoto, onClearFoto }: PhotoCellProps
 export function InvoiceReviewTable({
   productos,
   onUpdateProducto,
+  onPrecioChange,
   onToggleAll,
   onSetIvaAll,
   globalGanancia,
@@ -706,11 +709,11 @@ export function InvoiceReviewTable({
                                 next[index] = v;
                                 return next;
                               });
-                              const num = parseFloat(v);
-                              if (!isNaN(num) && num >= 0) {
-                                // El valor escrito a mano pasa a ser la nueva base del descuento
-                                onUpdateProducto(index, { precio: num, precioOriginal: num });
-                              }
+                              // Recalcula precio de venta, total del bulto,
+                              // descuento y estado a partir del valor escrito.
+                              // Entiende la coma decimal y no rompe el cálculo
+                              // mientras el campo está a medio escribir.
+                              onPrecioChange(index, v);
                             }}
                             inputMode="decimal"
                             editable

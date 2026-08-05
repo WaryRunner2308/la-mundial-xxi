@@ -325,6 +325,7 @@ export function InvoicePage() {
     scanImage,
     ejecutarImportacion,
     updateProducto,
+    setPrecioManual,
     toggleAll,
     setIvaAll,
     reset,
@@ -490,6 +491,7 @@ export function InvoicePage() {
               <InvoiceReviewTable
                 productos={productos}
                 onUpdateProducto={updateProducto}
+                onPrecioChange={setPrecioManual}
                 onToggleAll={toggleAll}
                 onSetIvaAll={setIvaAll}
                 globalGanancia={globalGanancia}

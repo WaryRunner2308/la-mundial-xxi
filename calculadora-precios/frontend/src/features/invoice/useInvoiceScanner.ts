@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { parseNumericInput } from '@/utils/validateDecimal';
 import { useProductStore } from '@/store/productStore';
 import { useProviderStore } from '@/store/providerStore';
 import { useCurrencyStore } from '@/store/currencyStore';
@@ -546,6 +547,44 @@ export function useInvoiceScanner() {
     setProductos((prev) => prev.map((p, i) => (i === index ? { ...p, ...changes } : p)));
   }, []);
 
+  /**
+   * Precio de costo corregido a mano cuando la IA se equivocó al leerlo.
+   * Recalcula TODO a partir del valor escrito: total del bulto, descuento y el
+   * estado (Nuevo / Actualizar precio / Sin cambios), que se compara de nuevo
+   * contra los productos ya registrados.
+   */
+  const setPrecioManual = useCallback(
+    (index: number, valorCrudo: string) => {
+      // parseNumericInput entiende la coma decimal (11154,34). Con parseFloat
+      // crudo se perdían los decimales, porque corta en la coma.
+      const base = parseNumericInput(valorCrudo);
+      // Mientras el campo está vacío o en 0 no se toca el cálculo: antes un 0
+      // intermedio ponía el precio de venta en 0 y parecía que se había roto.
+      if (!(base > 0)) return;
+
+      const pct = conDescuento ? parseFloat(descuento) : NaN;
+      const factor = !isNaN(pct) && pct > 0 && pct < 100 ? 1 - pct / 100 : 1;
+
+      setProductos((prev) =>
+        prev.map((p, i) => {
+          if (i !== index) return p;
+          // El valor escrito pasa a ser la base: el descuento se aplica sobre él
+          const precio = base * factor;
+          const cantidad = p.cantidadBulto && p.cantidadBulto > 1 ? p.cantidadBulto : null;
+          return {
+            ...p,
+            precioOriginal: base,
+            precioTotalOriginal: cantidad ? base * cantidad : null,
+            precio,
+            precioTotal: cantidad ? precio * cantidad : null,
+            ...determinarEstado(p.nombre, precio, p.moneda),
+          };
+        })
+      );
+    },
+    [conDescuento, descuento, determinarEstado]
+  );
+
   const toggleAll = useCallback((selected: boolean) => {
     setProductos((prev) => prev.map((p) => ({ ...p, seleccionado: selected })));
   }, []);
@@ -591,6 +630,7 @@ export function useInvoiceScanner() {
     scanImage,
     ejecutarImportacion,
     updateProducto,
+    setPrecioManual,
     toggleAll,
     setIvaAll,
     reset,
