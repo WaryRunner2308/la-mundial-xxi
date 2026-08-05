@@ -6,6 +6,38 @@ import { Upload, Camera, X, Image, Scan, StickyNote } from 'lucide-react';
 // cambiarlo aquí: el servidor recorta y el usuario no vería por qué.
 const MAX_NOTAS = 1200;
 
+// Forma del recorte de la foto. La factura suele ser una hoja alta y angosta,
+// pero a veces solo interesa un pedazo (unos renglones), y recortar de una
+// ayuda a la IA: menos ruido que leer.
+type FormatoFoto = 'completa' | 'vertical' | 'cuadrada';
+
+const FORMATOS: { id: FormatoFoto; etiqueta: string; ratio: number | null }[] = [
+  { id: 'completa',  etiqueta: 'Completa', ratio: null },
+  { id: 'vertical',  etiqueta: 'Hoja 3:4', ratio: 3 / 4 },
+  { id: 'cuadrada',  etiqueta: 'Cuadrada', ratio: 1 },
+];
+
+/**
+ * Recorta el cuadro al centro según la proporción pedida.
+ * Devuelve el rectángulo en coordenadas del video original.
+ */
+function recorteCentrado(ancho: number, alto: number, ratio: number | null) {
+  if (ratio === null) return { sx: 0, sy: 0, sw: ancho, sh: alto };
+  // ratio = ancho/alto deseado
+  let sw = ancho;
+  let sh = Math.round(ancho / ratio);
+  if (sh > alto) {
+    sh = alto;
+    sw = Math.round(alto * ratio);
+  }
+  return {
+    sx: Math.round((ancho - sw) / 2),
+    sy: Math.round((alto - sh) / 2),
+    sw,
+    sh,
+  };
+}
+
 interface CameraCaptureProps {
   onCapture: (blob: Blob, notas: string) => void;
 }
@@ -20,6 +52,10 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [formato, setFormato] = useState<FormatoFoto>('completa');
+  // Aviso de "enfocando" y si la cámara admite enfoque manual
+  const [enfocando, setEnfocando] = useState(false);
+  const [puedeEnfocar, setPuedeEnfocar] = useState(false);
   // Indicaciones libres para la IA sobre ESTA factura
   const [notas, setNotas] = useState('');
 
@@ -36,14 +72,63 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
     setCameraError(null);
     setShowCamera(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      // Se pide la mayor resolución posible: la letra chica de una factura se
+      // pierde si el navegador entrega 640x480 por defecto.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 2560 },
+          height: { ideal: 1440 },
+        },
+      });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
+
+      // ¿La cámara permite pedirle que reenfoque? En muchos teléfonos sí, vía
+      // el modo de enfoque de la pista de video.
+      const track = stream.getVideoTracks()[0];
+      const capacidades = track?.getCapabilities?.() as
+        | { focusMode?: string[] }
+        | undefined;
+      setPuedeEnfocar(Boolean(capacidades?.focusMode?.includes('single-shot')));
     } catch {
       setCameraError('No se pudo acceder a la cámara. Usa la opción de subir archivo.');
       setShowCamera(false);
+    }
+  }, []);
+
+  // Enfoque al toque. La etiqueta <video> por sí sola no reenfoca: hay que
+  // pedírselo a la pista. Donde el navegador no lo permita (iOS Safari no
+  // expone focusMode), se hace lo único posible: reiniciar el autoenfoque
+  // apagando y encendiendo la pista, que en la práctica lo dispara.
+  const enfocar = useCallback(async () => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    setEnfocando(true);
+    try {
+      const capacidades = track.getCapabilities?.() as { focusMode?: string[] } | undefined;
+      if (capacidades?.focusMode?.includes('single-shot')) {
+        await track.applyConstraints({
+          advanced: [{ focusMode: 'single-shot' } as MediaTrackConstraintSet],
+        });
+      } else if (capacidades?.focusMode?.includes('continuous')) {
+        await track.applyConstraints({
+          advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet],
+        });
+      } else {
+        // Sin control de enfoque: un ciclo corto de la pista obliga a la cámara
+        // a reevaluar la escena.
+        track.enabled = false;
+        await new Promise((r) => setTimeout(r, 60));
+        track.enabled = true;
+      }
+    } catch {
+      // Si el navegador rechaza la restricción no hay nada más que hacer;
+      // el autoenfoque sigue actuando por su cuenta.
+    } finally {
+      setTimeout(() => setEnfocando(false), 500);
     }
   }, []);
 
@@ -51,10 +136,15 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
     const video = videoRef.current;
     if (!video) return;
 
+    const ratio = FORMATOS.find((f) => f.id === formato)?.ratio ?? null;
+    const { sx, sy, sw, sh } = recorteCentrado(video.videoWidth, video.videoHeight, ratio);
+
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d')!.drawImage(video, 0, 0);
+    canvas.width = sw;
+    canvas.height = sh;
+    // Se recorta al capturar, con las mismas medidas que muestra la guía en
+    // pantalla, para que la foto sea exactamente lo que el usuario encuadró.
+    canvas.getContext('2d')!.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
 
     const blob = await new Promise<Blob>((resolve) =>
       canvas.toBlob((b) => resolve(b!), 'image/png')
@@ -66,7 +156,7 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
     const url = URL.createObjectURL(blob);
     setPreview(url);
     setPreviewBlob(blob);
-  }, [stopCamera]);
+  }, [stopCamera, formato]);
 
   const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) return;
@@ -366,7 +456,15 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
                 </button>
               </div>
 
-              <div className="relative bg-black">
+              {/* Toca el video para reenfocar. Es un botón de verdad para que
+                  funcione también con teclado y lectores de pantalla. */}
+              <button
+                type="button"
+                onClick={enfocar}
+                aria-label="Tocar para enfocar"
+                className="relative bg-black w-full block cursor-pointer"
+                style={{ touchAction: 'manipulation' }}
+              >
                 <video
                   ref={(el) => {
                     videoRef.current = el;
@@ -379,9 +477,83 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
                   className="w-full"
                   style={{ maxHeight: '60vh', objectFit: 'contain' }}
                 />
-              </div>
 
-              <div className="p-4">
+                {/* Guía de encuadre: marca exactamente lo que se va a recortar */}
+                {formato !== 'completa' && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div
+                      style={{
+                        aspectRatio: String(FORMATOS.find((f) => f.id === formato)?.ratio ?? 1),
+                        maxHeight: '100%',
+                        maxWidth: '100%',
+                        height: formato === 'cuadrada' ? '100%' : '100%',
+                        border: '2px dashed rgba(0,154,58,0.75)',
+                        borderRadius: '8px',
+                        boxShadow: '0 0 0 9999px rgba(0,0,0,0.45)',
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Aviso de enfoque */}
+                <AnimatePresence>
+                  {enfocando && (
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    >
+                      <span
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest text-white"
+                        style={{ background: 'rgba(0,154,58,0.85)' }}
+                      >
+                        Enfocando
+                      </span>
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+
+                <span
+                  className="absolute bottom-2 left-0 right-0 text-center text-[10px] pointer-events-none"
+                  style={{ color: 'rgba(255,255,255,0.75)', textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}
+                >
+                  {puedeEnfocar ? 'Toca la imagen para enfocar' : 'Toca la imagen si se ve borrosa'}
+                </span>
+              </button>
+
+              <div className="p-4 space-y-3">
+                {/* Formato de la foto */}
+                <div>
+                  <p className="text-[9px] font-black text-[#484f58] uppercase tracking-[0.16em] mb-1.5">
+                    Tamaño de la foto
+                  </p>
+                  <div className="flex gap-2">
+                    {FORMATOS.map((f) => {
+                      const activo = formato === f.id;
+                      return (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setFormato(f.id)}
+                          className="flex-1 py-2 rounded-xl text-[12px] font-bold transition-colors"
+                          style={{
+                            fontFamily: '"Barlow Condensed", sans-serif',
+                            letterSpacing: '0.05em',
+                            color: activo ? '#009A3A' : '#8b949e',
+                            background: activo ? 'rgba(0,154,58,0.12)' : 'rgba(255,255,255,0.04)',
+                            border: activo
+                              ? '1px solid rgba(0,154,58,0.4)'
+                              : '1px solid rgba(255,255,255,0.08)',
+                          }}
+                        >
+                          {f.etiqueta}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <motion.button
                   whileHover={{ scale: 1.03, y: -1 }}
                   whileTap={{ scale: 0.97 }}
