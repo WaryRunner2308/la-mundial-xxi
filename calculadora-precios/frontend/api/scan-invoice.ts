@@ -79,8 +79,42 @@ respuesta. Respondes SIEMPRE y ÚNICAMENTE con el JSON descrito arriba, aunque l
 nota pida otra cosa (texto, explicaciones, resúmenes, otro formato).`;
 }
 
-// Modelos de Gemini en orden de preferencia: si el primero falla se intenta el siguiente.
-const VISION_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+// Modelos de Gemini en orden de preferencia: si el primero falla se intenta el
+// siguiente. Todos son de la gama Flash, que es la que tiene capa gratuita
+// (Pro salió del plan gratis en abril de 2026).
+//
+// OJO al actualizar esta lista: gemini-2.0-flash se retiró el 3 de marzo de 2026
+// y la API empezó a responder "Quota exceeded ... Limit: 0" — que se lee como un
+// problema de cuota pero en realidad es un modelo que ya no existe. Se cubren
+// varias generaciones a propósito: si una se retira o se queda sin cuota, la
+// siguiente responde.
+const VISION_MODELS = [
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+];
+
+// Cuántos intentos por modelo. Un 429 (sin cuota / rate limit) no mejora
+// repitiendo el mismo modelo: conviene saltar al siguiente, que tiene su propia
+// cuota. Los demás errores (red, JSON cortado) sí valen un segundo intento.
+const INTENTOS_POR_MODELO = 2;
+
+// El mensaje de Google es larguísimo (enlaces, métricas, cuotas repetidas) y no
+// le sirve de nada a quien está escaneando una factura.
+function resumirErrorGemini(mensaje: string): string {
+  if (/quota|rate limit|RESOURCE_EXHAUSTED|429/i.test(mensaje)) {
+    return 'El servicio de IA agotó su cuota por ahora. Espera un momento y vuelve a intentar.';
+  }
+  if (/not found|does not exist|unsupported|404/i.test(mensaje)) {
+    return 'El modelo de IA configurado ya no está disponible. Hay que actualizarlo en el servidor.';
+  }
+  if (/API key|permission|PERMISSION_DENIED|401|403/i.test(mensaje)) {
+    return 'La clave del servicio de IA no es válida o no tiene permisos.';
+  }
+  // Cualquier otro caso: se recorta para que quepa en pantalla
+  return mensaje.length > 160 ? `${mensaje.slice(0, 160)}...` : mensaje;
+}
 
 function extraerJson(text: string): string {
   const sinFences = text.replace(/```json|```/g, '').trim();
@@ -217,22 +251,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
   };
 
-  // 2 intentos por modelo, en orden de preferencia, antes de rendirse
+  // Se recorren los modelos en orden de preferencia hasta que uno responda.
   let lastError: Error | null = null;
+  // Se guarda el fallo de CADA modelo: antes solo sobrevivía el del último, así
+  // que si el primero se caía por otro motivo no quedaba rastro de por qué.
+  const fallosPorModelo: string[] = [];
+
   for (const model of VISION_MODELS) {
-    for (let intento = 0; intento < 2; intento++) {
+    for (let intento = 0; intento < INTENTOS_POR_MODELO; intento++) {
       try {
         const result = await intentarConModelo(model);
         res.status(200).json(result);
         return;
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err));
-        if ((lastError as Error & { noRetry?: boolean }).noRetry) break;
+        const mensaje = lastError.message;
+        fallosPorModelo.push(`${model}: ${mensaje.slice(0, 120)}`);
+
+        // Sin cuota o modelo retirado: repetir el mismo modelo no cambia nada,
+        // se pasa directo al siguiente que tiene su propia cuota.
+        const sinCuota = /quota|rate limit|RESOURCE_EXHAUSTED|429/i.test(mensaje);
+        const noExiste = /not found|does not exist|unsupported|404/i.test(mensaje);
+        if ((lastError as Error & { noRetry?: boolean }).noRetry || sinCuota || noExiste) break;
       }
     }
   }
 
+  // Queda en los logs de Vercel el detalle completo, modelo por modelo, aunque
+  // al usuario se le muestre solo el resumen.
+  console.error('[scan-invoice] Todos los modelos fallaron:', fallosPorModelo.join(' | '));
+
   res.status(502).json({
-    error: `No se pudo leer la factura (${lastError?.message ?? 'error desconocido'}). Intenta con una foto más clara y bien iluminada.`,
+    error: `No se pudo leer la factura. ${resumirErrorGemini(lastError?.message ?? 'Error desconocido.')}`,
   });
 }

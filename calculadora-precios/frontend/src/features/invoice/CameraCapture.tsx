@@ -273,8 +273,10 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
                 rows={3}
                 maxLength={MAX_NOTAS}
                 placeholder="Pon alguna observación de la factura"
-                className="w-full px-4 py-3 bg-transparent text-[13px] text-[#e6edf3] outline-none resize-y placeholder-[#484f58]"
-                style={{ minHeight: '76px' }}
+                className="w-full px-4 py-3 bg-transparent text-[#e6edf3] outline-none resize-y placeholder-[#484f58]"
+                // 16px obligatorio: por debajo de eso Safari en iOS hace zoom
+                // automático al enfocar el campo y descuadra toda la pantalla.
+                style={{ minHeight: '76px', fontSize: '16px' }}
               />
 
               <div
