@@ -1,5 +1,26 @@
 import React, { useEffect, useLayoutEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 
+/**
+ * Devuelve la escala de la página a la normal al salir de un campo.
+ *
+ * En iOS, Safari hace zoom al enfocar un input con letra menor a 16px, y al
+ * salir NO lo deshace: la pantalla queda corrida. Aquí el input hereda el
+ * tamaño del div visible (ver el useLayoutEffect de abajo), que en las tablas
+ * es de 14px, así que el zoom ocurre sí o sí.
+ *
+ * El truco: fijar maximum-scale un instante obliga a Safari a volver a escala 1,
+ * y enseguida se restaura el viewport original para no dejar la app sin pinch.
+ */
+function devolverZoom() {
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) return;
+    const previo = meta.getAttribute('content');
+    if (previo === null || /maximum-scale/.test(previo)) return;
+    meta.setAttribute('content', `${previo}, maximum-scale=1.0`);
+    // Un tick basta para que Safari reajuste la escala antes de devolver el original
+    window.setTimeout(() => meta.setAttribute('content', previo), 120);
+}
+
 interface SecureInputProps {
     value: string;
     onChange: (value: string) => void;
@@ -93,7 +114,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         };
 
         const handleInputFocus = () => { setIsFocused(true); onFocus?.(); };
-        const handleInputBlur  = () => { setIsFocused(false); onBlur?.(); };
+        const handleInputBlur  = () => { setIsFocused(false); devolverZoom(); onBlur?.(); };
 
         // Sincroniza el contenido del div contenteditable con el value prop
         useEffect(() => {

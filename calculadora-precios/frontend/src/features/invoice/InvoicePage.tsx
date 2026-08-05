@@ -7,6 +7,10 @@ import { InvoiceReviewTable } from './InvoiceReviewTable';
 import { useInvoiceScanner, LOADING_MESSAGES } from './useInvoiceScanner';
 import { useProviderStore } from '@/store/providerStore';
 import { useToastStore } from '@/store/toastStore';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+
+// Acción pendiente de confirmar cuando hay una factura leída sin importar
+type Confirmacion = 'salir' | 'nueva' | 'importar' | null;
 
 // El toast es chico: más de esto no se lee. El resto queda en la pantalla final
 // y en Facturas Importadas.
@@ -334,6 +338,34 @@ export function InvoicePage() {
   const { fetchProviders } = useProviderStore();
   useEffect(() => { fetchProviders(); }, []);
 
+  const [confirmacion, setConfirmacion] = useState<Confirmacion>(null);
+
+  // Hay trabajo que se puede perder: la IA ya leyó la factura y todavía no se
+  // ha importado nada.
+  const hayTrabajoSinGuardar = step === 'review' && productos.length > 0;
+
+  // Aviso del navegador al recargar o cerrar la pestaña con la factura a medias.
+  // No cubre el botón atrás del navegador o del teléfono: eso lo controla el
+  // enrutador y aquí no hay forma de interceptarlo.
+  useEffect(() => {
+    if (!hayTrabajoSinGuardar) return;
+    const avisar = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', avisar);
+    return () => window.removeEventListener('beforeunload', avisar);
+  }, [hayTrabajoSinGuardar]);
+
+  const volverAProductos = () => navigate('/products');
+
+  // Cada botón pide confirmación solo si de verdad hay algo que perder
+  const pedirSalir = () => {
+    if (hayTrabajoSinGuardar) setConfirmacion('salir');
+    else volverAProductos();
+  };
+  const pedirNueva = () => {
+    if (hayTrabajoSinGuardar) setConfirmacion('nueva');
+    else reset();
+  };
+
   const handleImport = async () => {
     const result = await ejecutarImportacion();
     if (!result) return;
@@ -380,7 +412,7 @@ export function InvoicePage() {
         <motion.button
           whileHover={{ scale: 1.06, x: -2 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/products')}
+          onClick={pedirSalir}
           className="p-2 rounded-xl transition-colors"
           style={{ background: 'rgba(255,255,255,0.05)', color: '#8b949e' }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#e6edf3'; }}
@@ -639,7 +671,7 @@ export function InvoicePage() {
             <motion.button
               whileHover={{ scale: 1.02, y: -1 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => reset()}
+              onClick={pedirNueva}
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition"
               style={{
                 fontFamily: '"Barlow Condensed", sans-serif',
@@ -656,7 +688,7 @@ export function InvoicePage() {
             <motion.button
               whileHover={{ scale: 1.02, y: -1 }}
               whileTap={{ scale: 0.97 }}
-              onClick={handleImport}
+              onClick={() => setConfirmacion('importar')}
               disabled={selectedCount === 0}
               className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
@@ -682,6 +714,38 @@ export function InvoicePage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Confirmaciones: perder la lectura de la IA es lo más costoso que puede
+          pasar aquí (hay que volver a fotografiar y volver a escanear). */}
+      <ConfirmationModal
+        isOpen={confirmacion === 'salir'}
+        title="¿Salir sin importar?"
+        message={`La IA leyó ${productos.length} ${productos.length === 1 ? 'producto' : 'productos'} y todavía no se ha guardado nada. Si sales ahora se pierde y hay que escanear la factura de nuevo.`}
+        confirmText="Sí, salir"
+        cancelText="Seguir aquí"
+        onConfirm={() => { setConfirmacion(null); volverAProductos(); }}
+        onCancel={() => setConfirmacion(null)}
+      />
+
+      <ConfirmationModal
+        isOpen={confirmacion === 'nueva'}
+        title="¿Empezar otra factura?"
+        message={`Se descartan los ${productos.length} ${productos.length === 1 ? 'producto' : 'productos'} de esta factura sin importarlos. Habría que escanearla de nuevo.`}
+        confirmText="Sí, descartar"
+        cancelText="Seguir aquí"
+        onConfirm={() => { setConfirmacion(null); reset(); }}
+        onCancel={() => setConfirmacion(null)}
+      />
+
+      <ConfirmationModal
+        isOpen={confirmacion === 'importar'}
+        title="¿Confirmar importación?"
+        message={`Se van a guardar ${selectedCount} ${selectedCount === 1 ? 'producto' : 'productos'}: los nuevos se crean y a los repetidos se les actualiza el precio. Revisa que los precios y el IVA estén correctos.`}
+        confirmText="Sí, importar"
+        cancelText="Revisar otra vez"
+        onConfirm={() => { setConfirmacion(null); handleImport(); }}
+        onCancel={() => setConfirmacion(null)}
+      />
     </motion.div>
   );
 }
