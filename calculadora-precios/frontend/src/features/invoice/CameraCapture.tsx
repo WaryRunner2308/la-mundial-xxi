@@ -56,6 +56,11 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   // Aviso de "enfocando" y si la cámara admite enfoque manual
   const [enfocando, setEnfocando] = useState(false);
   const [puedeEnfocar, setPuedeEnfocar] = useState(false);
+
+  // Proporción del formato activo. null = foto completa, sin recorte. Una sola
+  // fuente para la vista previa y para la captura: si se calcularan por
+  // separado, la foto podría no coincidir con lo que se vio encuadrado.
+  const ratioActivo = FORMATOS.find((f) => f.id === formato)?.ratio ?? null;
   // Indicaciones libres para la IA sobre ESTA factura
   const [notas, setNotas] = useState('');
 
@@ -67,6 +72,27 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   useEffect(() => {
     return () => stopCamera();
   }, [stopCamera]);
+
+  // Mientras la cámara está abierta se congela la escala de la app: se fija
+  // maximum-scale en el viewport y se bloquea el scroll del fondo. Sin esto, en
+  // el teléfono un pinch o un doble toque sobre la cámara hacía zoom de la
+  // APLICACIÓN (no de la cámara) y descuadraba todo. Al cerrar se restaura el
+  // viewport original para no dejar la app sin zoom en el resto de pantallas.
+  useEffect(() => {
+    if (!showCamera) return;
+    const meta = document.querySelector('meta[name="viewport"]');
+    const contenidoPrevio = meta?.getAttribute('content') ?? null;
+    meta?.setAttribute(
+      'content',
+      'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'
+    );
+    const overflowPrevio = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      if (contenidoPrevio !== null) meta?.setAttribute('content', contenidoPrevio);
+      document.body.style.overflow = overflowPrevio;
+    };
+  }, [showCamera]);
 
   const openCamera = useCallback(async () => {
     setCameraError(null);
@@ -136,8 +162,10 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
     const video = videoRef.current;
     if (!video) return;
 
-    const ratio = FORMATOS.find((f) => f.id === formato)?.ratio ?? null;
-    const { sx, sy, sw, sh } = recorteCentrado(video.videoWidth, video.videoHeight, ratio);
+    // Misma proporción que muestra el recuadro en pantalla: la vista previa usa
+    // object-fit cover con este ratio, así que este recorte centrado reproduce
+    // exactamente lo que el usuario vio encuadrado.
+    const { sx, sy, sw, sh } = recorteCentrado(video.videoWidth, video.videoHeight, ratioActivo);
 
     const canvas = document.createElement('canvas');
     canvas.width = sw;
@@ -156,7 +184,7 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
     const url = URL.createObjectURL(blob);
     setPreview(url);
     setPreviewBlob(blob);
-  }, [stopCamera, formato]);
+  }, [stopCamera, ratioActivo]);
 
   const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) return;
@@ -457,13 +485,23 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
               </div>
 
               {/* Toca el video para reenfocar. Es un botón de verdad para que
-                  funcione también con teclado y lectores de pantalla. */}
+                  funcione también con teclado y lectores de pantalla.
+                  El recuadro cambia de forma según el formato elegido y el video
+                  lo llena recortado (object-fit cover): lo que se ve encuadrado
+                  es exactamente lo que se captura. */}
               <button
                 type="button"
                 onClick={enfocar}
                 aria-label="Tocar para enfocar"
-                className="relative bg-black w-full block cursor-pointer"
-                style={{ touchAction: 'manipulation' }}
+                className="relative bg-black w-full block cursor-pointer overflow-hidden"
+                style={{
+                  // touchAction none dentro de la cámara: sin esto un pinch o un
+                  // doble toque hacía zoom de la APP encima de la cámara.
+                  touchAction: 'none',
+                  aspectRatio: ratioActivo !== null ? String(ratioActivo) : undefined,
+                  maxHeight: '60vh',
+                  margin: '0 auto',
+                }}
               >
                 <video
                   ref={(el) => {
@@ -474,25 +512,25 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
                   autoPlay
                   playsInline
                   muted
-                  className="w-full"
-                  style={{ maxHeight: '60vh', objectFit: 'contain' }}
+                  className="w-full h-full block"
+                  style={{
+                    maxHeight: '60vh',
+                    // Con formato fijo el video llena el recuadro recortando lo
+                    // que sobra, igual que hará la captura. Sin formato se ve
+                    // completo.
+                    objectFit: ratioActivo !== null ? 'cover' : 'contain',
+                  }}
                 />
 
-                {/* Guía de encuadre: marca exactamente lo que se va a recortar */}
-                {formato !== 'completa' && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div
-                      style={{
-                        aspectRatio: String(FORMATOS.find((f) => f.id === formato)?.ratio ?? 1),
-                        maxHeight: '100%',
-                        maxWidth: '100%',
-                        height: formato === 'cuadrada' ? '100%' : '100%',
-                        border: '2px dashed rgba(0,154,58,0.75)',
-                        borderRadius: '8px',
-                        boxShadow: '0 0 0 9999px rgba(0,0,0,0.45)',
-                      }}
-                    />
-                  </div>
+                {/* Marco verde: confirma visualmente el encuadre elegido */}
+                {ratioActivo !== null && (
+                  <span
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      border: '2px dashed rgba(0,154,58,0.8)',
+                      borderRadius: '8px',
+                    }}
+                  />
                 )}
 
                 {/* Aviso de enfoque */}
