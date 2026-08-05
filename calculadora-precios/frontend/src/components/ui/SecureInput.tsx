@@ -1,49 +1,22 @@
 import React, { useEffect, useLayoutEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 
 // ============================================================================
-//  Control de la escala de la página al editar campos.
+//  Nota sobre el zoom automático al enfocar un campo (historial de intentos)
 //
-//  Problema: en iOS, Safari hace zoom al enfocar un input con letra menor a
-//  16px. Aquí el input hereda el tamaño del div visible (lo copia el
-//  useLayoutEffect de abajo) y en las tablas ese div es de 14px, así que el zoom
-//  ocurría siempre.
+//  El navegador amplía la página al enfocar un input con letra menor a 16px.
+//  Aquí se intentó resolver tocando el viewport (maximum-scale) y fue peor:
 //
-//  Se intentó deshacer el zoom AL SALIR del campo, y fue peor: rescalar mueve el
-//  scroll, así que al terminar de editar la pantalla saltaba y la fila que se
-//  estaba editando aparecía en otro sitio.
+//   1. Deshacer el zoom al SALIR del campo → rescalar mueve el scroll, así que
+//      al terminar de editar la pantalla saltaba y la fila editada aparecía en
+//      otro sitio de la lista.
+//   2. Fijar la escala ANTES del foco → evitaba el zoom en iOS, pero cambiar el
+//      viewport entre el blur de un campo y el foco del siguiente ensuciaba el
+//      foco. Y en Android Chrome no sirve de nada: ignora maximum-scale.
 //
-//  Enfoque actual: impedir el zoom ANTES de que el campo reciba el foco. Si el
-//  zoom nunca ocurre, no hay nada que deshacer y la pantalla no se mueve. La
-//  escala se libera al salir, para no dejar la app sin pinch-zoom.
+//  La solución de verdad, estándar y multiplataforma, está en el useLayoutEffect
+//  de abajo: forzar 16px en el input. Ningún navegador amplía un campo de 16px,
+//  no hay viewport que tocar, y el pinch-zoom de la app queda intacto.
 // ============================================================================
-
-// Contenido original del viewport mientras hay un campo en edición
-let viewportOriginal: string | null = null;
-// Liberación pendiente: al pasar de un campo a otro, el blur del anterior llega
-// DESPUÉS del pointerdown del nuevo. Sin esta espera se liberaría la escala en
-// medio del cambio y el zoom se colaría.
-let liberacionPendiente: number | null = null;
-
-function fijarEscala() {
-    const meta = document.querySelector('meta[name="viewport"]');
-    if (!meta) return;
-    if (liberacionPendiente !== null) {
-        window.clearTimeout(liberacionPendiente);
-        liberacionPendiente = null;
-    }
-    if (viewportOriginal === null) viewportOriginal = meta.getAttribute('content');
-    meta.setAttribute('content', `${viewportOriginal ?? 'width=device-width, initial-scale=1.0'}, maximum-scale=1.0`);
-}
-
-function liberarEscala() {
-    if (viewportOriginal === null) return;
-    liberacionPendiente = window.setTimeout(() => {
-        const meta = document.querySelector('meta[name="viewport"]');
-        if (meta && viewportOriginal !== null) meta.setAttribute('content', viewportOriginal);
-        viewportOriginal = null;
-        liberacionPendiente = null;
-    }, 250);
-}
 
 interface SecureInputProps {
     value: string;
@@ -91,9 +64,6 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
 
         const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
             if (!inputRef.current) return;
-            // Antes del foco: es el único momento en que Safari respeta el
-            // maximum-scale y decide no hacer zoom.
-            fijarEscala();
             // Se recuerda para poner el caret al final solo en móvil (en ratón se
             // respeta el punto donde se hizo clic).
             ultimoTouch.current = e.pointerType === 'touch';
@@ -156,7 +126,6 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
         // También al enfocar, no solo al tocar: cubre el foco por teclado (Tab) y
         // el autoFocus, donde no hay pointerdown.
         const handleInputFocus = () => {
-            fijarEscala();
             setIsFocused(true);
             // Caret al final en móvil, que es lo esperado al tocar un campo con
             // valor. Va aquí y no en el pointerdown para no tener que enfocar a
@@ -169,7 +138,7 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
             }
             onFocus?.();
         };
-        const handleInputBlur  = () => { setIsFocused(false); liberarEscala(); onBlur?.(); };
+        const handleInputBlur  = () => { setIsFocused(false); onBlur?.(); };
 
         // Sincroniza el contenido del div contenteditable con el value prop
         useEffect(() => {
@@ -196,7 +165,18 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                 // coinciden con el div visible (ej: !text-center !text-xs en la tabla),
                 // el caret aparece desplazado y "salta" al escribir. Igualamos todo.
                 inputRef.current.style.textAlign     = cs.textAlign;
-                inputRef.current.style.fontSize      = cs.fontSize;
+                // 16px es el MÍNIMO que evita el zoom automático al enfocar. Es la
+                // solución estándar y funciona igual en iOS y en Android; por
+                // debajo de 16px el navegador amplía la página al entrar al campo
+                // (y iOS además no lo deshace al salir).
+                //
+                // Se puede forzar sin romper nada porque el texto de este input es
+                // transparente: su tamaño solo afecta al caret, no a lo que se lee.
+                // En las celdas de la tabla el texto va alineado a la derecha y en
+                // móvil el caret se coloca al final, así que la posición coincide
+                // con la del texto visible aunque los tamaños difieran.
+                const tamanoVisible = parseFloat(cs.fontSize) || 16;
+                inputRef.current.style.fontSize = `${Math.max(16, tamanoVisible)}px`;
                 inputRef.current.style.fontFamily    = cs.fontFamily;
                 inputRef.current.style.fontWeight    = cs.fontWeight;
                 inputRef.current.style.letterSpacing = cs.letterSpacing;
