@@ -45,8 +45,6 @@ export interface InvoiceHistoryEntry {
   proveedorNombre: string | null;
   proveedorId: number | null;
   tasa: number;
-  /** Indicaciones que se le dieron a la IA para esta factura */
-  notas: string | null;
   descuento: number | null;
   totalItems: number;
   creados: number;
@@ -62,7 +60,6 @@ interface DbFacturaRow {
   proveedor_nombre: string | null;
   proveedor_id: number | null;
   tasa: number | null;
-  notas: string | null;
   descuento: number | null;
   total_items: number | null;
   creados: number | null;
@@ -77,7 +74,6 @@ function mapRow(row: DbFacturaRow): InvoiceHistoryEntry {
     proveedorNombre: row.proveedor_nombre,
     proveedorId: row.proveedor_id,
     tasa: row.tasa ?? 0,
-    notas: row.notas,
     descuento: row.descuento,
     totalItems: row.total_items ?? 0,
     creados: row.creados ?? 0,
@@ -122,7 +118,6 @@ export const useInvoiceHistoryStore = create<InvoiceHistoryStore>((set) => ({
         proveedor_nombre: factura.proveedorNombre,
         proveedor_id: factura.proveedorId,
         tasa: factura.tasa,
-        notas: factura.notas,
         descuento: factura.descuento,
         total_items: factura.totalItems,
         creados: factura.creados,

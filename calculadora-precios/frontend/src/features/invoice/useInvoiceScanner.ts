@@ -163,8 +163,6 @@ export function useInvoiceScanner() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [conDescuento, setConDescuento] = useState(false);
   const [descuento, setDescuentoStr] = useState('');
-  // Indicaciones que el encargado le dejó a la IA para esta factura
-  const [notas, setNotas] = useState('');
 
   const callGeminiVision = useCallback(async (imageBlob: Blob, notas: string) => {
     const prepared = await prepararImagen(imageBlob);
@@ -302,19 +300,19 @@ export function useInvoiceScanner() {
   );
 
   const scanImage = useCallback(
-    async (imageBlob: Blob, notasCrudas = '') => {
+    // Las notas son de un solo uso: la IA las lee para este escaneo y no se
+    // guardan en ninguna parte. Sin notas, la lectura es la de siempre.
+    async (imageBlob: Blob, notas = '') => {
       setError(null);
       setStep('scanning');
       setLoadingMessageIdx(0);
-      const notasFactura = notasCrudas.trim();
-      setNotas(notasFactura);
 
       const msgInterval = setInterval(() => {
         setLoadingMessageIdx((prev) => (prev + 1) % LOADING_MESSAGES.length);
       }, 2000);
 
       try {
-        const result = await callGeminiVision(imageBlob, notasFactura);
+        const result = await callGeminiVision(imageBlob, notas.trim());
 
         if (!result?.productos || result.productos.length === 0) {
           throw new Error('No se detectaron productos en la imagen. Intenta con una foto más clara.');
@@ -525,7 +523,6 @@ export function useInvoiceScanner() {
         proveedorNombre: nombreProveedor,
         proveedorId: proveedorId ?? null,
         tasa: rate,
-        notas: notas || null,
         descuento: descuentoActivo ? pctDescuento : null,
         totalItems: items.length,
         creados,
@@ -543,7 +540,7 @@ export function useInvoiceScanner() {
     const result = { creados, actualizados, cambiosPrecio };
     setImportResult(result);
     return result;
-  }, [productos, proveedorId, proveedor, providers, rate, notas, addProduct, updateProduct, globalGanancia, gananciaMode, conDescuento, descuento]);
+  }, [productos, proveedorId, proveedor, providers, rate, addProduct, updateProduct, globalGanancia, gananciaMode, conDescuento, descuento]);
 
   const updateProducto = useCallback((index: number, changes: Partial<InvoiceProduct>) => {
     setProductos((prev) => prev.map((p, i) => (i === index ? { ...p, ...changes } : p)));
@@ -568,7 +565,6 @@ export function useInvoiceScanner() {
     setImportResult(null);
     setConDescuento(false);
     setDescuentoStr('');
-    setNotas('');
   }, []);
 
   return {
@@ -592,7 +588,6 @@ export function useInvoiceScanner() {
     toggleDescuento,
     descuento,
     setDescuento,
-    notas,
     scanImage,
     ejecutarImportacion,
     updateProducto,

@@ -31,8 +31,6 @@ CREATE TABLE IF NOT EXISTS public.facturas_importadas (
   proveedor_id      bigint,
   -- Tasa Bs/USD usada en esa importación, para poder reconstruir los cálculos
   tasa              numeric       NOT NULL DEFAULT 0,
-  -- Indicaciones que el encargado le dejó a la IA para esa factura
-  notas             text,
   -- % de descuento de factura aplicado, NULL si no hubo
   descuento         numeric,
   total_items       integer       NOT NULL DEFAULT 0,
@@ -46,9 +44,10 @@ CREATE TABLE IF NOT EXISTS public.facturas_importadas (
 CREATE INDEX IF NOT EXISTS facturas_importadas_created_at_idx
   ON public.facturas_importadas (created_at DESC);
 
--- Para bases creadas antes de que existieran las notas
+-- Las notas que se le dan a la IA al importar NO se guardan aquí a propósito:
+-- son de un solo uso, solo sirven para ese escaneo.
 ALTER TABLE public.facturas_importadas
-  ADD COLUMN IF NOT EXISTS notas text;
+  DROP COLUMN IF EXISTS notas;
 
 
 -- ─── 2) RLS: mismo modelo que products y proveedores ────────────────────────
