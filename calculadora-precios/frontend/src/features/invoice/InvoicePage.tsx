@@ -743,6 +743,7 @@ export function InvoicePage() {
         message={`Se van a guardar ${selectedCount} ${selectedCount === 1 ? 'producto' : 'productos'}: los nuevos se crean y a los repetidos se les actualiza el precio. Revisa que los precios y el IVA estén correctos.`}
         confirmText="Sí, importar"
         cancelText="Revisar otra vez"
+        variant="accion"
         onConfirm={() => { setConfirmacion(null); handleImport(); }}
         onCancel={() => setConfirmacion(null)}
       />

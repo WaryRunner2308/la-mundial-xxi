@@ -7,9 +7,32 @@ interface ConfirmationModalProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  /**
+   * 'peligro' (rojo) para lo que destruye algo: borrar, descartar, salir
+   * perdiendo trabajo. 'accion' (verde) para confirmar algo que se quiere
+   * hacer, como importar: en rojo parecía que era el botón de cancelar.
+   */
+  variant?: 'peligro' | 'accion';
   onConfirm: () => void;
   onCancel: () => void;
 }
+
+const COLORES = {
+  peligro: {
+    acento: '#C8102E',
+    fondoIcono: 'rgba(200,16,46,0.1)',
+    bordeIcono: 'rgba(200,16,46,0.2)',
+    boton: 'linear-gradient(135deg,#C8102E,#a00d25)',
+    sombra: '0 4px 16px rgba(200,16,46,0.3)',
+  },
+  accion: {
+    acento: '#009A3A',
+    fondoIcono: 'rgba(0,154,58,0.1)',
+    bordeIcono: 'rgba(0,154,58,0.2)',
+    boton: 'linear-gradient(135deg,#009A3A,#007b2e)',
+    sombra: '0 4px 16px rgba(0,154,58,0.3)',
+  },
+} as const;
 
 export function ConfirmationModal({
   isOpen,
@@ -17,9 +40,11 @@ export function ConfirmationModal({
   message,
   confirmText = 'Sí, cancelar',
   cancelText = 'Continuar editando',
+  variant = 'peligro',
   onConfirm,
   onCancel,
 }: ConfirmationModalProps) {
+  const c = COLORES[variant];
   useEffect(() => {
     if (!isOpen) return;
     if (document.activeElement instanceof HTMLElement) {
@@ -63,17 +88,27 @@ export function ConfirmationModal({
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ delay: 0.1, type: 'spring', stiffness: 280, damping: 20 }}
                 className="w-14 h-14 rounded-full flex items-center justify-center"
-                style={{ background: 'rgba(200,16,46,0.1)', border: '1px solid rgba(200,16,46,0.2)' }}
+                style={{ background: c.fondoIcono, border: `1px solid ${c.bordeIcono}` }}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  style={{ color: '#C8102E' }}
+                  style={{ color: c.acento }}
                 >
-                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                  <path d="M12 9v4" />
-                  <path d="M12 17h.01" />
+                  {variant === 'accion' ? (
+                    // Visto: la acción se quiere hacer, no es una advertencia
+                    <>
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                      <path d="m9 11 3 3L22 4" />
+                    </>
+                  ) : (
+                    <>
+                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                      <path d="M12 9v4" />
+                      <path d="M12 17h.01" />
+                    </>
+                  )}
                 </svg>
               </motion.div>
             </div>
@@ -104,8 +139,8 @@ export function ConfirmationModal({
                 style={{
                   fontFamily: '"Barlow Condensed", sans-serif',
                   letterSpacing: '0.06em',
-                  background: 'linear-gradient(135deg,#C8102E,#a00d25)',
-                  boxShadow: '0 4px 16px rgba(200,16,46,0.3)',
+                  background: c.boton,
+                  boxShadow: c.sombra,
                 }}
               >
                 {confirmText}

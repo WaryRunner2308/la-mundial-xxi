@@ -1,24 +1,48 @@
 import React, { useEffect, useLayoutEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 
-/**
- * Devuelve la escala de la página a la normal al salir de un campo.
- *
- * En iOS, Safari hace zoom al enfocar un input con letra menor a 16px, y al
- * salir NO lo deshace: la pantalla queda corrida. Aquí el input hereda el
- * tamaño del div visible (ver el useLayoutEffect de abajo), que en las tablas
- * es de 14px, así que el zoom ocurre sí o sí.
- *
- * El truco: fijar maximum-scale un instante obliga a Safari a volver a escala 1,
- * y enseguida se restaura el viewport original para no dejar la app sin pinch.
- */
-function devolverZoom() {
+// ============================================================================
+//  Control de la escala de la página al editar campos.
+//
+//  Problema: en iOS, Safari hace zoom al enfocar un input con letra menor a
+//  16px. Aquí el input hereda el tamaño del div visible (lo copia el
+//  useLayoutEffect de abajo) y en las tablas ese div es de 14px, así que el zoom
+//  ocurría siempre.
+//
+//  Se intentó deshacer el zoom AL SALIR del campo, y fue peor: rescalar mueve el
+//  scroll, así que al terminar de editar la pantalla saltaba y la fila que se
+//  estaba editando aparecía en otro sitio.
+//
+//  Enfoque actual: impedir el zoom ANTES de que el campo reciba el foco. Si el
+//  zoom nunca ocurre, no hay nada que deshacer y la pantalla no se mueve. La
+//  escala se libera al salir, para no dejar la app sin pinch-zoom.
+// ============================================================================
+
+// Contenido original del viewport mientras hay un campo en edición
+let viewportOriginal: string | null = null;
+// Liberación pendiente: al pasar de un campo a otro, el blur del anterior llega
+// DESPUÉS del pointerdown del nuevo. Sin esta espera se liberaría la escala en
+// medio del cambio y el zoom se colaría.
+let liberacionPendiente: number | null = null;
+
+function fijarEscala() {
     const meta = document.querySelector('meta[name="viewport"]');
     if (!meta) return;
-    const previo = meta.getAttribute('content');
-    if (previo === null || /maximum-scale/.test(previo)) return;
-    meta.setAttribute('content', `${previo}, maximum-scale=1.0`);
-    // Un tick basta para que Safari reajuste la escala antes de devolver el original
-    window.setTimeout(() => meta.setAttribute('content', previo), 120);
+    if (liberacionPendiente !== null) {
+        window.clearTimeout(liberacionPendiente);
+        liberacionPendiente = null;
+    }
+    if (viewportOriginal === null) viewportOriginal = meta.getAttribute('content');
+    meta.setAttribute('content', `${viewportOriginal ?? 'width=device-width, initial-scale=1.0'}, maximum-scale=1.0`);
+}
+
+function liberarEscala() {
+    if (viewportOriginal === null) return;
+    liberacionPendiente = window.setTimeout(() => {
+        const meta = document.querySelector('meta[name="viewport"]');
+        if (meta && viewportOriginal !== null) meta.setAttribute('content', viewportOriginal);
+        viewportOriginal = null;
+        liberacionPendiente = null;
+    }, 250);
 }
 
 interface SecureInputProps {
@@ -64,6 +88,9 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
 
         const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
             if (!inputRef.current) return;
+            // Antes del foco: es el único momento en que Safari respeta el
+            // maximum-scale y decide no hacer zoom.
+            fijarEscala();
             if (e.pointerType === 'touch') {
                 // En touch: prevenir default + foco + cursor al final (comportamiento esperado en móvil)
                 e.preventDefault();
@@ -113,8 +140,10 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
             onKeyDown?.(e);
         };
 
-        const handleInputFocus = () => { setIsFocused(true); onFocus?.(); };
-        const handleInputBlur  = () => { setIsFocused(false); devolverZoom(); onBlur?.(); };
+        // También al enfocar, no solo al tocar: cubre el foco por teclado (Tab) y
+        // el autoFocus, donde no hay pointerdown.
+        const handleInputFocus = () => { fijarEscala(); setIsFocused(true); onFocus?.(); };
+        const handleInputBlur  = () => { setIsFocused(false); liberarEscala(); onBlur?.(); };
 
         // Sincroniza el contenido del div contenteditable con el value prop
         useEffect(() => {
