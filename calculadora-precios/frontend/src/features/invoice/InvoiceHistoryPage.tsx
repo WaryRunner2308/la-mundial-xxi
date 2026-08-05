@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, FileText, ChevronRight, Loader2, ScanLine, Store,
-  TrendingUp, TrendingDown, Trash2, RotateCcw, Tags,
+  TrendingUp, TrendingDown, Trash2, Tags,
 } from 'lucide-react';
 import {
   useInvoiceHistoryStore,
@@ -364,15 +364,6 @@ export function InvoiceHistoryPage() {
           Facturas <span style={{ color: VERDE }}>Importadas</span>
         </h1>
 
-        <button
-          type="button"
-          onClick={() => fetchFacturas()}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition"
-          style={{ color: '#8b949e', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-        >
-          <RotateCcw size={13} />
-          Recargar
-        </button>
         <button
           type="button"
           onClick={() => navigate('/import-invoice')}

@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { fetchBcvRate, formatBcvDate, type BcvRate } from '@/services/bcvRate';
 import {
   Package, Calculator, Truck, BarChart2, TrendingDown,
-  Menu, X, DollarSign, ScanLine, Loader2, Landmark, FileText,
+  Menu, X, DollarSign, ScanLine, Loader2, Landmark, FileText, LogOut,
 } from 'lucide-react';
 
 import { ProductsPage } from '@/features/products/ProductList';
@@ -255,7 +255,7 @@ const NAV_ITEMS = [
 function App() {
   const { rate, setRate } = useCurrencyStore();
   const { loadFromSupabase } = useProductStore();
-  const { userRole } = useAuth();
+  const { userRole, logout } = useAuth();
   const [showWelcome, setShowWelcome] = useState(false);
   const [showEditRate, setShowEditRate] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -464,7 +464,7 @@ function App() {
         )}
 
         {/* Imagen decorativa — al pie del sidebar */}
-        <div className="flex justify-center pb-5 pt-2">
+        <div className="flex justify-center pb-4 pt-2">
           <img
             src="/logo.png"
             alt=""
@@ -472,6 +472,39 @@ function App() {
             className="w-24 object-contain select-none"
             style={{ opacity: 0.55 }}
           />
+        </div>
+
+        {/* Salir — lo último del sidebar. Discreto: sin relleno de fondo y en
+            letra chica, para que no compita con el menú. */}
+        <div className="px-3 pb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
+          <button
+            type="button"
+            onClick={logout}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl transition-colors"
+            style={{
+              color: '#C8102E',
+              background: 'transparent',
+              border: '1px solid rgba(200,16,46,0.16)',
+              fontFamily: '"Barlow Condensed", sans-serif',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              letterSpacing: '0.09em',
+              textTransform: 'uppercase',
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.background = 'rgba(200,16,46,0.1)';
+              el.style.borderColor = 'rgba(200,16,46,0.35)';
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.background = 'transparent';
+              el.style.borderColor = 'rgba(200,16,46,0.16)';
+            }}
+          >
+            <LogOut size={12} strokeWidth={2.4} />
+            Salir
+          </button>
         </div>
       </aside>
 
