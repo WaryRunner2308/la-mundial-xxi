@@ -4,8 +4,7 @@ import { Upload, ClipboardPaste, X, ImagePlus, HelpCircle } from 'lucide-react';
 import { SecureInput } from '@/components/ui/SecureInput';
 import { useCurrencyStore } from '@/store/currencyStore';
 import type { InvoiceProduct, IvaChoice } from './useInvoiceScanner';
-
-const IVA = 0.16;
+import { calcularFila } from './precioVenta';
 
 // Convierte cualquier blob de imagen a PNG redimensionado a 500px máximo.
 function blobToPng(blob: Blob): Promise<Blob> {
@@ -42,16 +41,6 @@ function blobToPng(blob: Blob): Promise<Blob> {
     };
     img.src = url;
   });
-}
-
-// base = costo / (1 - ganancia/100)
-// ivaChoice 'yes' → base * 1.16; 'no' → base; null → base (sin definir, se muestra en gris)
-function calcularPrecioVenta(costo: number, ganancia: number, ivaChoice: IvaChoice): number {
-  if (costo <= 0) return 0;
-  const margen = 1 - (ganancia || 0) / 100;
-  if (margen <= 0) return 0;
-  const base = costo / margen;
-  return ivaChoice === 'yes' ? base * (1 + IVA) : base;
 }
 
 interface InvoiceReviewTableProps {
@@ -103,12 +92,24 @@ function IvaToggle({ value, onChange }: { value: IvaChoice; onChange: (v: IvaCho
   );
 }
 
-function EstadoBadge({ estado, precioAnterior, precio, moneda }: {
+function EstadoBadge({ estado, precioAnterior, precio, moneda, nombreExistente, matchAproximado }: {
   estado: InvoiceProduct['estado'];
   precioAnterior: number | null;
   precio: number;
   moneda: string;
+  nombreExistente: string | null;
+  matchAproximado: boolean;
 }) {
+  // Cuando el nombre de la factura no era idéntico al nuestro, se muestra con
+  // qué producto se cruzó para poder desmarcar la fila si se equivocó.
+  const avisoMatch = matchAproximado && nombreExistente
+    ? (
+      <span className="text-[9px] whitespace-nowrap" style={{ color: '#fbbf24' }} title={nombreExistente}>
+        ≈ {nombreExistente}
+      </span>
+    )
+    : null;
+
   if (estado === 'Nuevo') {
     return (
       <span
@@ -142,20 +143,24 @@ function EstadoBadge({ estado, precioAnterior, precio, moneda }: {
             ${precioAnterior.toFixed(2)} → ${precio.toFixed(2)} {moneda}
           </span>
         )}
+        {avisoMatch}
       </div>
     );
   }
   return (
-    <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-black rounded-full border uppercase tracking-wider whitespace-nowrap"
-      style={{
-        color: '#009A3A',
-        background: 'rgba(0,154,58,0.08)',
-        borderColor: 'rgba(0,154,58,0.25)',
-      }}
-    >
-      Sin cambios
-    </span>
+    <div className="flex flex-col gap-0.5">
+      <span
+        className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-black rounded-full border uppercase tracking-wider whitespace-nowrap"
+        style={{
+          color: '#009A3A',
+          background: 'rgba(0,154,58,0.08)',
+          borderColor: 'rgba(0,154,58,0.25)',
+        }}
+      >
+        Sin cambios
+      </span>
+      {avisoMatch}
+    </div>
   );
 }
 
@@ -611,34 +616,8 @@ export function InvoiceReviewTable({
               <AnimatePresence initial={false}>
                 {productos.map((producto, index) => {
                   const gananciaUsada = gananciaMode === 'global' ? gananciaGlobalNum : producto.ganancia;
-                  const descuentoFila = descuentoAplicado > 0 && descuentoAplicado < 100;
-                  // Solo productos existentes con datos previos pueden elegir mantener/bajar el PV
-                  const eligePv = descuentoFila && producto.estado === 'Actualizar precio'
-                    && producto.precioAnterior !== null && producto.gananciaAnterior !== null;
-                  const mantienePv = eligePv && producto.descuentoPv === 'mantener';
-
-                  let precioVenta: number;
-                  if (mantienePv) {
-                    // Precio de venta anterior del producto (costo y ganancia guardados, en USD)
-                    const margenPrev = 1 - (producto.gananciaAnterior ?? 0) / 100;
-                    let pvUsd = margenPrev > 0 ? (producto.precioAnterior ?? 0) / margenPrev : 0;
-                    if (producto.ivaChoice === 'yes') pvUsd *= 1 + IVA;
-                    precioVenta = producto.moneda === 'Bs' ? pvUsd * (rate > 0 ? rate : 1) : pvUsd;
-                  } else {
-                    // Los productos nuevos con descuento se guardan con el costo sin descuento,
-                    // así que su PV también se calcula sobre esa base
-                    const costoBasePv = descuentoFila && producto.estado === 'Nuevo'
-                      ? producto.precioOriginal
-                      : producto.precio;
-                    precioVenta = calcularPrecioVenta(costoBasePv, gananciaUsada, producto.ivaChoice);
-                  }
-                  // Puntos de margen extra al mantener el PV pagando el costo con descuento
-                  const extraPct = mantienePv
-                    ? (descuentoAplicado * (100 - (producto.gananciaAnterior ?? 0))) / 100
-                    : 0;
-                  const costoAGuardar = descuentoFila && producto.descuentoPv === 'mantener'
-                    ? producto.precioOriginal
-                    : producto.precio;
+                  const { precioVenta, costoAGuardar, eligePv, mantienePv, extraPct } =
+                    calcularFila(producto, gananciaUsada, descuentoAplicado, rate);
                   const monedaSimbolo = producto.moneda === 'USD' ? '$' : 'Bs';
                   const otroMonedaSimbolo = producto.moneda === 'USD' ? 'Bs' : '$';
                   let precioVentaOtra: number | null = null;
@@ -859,6 +838,8 @@ export function InvoiceReviewTable({
                             precioAnterior={producto.precioAnterior}
                             precio={costoAGuardar}
                             moneda={producto.moneda}
+                            nombreExistente={producto.nombreExistente}
+                            matchAproximado={producto.matchAproximado}
                           />
                         </motion.div>
                       </AnimatePresence>

@@ -1,12 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, CheckCircle, AlertCircle, RotateCcw, Download, ChevronDown, Plus, Store, X } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, AlertCircle, RotateCcw, Download, ChevronDown, Plus, Store, X, TrendingUp, TrendingDown } from 'lucide-react';
 import { CameraCapture } from './CameraCapture';
 import { InvoiceReviewTable } from './InvoiceReviewTable';
 import { useInvoiceScanner, LOADING_MESSAGES } from './useInvoiceScanner';
 import { useProviderStore } from '@/store/providerStore';
 import { useToastStore } from '@/store/toastStore';
+
+// El toast es chico: más de esto no se lee. El resto queda en la pantalla final
+// y en Facturas Importadas.
+const MAX_CAMBIOS_EN_TOAST = 4;
 
 /* ─── Loading spinner con mensajes rotativos ─── */
 function ScanningOverlay({ messageIdx }: { messageIdx: number }) {
@@ -308,6 +312,7 @@ export function InvoicePage() {
     setError,
     importProgress,
     importTotal,
+    importResult,
     loadingMessageIdx,
     globalGanancia,
     setGlobalGanancia,
@@ -332,15 +337,32 @@ export function InvoicePage() {
     const result = await ejecutarImportacion();
     if (!result) return;
     setStep('done');
-    useToastStore.getState().show(`✅ ${result.creados} creados · ${result.actualizados} actualizados`, 'success');
+
+    // Aviso de precios: además del resumen, se dice producto por producto
+    // cuánto era el último precio y cuánto quedó ahora. El toast dura poco, así
+    // que la lista completa también queda en la pantalla final y en el historial.
+    const lineas = [`✅ ${result.creados} creados · ${result.actualizados} actualizados`];
+    if (result.cambiosPrecio.length > 0) {
+      lineas.push('', '💰 PRECIO MODIFICADO');
+      for (const cambio of result.cambiosPrecio.slice(0, MAX_CAMBIOS_EN_TOAST)) {
+        lineas.push(`${cambio.nombre}: $${cambio.antes.toFixed(2)} → $${cambio.ahora.toFixed(2)}`);
+      }
+      const restantes = result.cambiosPrecio.length - MAX_CAMBIOS_EN_TOAST;
+      if (restantes > 0) lineas.push(`y ${restantes} más...`);
+    }
+    useToastStore.getState().show(lineas.join('\n'), 'success');
   };
 
+  // Si hubo cambios de precio NO se redirige solo: el usuario tiene que poder
+  // leer cuánto era antes y cuánto quedó ahora sin que la pantalla se le vaya.
+  const hayCambiosPrecio = (importResult?.cambiosPrecio.length ?? 0) > 0;
+
   useEffect(() => {
-    if (step === 'done') {
+    if (step === 'done' && !hayCambiosPrecio) {
       const t = setTimeout(() => navigate('/products'), 3000);
       return () => clearTimeout(t);
     }
-  }, [step, navigate]);
+  }, [step, hayCambiosPrecio, navigate]);
 
   const selectedCount = productos.filter((p) => p.seleccionado).length;
   const isLoading = step === 'scanning';
@@ -510,7 +532,93 @@ export function InvoicePage() {
                 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.3rem' }}>
                 ¡Importación completada!
               </p>
-              <p className="text-sm text-[#8b949e]">Redirigiendo a productos...</p>
+
+              {importResult && (
+                <p className="text-sm text-[#8b949e] -mt-2">
+                  {importResult.creados} creados · {importResult.actualizados} actualizados
+                </p>
+              )}
+
+              {/* Lista de precios modificados: último precio → precio nuevo */}
+              {hayCambiosPrecio && importResult && (
+                <div
+                  className="w-full max-w-md rounded-xl overflow-hidden mt-1"
+                  style={{ background: 'rgba(251,191,36,0.05)', border: '1px solid rgba(251,191,36,0.2)' }}
+                >
+                  <p
+                    className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest"
+                    style={{ color: '#fbbf24', borderBottom: '1px solid rgba(251,191,36,0.15)' }}
+                  >
+                    💰 Precio modificado
+                  </p>
+                  <div className="max-h-64 overflow-y-auto">
+                    {importResult.cambiosPrecio.map((cambio, i) => {
+                      const subio = cambio.ahora > cambio.antes;
+                      return (
+                        <div
+                          key={`${cambio.nombre}-${i}`}
+                          className="flex items-center gap-2 px-4 py-2.5"
+                          style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+                        >
+                          <span className="flex-1 min-w-0 text-[13px] text-[#e6edf3] font-semibold truncate text-left">
+                            {cambio.nombre}
+                          </span>
+                          <span
+                            className="text-[12px] whitespace-nowrap"
+                            style={{ fontFamily: '"JetBrains Mono", monospace', color: '#8b949e' }}
+                          >
+                            ${cambio.antes.toFixed(2)}
+                          </span>
+                          {subio
+                            ? <TrendingUp size={12} style={{ color: '#C8102E', flexShrink: 0 }} />
+                            : <TrendingDown size={12} style={{ color: '#009A3A', flexShrink: 0 }} />}
+                          <span
+                            className="text-[12px] font-bold whitespace-nowrap"
+                            style={{ fontFamily: '"JetBrains Mono", monospace', color: subio ? '#C8102E' : '#009A3A' }}
+                          >
+                            ${cambio.ahora.toFixed(2)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {hayCambiosPrecio ? (
+                <div className="flex flex-col sm:flex-row gap-3 mt-2 w-full max-w-md">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/invoices')}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition"
+                    style={{
+                      fontFamily: '"Barlow Condensed", sans-serif',
+                      letterSpacing: '0.06em',
+                      color: '#8b949e',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                    }}
+                  >
+                    <FileText size={14} />
+                    VER FACTURAS IMPORTADAS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/products')}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-white transition"
+                    style={{
+                      fontFamily: '"Barlow Condensed", sans-serif',
+                      letterSpacing: '0.06em',
+                      background: 'linear-gradient(135deg,#009A3A,#007b2e)',
+                      boxShadow: '0 4px 18px rgba(0,154,58,0.3)',
+                    }}
+                  >
+                    IR A PRODUCTOS
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-[#8b949e]">Redirigiendo a productos...</p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

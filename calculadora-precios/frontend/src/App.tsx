@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { fetchBcvRate, formatBcvDate, type BcvRate } from '@/services/bcvRate';
 import {
   Package, Calculator, Truck, BarChart2, TrendingDown,
-  Menu, X, DollarSign, ScanLine, Loader2, Landmark,
+  Menu, X, DollarSign, ScanLine, Loader2, Landmark, FileText,
 } from 'lucide-react';
 
 import { ProductsPage } from '@/features/products/ProductList';
@@ -21,6 +21,7 @@ import { ComparatorPage } from '@/features/comparator/ComparatorPage';
 import { LandingPage } from '@/features/auth/LandingPage';
 import { DiagonalMarquee } from '@/features/auth/DiagonalMarquee';
 import { InvoicePage } from '@/features/invoice/InvoicePage';
+import { InvoiceHistoryPage } from '@/features/invoice/InvoiceHistoryPage';
 import { ToastHost } from '@/components/ui/Toast';
 
 /* ─── Error Boundary ─── */
@@ -247,6 +248,7 @@ const NAV_ITEMS = [
   { path: '/comparator',      icon: BarChart2,   label: 'Comparador',     managerOnly: true  },
   { path: '/merma',           icon: TrendingDown,label: 'Merma',          managerOnly: true  },
   { path: '/import-invoice',  icon: ScanLine,    label: 'Import. Factura',managerOnly: true  },
+  { path: '/invoices',        icon: FileText,    label: 'Facturas Import.',managerOnly: true },
 ];
 
 /* ─── App ─── */
@@ -492,6 +494,7 @@ function App() {
                 <Route path="/comparator"      element={<ComparatorPage />} />
                 <Route path="/merma"           element={<MermaPage />} />
                 <Route path="/import-invoice"  element={<InvoicePage />} />
+                <Route path="/invoices"        element={<InvoiceHistoryPage />} />
               </>
             ) : (
               <>
@@ -499,6 +502,7 @@ function App() {
                 <Route path="/comparator"      element={<Navigate to="/unauthorized" replace />} />
                 <Route path="/merma"           element={<Navigate to="/unauthorized" replace />} />
                 <Route path="/import-invoice"  element={<Navigate to="/unauthorized" replace />} />
+                <Route path="/invoices"        element={<Navigate to="/unauthorized" replace />} />
               </>
             )}
             <Route path="/unauthorized" element={

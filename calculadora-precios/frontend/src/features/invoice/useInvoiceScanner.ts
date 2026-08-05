@@ -4,6 +4,9 @@ import { useProviderStore } from '@/store/providerStore';
 import { useCurrencyStore } from '@/store/currencyStore';
 import { supabase, uploadProductImage } from '@/lib/supabase';
 import { useToastStore } from '@/store/toastStore';
+import { useInvoiceHistoryStore, type InvoiceHistoryItem } from '@/store/invoiceHistoryStore';
+import { buscarProductoExistente } from './matchProducto';
+import { calcularFila } from './precioVenta';
 
 // El escaneo corre en una función servidor (frontend/api/scan-invoice.ts) que
 // guarda la clave de Gemini fuera del cliente. Se llama por URL absoluta
@@ -28,6 +31,10 @@ export interface InvoiceProduct {
   id: number | null;
   precioAnterior: number | null;
   gananciaAnterior: number | null;
+  // Nombre con el que ya está guardado el producto (puede diferir del de la
+  // factura) y si el emparejamiento fue por parecido en vez de exacto.
+  nombreExistente: string | null;
+  matchAproximado: boolean;
   // Con descuento activo: 'mantener' conserva el precio de venta anterior y guarda
   // el costo SIN descuento (la promo no altera el costo real del producto)
   descuentoPv: 'mantener' | 'bajar';
@@ -38,6 +45,19 @@ export interface InvoiceProduct {
 }
 
 export type ScanStep = 'idle' | 'scanning' | 'review' | 'importing' | 'done';
+
+// Un producto que ya existía y al que la factura le cambió el costo
+export interface CambioPrecio {
+  nombre: string;
+  antes: number;
+  ahora: number;
+}
+
+export interface ImportResult {
+  creados: number;
+  actualizados: number;
+  cambiosPrecio: CambioPrecio[];
+}
 
 export const LOADING_MESSAGES = [
   'Leyendo factura...',
@@ -140,7 +160,7 @@ export function useInvoiceScanner() {
   const [loadingMessageIdx, setLoadingMessageIdx] = useState(0);
   const [globalGanancia, setGlobalGanancia] = useState('30');
   const [gananciaMode, setGananciaMode] = useState<'global' | 'individual'>('global');
-  const [importResult, setImportResult] = useState<{ creados: number; actualizados: number } | null>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [conDescuento, setConDescuento] = useState(false);
   const [descuento, setDescuentoStr] = useState('');
 
@@ -193,20 +213,42 @@ export function useInvoiceScanner() {
     };
   }, []);
 
+  type EstadoMatch = Pick<
+    InvoiceProduct,
+    'estado' | 'id' | 'precioAnterior' | 'gananciaAnterior' | 'nombreExistente' | 'matchAproximado'
+  >;
+
   const determinarEstado = useCallback(
-    (nombre: string, precio: number, moneda: string): Pick<InvoiceProduct, 'estado' | 'id' | 'precioAnterior' | 'gananciaAnterior'> => {
-      const existente = products.find(
-        (p) => p.name.toLowerCase().trim() === nombre.toLowerCase().trim()
-      );
-      if (!existente) return { estado: 'Nuevo', id: null, precioAnterior: null, gananciaAnterior: null };
+    (nombre: string, precio: number, moneda: string): EstadoMatch => {
+      // El nombre de la factura casi nunca es idéntico al nuestro
+      // ("MANTEQ. MAVESA 250 GRS" vs "Mantequilla Mavesa 250g"), así que el
+      // emparejamiento es por parecido normalizado, no por texto exacto.
+      const coincidencia = buscarProductoExistente(nombre, products);
+      if (!coincidencia) {
+        return {
+          estado: 'Nuevo',
+          id: null,
+          precioAnterior: null,
+          gananciaAnterior: null,
+          nombreExistente: null,
+          matchAproximado: false,
+        };
+      }
+
+      const existente = coincidencia.producto;
+      const base = {
+        id: existente.id,
+        precioAnterior: existente.costUSD,
+        gananciaAnterior: existente.profitPercentage,
+        nombreExistente: existente.name,
+        matchAproximado: coincidencia.tipo === 'aproximado',
+      };
 
       const precioNuevo = moneda === 'Bs' ? precio / (rate > 0 ? rate : 1) : precio;
       const diff = Math.abs(existente.costUSD - precioNuevo);
 
-      if (diff < 0.001) {
-        return { estado: 'Sin cambios', id: existente.id, precioAnterior: existente.costUSD, gananciaAnterior: existente.profitPercentage };
-      }
-      return { estado: 'Actualizar precio', id: existente.id, precioAnterior: existente.costUSD, gananciaAnterior: existente.profitPercentage };
+      if (diff < 0.001) return { ...base, estado: 'Sin cambios' };
+      return { ...base, estado: 'Actualizar precio' };
     },
     [products, rate]
   );
@@ -221,8 +263,7 @@ export function useInvoiceScanner() {
         prev.map((p) => {
           const precio = p.precioOriginal * factor;
           const precioTotal = p.precioTotalOriginal !== null ? p.precioTotalOriginal * factor : null;
-          const { estado, id, precioAnterior, gananciaAnterior } = determinarEstado(p.nombre, precio, p.moneda);
-          return { ...p, precio, precioTotal, estado, id, precioAnterior, gananciaAnterior };
+          return { ...p, precio, precioTotal, ...determinarEstado(p.nombre, precio, p.moneda) };
         })
       );
     },
@@ -288,7 +329,7 @@ export function useInvoiceScanner() {
             p.cantidad_bulto ?? null,
             p.nombre
           );
-          const { estado, id, precioAnterior, gananciaAnterior } = determinarEstado(p.nombre, precio, moneda);
+          const match = determinarEstado(p.nombre, precio, moneda);
           return {
             nombre: p.nombre,
             precio,
@@ -298,11 +339,8 @@ export function useInvoiceScanner() {
             moneda,
             unidad: p.unidad,
             cantidadBulto,
-            seleccionado: estado !== 'Sin cambios',
-            estado,
-            id,
-            precioAnterior,
-            gananciaAnterior,
+            seleccionado: match.estado !== 'Sin cambios',
+            ...match,
             descuentoPv: 'mantener' as const,
             fotoUrl: null,
             fotoBlob: null,
@@ -328,7 +366,7 @@ export function useInvoiceScanner() {
 
   const ejecutarImportacion = useCallback(async () => {
     const seleccionados = productos.filter((p) => p.seleccionado);
-    if (seleccionados.length === 0) return { creados: 0, actualizados: 0 };
+    if (seleccionados.length === 0) return { creados: 0, actualizados: 0, cambiosPrecio: [] };
 
     setStep('importing');
     setImportProgress(0);
@@ -338,6 +376,11 @@ export function useInvoiceScanner() {
     let actualizados = 0;
     const productosConFallaDeFoto: string[] = [];
     const productosConFallaDeImportacion: string[] = [];
+    // Precios que efectivamente cambiaron, para avisarle al usuario cuánto era
+    // antes y cuánto quedó ahora.
+    const cambiosPrecio: CambioPrecio[] = [];
+    // Costo final en USD por fila, para dejarlo grabado en el historial
+    const costoFinalPorFila = new Map<InvoiceProduct, number>();
     const gananciaGlobal = parseFloat(globalGanancia) || 30;
     const pctDescuento = conDescuento ? parseFloat(descuento) || 0 : 0;
     const descuentoActivo = pctDescuento > 0 && pctDescuento < 100;
@@ -354,6 +397,8 @@ export function useInvoiceScanner() {
         producto.moneda === 'Bs'
           ? costoBase / (rate > 0 ? rate : 1)
           : costoBase;
+
+      costoFinalPorFila.set(producto, costUsd);
 
       const ganancia = gananciaMode === 'global' ? gananciaGlobal : producto.ganancia;
 
@@ -399,6 +444,13 @@ export function useInvoiceScanner() {
               productosConFallaDeFoto.push(producto.nombre);
             }
           }
+          if (producto.precioAnterior !== null) {
+            cambiosPrecio.push({
+              nombre: producto.nombreExistente ?? producto.nombre,
+              antes: producto.precioAnterior,
+              ahora: costUsd,
+            });
+          }
           actualizados++;
         }
       } catch (err) {
@@ -421,10 +473,62 @@ export function useInvoiceScanner() {
       );
     }
 
-    const result = { creados, actualizados };
+    // Historial: se graba TODO lo que leyó la IA, no solo lo importado, y con
+    // los mismos números que se vieron en la tabla de revisión (misma función
+    // calcularFila), para que el historial no muestre otra cosa.
+    const items: InvoiceHistoryItem[] = productos.map((p) => {
+      const gananciaFila = gananciaMode === 'global' ? gananciaGlobal : p.ganancia;
+      const { precioVenta, costoAGuardar } = calcularFila(
+        p,
+        gananciaFila,
+        descuentoActivo ? pctDescuento : 0,
+        rate
+      );
+      return {
+        nombre: p.nombre,
+        precioCosto: costoAGuardar,
+        precioVenta,
+        moneda: p.moneda,
+        iva: p.ivaChoice,
+        ganancia: gananciaFila,
+        unidad: p.unidad,
+        cantidadBulto: p.cantidadBulto,
+        costoUsd: costoFinalPorFila.get(p) ?? null,
+        estado: p.estado,
+        precioAnterior: p.precioAnterior,
+        importado: p.seleccionado && !productosConFallaDeImportacion.includes(p.nombre),
+        productoId: p.id,
+        nombreExistente: p.nombreExistente,
+        matchAproximado: p.matchAproximado,
+      };
+    });
+
+    const nombreProveedor =
+      providers.find((prov) => prov.id === proveedorId)?.name ?? proveedor ?? null;
+
+    try {
+      await useInvoiceHistoryStore.getState().guardarFactura({
+        proveedorNombre: nombreProveedor,
+        proveedorId: proveedorId ?? null,
+        tasa: rate,
+        descuento: descuentoActivo ? pctDescuento : null,
+        totalItems: items.length,
+        creados,
+        actualizados,
+        items,
+      });
+    } catch {
+      // Los productos ya se importaron bien; solo se perdió el registro.
+      useToastStore.getState().show(
+        'Los productos se importaron, pero la factura no se pudo guardar en el historial.',
+        'error'
+      );
+    }
+
+    const result = { creados, actualizados, cambiosPrecio };
     setImportResult(result);
     return result;
-  }, [productos, proveedorId, rate, addProduct, updateProduct, globalGanancia, gananciaMode, conDescuento, descuento]);
+  }, [productos, proveedorId, proveedor, providers, rate, addProduct, updateProduct, globalGanancia, gananciaMode, conDescuento, descuento]);
 
   const updateProducto = useCallback((index: number, changes: Partial<InvoiceProduct>) => {
     setProductos((prev) => prev.map((p, i) => (i === index ? { ...p, ...changes } : p)));
