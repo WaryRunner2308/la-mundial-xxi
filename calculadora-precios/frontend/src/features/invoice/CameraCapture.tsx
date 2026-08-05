@@ -272,25 +272,17 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
                 onChange={(e) => setNotas(e.target.value.slice(0, MAX_NOTAS))}
                 rows={3}
                 maxLength={MAX_NOTAS}
-                placeholder={
-                  'Indícale algo sobre esta factura. Ejemplos:\n' +
-                  '• La mantequilla Mavesa de 250g no llegó, ignórala.\n' +
-                  '• Los productos de limpieza llevan IVA, los alimentos no.'
-                }
+                placeholder="Pon alguna observación de la factura"
                 className="w-full px-4 py-3 bg-transparent text-[13px] text-[#e6edf3] outline-none resize-y placeholder-[#484f58]"
                 style={{ minHeight: '76px' }}
               />
 
               <div
-                className="flex items-center justify-between gap-3 px-4 py-2"
+                className="flex items-center justify-end px-4 py-1.5"
                 style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
               >
-                <p className="text-[10px] text-[#484f58]">
-                  La IA lee esto antes de leer la factura. No cambia el resultado a texto:
-                  sigue devolviendo la lista de precios.
-                </p>
                 <span
-                  className="text-[10px] flex-shrink-0"
+                  className="text-[10px]"
                   style={{
                     fontFamily: '"JetBrains Mono", monospace',
                     color: notas.length >= MAX_NOTAS ? '#C8102E' : '#484f58',
