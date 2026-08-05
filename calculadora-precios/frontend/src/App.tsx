@@ -265,6 +265,15 @@ function App() {
   const isGerencia = userRole === 'gerencia';
 
   useEffect(() => { setSidebarOpen(false); }, [location]);
+
+  // Al abrir el menú en móvil se suelta el foco de cualquier campo. Si no, el
+  // buscador que quedó enfocado sigue con el caret parpadeando y el teclado del
+  // teléfono abierto detrás del menú.
+  useEffect(() => {
+    if (sidebarOpen && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, [sidebarOpen]);
   // La tasa del día es obligatoria: el aviso sale al entrar a un modo (invitado
   // o gerencia) solo si todavia no se cargo una tasa hoy (currencyStore la
   // persiste con fecha), y no se puede cerrar sin ingresar una tasa válida.

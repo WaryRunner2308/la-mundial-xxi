@@ -166,7 +166,12 @@ export const SecureInput = forwardRef<HTMLDivElement, SecureInputProps>(
                         top: '0',
                         width: '100%',
                         height: '100%',
-                        zIndex: 9999,
+                        // Solo tiene que quedar encima de su propio div visible (z-index 1).
+                        // Con 9999 se elevaba por encima de TODA la app: el buscador seguía
+                        // recibiendo toques y pintando el caret por encima del sidebar y de
+                        // los modales, porque el contenedor relative no crea contexto de
+                        // apilamiento propio y el 9999 competía en la raíz.
+                        zIndex: 2,
                         margin: 0,
                         padding: '0.75rem 1rem', // punto de partida; useLayoutEffect lo sobreescribe con el del div visible
                         border: '1px solid transparent',
