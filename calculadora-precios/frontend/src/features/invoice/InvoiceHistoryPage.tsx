@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, FileText, ChevronRight, Loader2, ScanLine, Store,
-  TrendingUp, TrendingDown, Trash2, RotateCcw,
+  TrendingUp, TrendingDown, Trash2, RotateCcw, Tags,
 } from 'lucide-react';
 import {
   useInvoiceHistoryStore,
@@ -12,6 +12,7 @@ import {
 } from '@/store/invoiceHistoryStore';
 import { useToastStore } from '@/store/toastStore';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { InvoicePriceSummary } from './InvoicePriceSummary';
 
 const VERDE = '#009A3A';
 const ROJO = '#C8102E';
@@ -64,7 +65,7 @@ function EstadoPill({ item }: { item: InvoiceHistoryItem }) {
    edita nada, es el registro de lo que hizo la IA ese día. */
 const COLUMNAS = ['Nombre', 'Precio Costo', 'Precio Venta', 'Moneda', 'IVA', '% Gan.', 'Estado'];
 
-function DetalleFactura({ factura }: { factura: InvoiceHistoryEntry }) {
+function DetalleFactura({ factura, onVerResumen }: { factura: InvoiceHistoryEntry; onVerResumen: () => void }) {
   return (
     <div className="px-3 pb-4 pt-1">
       <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -178,21 +179,41 @@ function DetalleFactura({ factura }: { factura: InvoiceHistoryEntry }) {
         </table>
       </div>
 
-      <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 px-1 text-[10px] text-[#484f58]">
-        <span>
-          Tasa usada:{' '}
-          <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#8b949e' }}>
-            {factura.tasa.toFixed(2)} Bs
-          </span>
-        </span>
-        {factura.descuento !== null && (
+      {/* Pie del detalle: los datos de contexto a la izquierda, la acción a la derecha */}
+      <div className="flex items-end justify-between gap-4 mt-3 px-1">
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-[10px] text-[#484f58]">
           <span>
-            Descuento aplicado:{' '}
-            <span style={{ fontFamily: '"JetBrains Mono", monospace', color: AMBAR }}>
-              {factura.descuento}%
+            Tasa usada:{' '}
+            <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#8b949e' }}>
+              {factura.tasa.toFixed(2)} Bs
             </span>
           </span>
-        )}
+          {factura.descuento !== null && (
+            <span>
+              Descuento aplicado:{' '}
+              <span style={{ fontFamily: '"JetBrains Mono", monospace', color: AMBAR }}>
+                {factura.descuento}%
+              </span>
+            </span>
+          )}
+        </div>
+
+        <motion.button
+          type="button"
+          whileHover={{ scale: 1.02, y: -1 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={onVerResumen}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-[13px] text-white flex-shrink-0"
+          style={{
+            fontFamily: '"Barlow Condensed", sans-serif',
+            letterSpacing: '0.06em',
+            background: `linear-gradient(135deg,${VERDE},#007b2e)`,
+            boxShadow: '0 4px 18px rgba(0,154,58,0.3)',
+          }}
+        >
+          <Tags size={14} />
+          VER RESUMEN
+        </motion.button>
       </div>
     </div>
   );
@@ -204,11 +225,13 @@ function FacturaCard({
   abierta,
   onToggle,
   onEliminar,
+  onVerResumen,
 }: {
   factura: InvoiceHistoryEntry;
   abierta: boolean;
   onToggle: () => void;
   onEliminar: () => void;
+  onVerResumen: () => void;
 }) {
   return (
     <div
@@ -286,7 +309,7 @@ function FacturaCard({
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             style={{ overflow: 'hidden' }}
           >
-            <DetalleFactura factura={factura} />
+            <DetalleFactura factura={factura} onVerResumen={onVerResumen} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -300,6 +323,7 @@ export function InvoiceHistoryPage() {
   const { facturas, loading, error, fetchFacturas, eliminarFactura } = useInvoiceHistoryStore();
   const [abiertaId, setAbiertaId] = useState<number | null>(null);
   const [porEliminar, setPorEliminar] = useState<InvoiceHistoryEntry | null>(null);
+  const [resumenDe, setResumenDe] = useState<InvoiceHistoryEntry | null>(null);
 
   useEffect(() => { fetchFacturas(); }, [fetchFacturas]);
 
@@ -412,9 +436,12 @@ export function InvoiceHistoryPage() {
             abierta={abiertaId === factura.id}
             onToggle={() => setAbiertaId((prev) => (prev === factura.id ? null : factura.id))}
             onEliminar={() => setPorEliminar(factura)}
+            onVerResumen={() => setResumenDe(factura)}
           />
         ))}
       </div>
+
+      <InvoicePriceSummary factura={resumenDe} onClose={() => setResumenDe(null)} />
 
       <ConfirmationModal
         isOpen={porEliminar !== null}
