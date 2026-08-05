@@ -15,6 +15,26 @@ const CONDENSED = '"Barlow Condensed", sans-serif';
 // Curva de salida: arranca rápido y frena. La nativa se siente floja.
 const SALIDA = [0.23, 1, 0.32, 1] as const;
 
+// Anchos fijos de las columnas de precio, compartidos entre el encabezado y las
+// filas: es lo que hace que los símbolos Bs y $ queden justo encima de sus
+// cifras. Bs lleva más ancho porque el número es más largo (miles con punto).
+// En teléfono se aprietan para que al nombre del producto le quede ancho útil.
+const COL_BS = 'w-[86px] sm:w-[128px]';
+const COL_USD = 'w-[62px] sm:w-[100px]';
+
+// Separación y relleno. A la derecha sobra más que a la izquierda para arrimar
+// las cifras hacia adentro en vez de dejarlas pegadas al borde.
+const FILA_GAP = 'gap-2 sm:gap-3';
+const FILA_PAD = 'pl-3 pr-3 sm:pl-6 sm:pr-9';
+
+// Las cifras: mismo tamaño y peso en ambas monedas, tabular para que las
+// columnas queden cuadradas al bajar la vista.
+// 14px en teléfono no es capricho: en JetBrains Mono cada cifra ocupa 0.6em, así
+// que un precio de 10 caracteres ("120.000,00") entra justo en los 86px de la
+// columna de Bs. A 15px se desbordaría sobre el nombre del producto.
+const CIFRA = 'text-[14px] sm:text-[17px] text-right flex-shrink-0 text-[#e6edf3]';
+const CIFRA_STYLE = { fontFamily: MONO, fontWeight: 700, fontVariantNumeric: 'tabular-nums' } as const;
+
 function formatearFecha(iso: string): string {
   const fecha = new Date(iso);
   if (isNaN(fecha.getTime())) return '—';
@@ -105,57 +125,84 @@ export function InvoicePriceSummary({ factura, onClose }: InvoicePriceSummaryPro
 
             {/* ─── Encabezado ─── */}
             <div
-              className="sticky top-0 z-10 px-4 sm:px-6 py-4"
+              className="sticky top-0 z-10"
               style={{ background: '#1c2128', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
             >
-              <div className="flex items-start gap-3">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(0,154,58,0.1)', border: '1px solid rgba(0,154,58,0.18)' }}
-                >
-                  <Tags size={16} style={{ color: VERDE }} />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <h2
-                    id="titulo-resumen-precios"
-                    className="font-black text-[#e6edf3] uppercase leading-none"
-                    style={{ fontFamily: CONDENSED, fontSize: '1.35rem', letterSpacing: '0.06em' }}
+              <div className="px-4 sm:px-6 pt-4 pb-3">
+                <div className="flex items-start gap-3">
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'rgba(0,154,58,0.1)', border: '1px solid rgba(0,154,58,0.18)' }}
                   >
-                    Resumen de <span style={{ color: VERDE }}>precios</span>
-                  </h2>
-                  <div className="flex items-center gap-1.5 mt-1.5 min-w-0">
-                    <Store size={11} className="flex-shrink-0" style={{ color: '#484f58' }} />
-                    <p className="text-[11px] text-[#8b949e] truncate">
-                      {factura.proveedorNombre ?? 'Proveedor no identificado'}
-                      <span className="text-[#484f58]"> · {formatearFecha(factura.createdAt)}</span>
-                    </p>
+                    <Tags size={16} style={{ color: VERDE }} />
                   </div>
+
+                  <div className="flex-1 min-w-0">
+                    <h2
+                      id="titulo-resumen-precios"
+                      className="font-black text-[#e6edf3] uppercase leading-none"
+                      style={{ fontFamily: CONDENSED, fontSize: '1.35rem', letterSpacing: '0.06em' }}
+                    >
+                      Resumen de <span style={{ color: VERDE }}>precios</span>
+                    </h2>
+                    <div className="flex items-center gap-1.5 mt-1.5 min-w-0">
+                      <Store size={11} className="flex-shrink-0" style={{ color: '#484f58' }} />
+                      <p className="text-[11px] text-[#8b949e] truncate">
+                        {factura.proveedorNombre ?? 'Proveedor no identificado'}
+                        <span className="text-[#484f58]"> · {formatearFecha(factura.createdAt)}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Cerrar resumen"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-[#8b949e] transition-colors hover:text-[#e6edf3]"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  >
+                    <X size={15} />
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={onClose}
-                  aria-label="Cerrar resumen"
-                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-[#8b949e] transition-colors hover:text-[#e6edf3]"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
-                >
-                  <X size={15} />
-                </button>
+                <div className="flex items-center gap-x-4 gap-y-1 flex-wrap mt-3">
+                  <span className="text-[10px] text-[#484f58] uppercase tracking-widest font-semibold">
+                    {lineas.length} {lineas.length === 1 ? 'producto' : 'productos'}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[10px] text-[#484f58]">
+                    <Landmark size={10} />
+                    Tasa de la factura:{' '}
+                    <span style={{ fontFamily: MONO, color: '#8b949e' }}>
+                      {factura.tasa > 0 ? `${formatAmount(factura.tasa, 'Bs')} Bs` : 'sin tasa'}
+                    </span>
+                  </span>
+                </div>
               </div>
 
-              <div className="flex items-center gap-x-4 gap-y-1 flex-wrap mt-3">
-                <span className="text-[10px] text-[#484f58] uppercase tracking-widest font-semibold">
-                  {lineas.length} {lineas.length === 1 ? 'producto' : 'productos'}
-                </span>
-                <span className="flex items-center gap-1.5 text-[10px] text-[#484f58]">
-                  <Landmark size={10} />
-                  Tasa de la factura:{' '}
-                  <span style={{ fontFamily: MONO, color: '#8b949e' }}>
-                    {factura.tasa > 0 ? `${formatAmount(factura.tasa, 'Bs')} Bs` : 'sin tasa'}
+              {/* Encabezado de columnas. Va dentro del bloque fijo para que los
+                  símbolos Bs y $ no se pierdan al bajar por una lista larga. */}
+              {lineas.length > 0 && (
+                <div
+                  className={`flex items-end ${FILA_GAP} ${FILA_PAD} pt-2.5 pb-2`}
+                  style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+                >
+                  <span className="flex-1 min-w-0 text-[9px] font-black text-[#484f58] uppercase tracking-[0.16em]">
+                    Producto
                   </span>
-                </span>
-              </div>
+                  <span
+                    className={`${COL_BS} text-right text-[13px] font-bold text-[#8b949e] leading-none flex-shrink-0`}
+                    style={{ fontFamily: MONO }}
+                  >
+                    Bs
+                  </span>
+                  <span
+                    className={`${COL_USD} text-right text-[13px] font-bold text-[#8b949e] leading-none flex-shrink-0`}
+                    style={{ fontFamily: MONO }}
+                  >
+                    $
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* ─── Lista ─── */}
@@ -172,64 +219,39 @@ export function InvoicePriceSummary({ factura, onClose }: InvoicePriceSummaryPro
                 </p>
               </div>
             ) : (
-              <>
-                {/* Rótulo de columnas: solo lo justo para saber qué moneda es cuál */}
-                <div
-                  className="flex items-center px-4 sm:px-6 py-2"
-                  style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                >
-                  <span className="flex-1 text-[9px] font-black text-[#484f58] uppercase tracking-[0.16em]">
-                    Producto
-                  </span>
-                  <span className="text-[9px] font-black text-[#484f58] uppercase tracking-[0.16em] text-right">
-                    Precio de venta
-                  </span>
-                </div>
-
-                <div>
-                  {lineas.map((linea, i) => (
-                    <div
-                      key={`${linea.nombre}-${i}`}
-                      className="flex items-center gap-4 px-4 sm:px-6"
-                      style={{
-                        minHeight: '56px',
-                        borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                      }}
-                    >
-                      <div className="flex-1 min-w-0 py-2">
-                        <p className="text-[14px] font-semibold text-[#e6edf3] leading-snug">
-                          {linea.nombre}
+              <div>
+                {lineas.map((linea, i) => (
+                  <div
+                    key={`${linea.nombre}-${i}`}
+                    className={`flex items-center ${FILA_GAP} ${FILA_PAD}`}
+                    style={{
+                      minHeight: '52px',
+                      borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                    }}
+                  >
+                    <div className="flex-1 min-w-0 py-2">
+                      <p className="text-[13px] sm:text-[13.5px] font-semibold text-[#e6edf3] leading-snug">
+                        {linea.nombre}
+                      </p>
+                      {/* Solo aparece cuando hay algo que advertir */}
+                      {!linea.importado && (
+                        <p className="text-[10px] mt-0.5" style={{ color: AMBAR }}>
+                          No se importó · precio no guardado
                         </p>
-                        {/* Solo aparece cuando hay algo que advertir */}
-                        {!linea.importado && (
-                          <p className="text-[10px] mt-0.5" style={{ color: AMBAR }}>
-                            No se importó · precio no guardado
-                          </p>
-                        )}
-                      </div>
-
-                      {/* El Bs manda: es el precio que se marca. El $ es referencia. */}
-                      <div className="text-right flex-shrink-0 py-2">
-                        <p
-                          className="text-[#e6edf3] leading-none"
-                          style={{ fontFamily: MONO, fontSize: '1.25rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-                        >
-                          {linea.precioBs !== null ? formatAmount(linea.precioBs, 'Bs') : '—'}
-                          <span className="text-[#484f58] ml-1" style={{ fontSize: '0.7rem', fontWeight: 500 }}>
-                            Bs
-                          </span>
-                        </p>
-                        <p
-                          className="text-[#8b949e] mt-1 leading-none"
-                          style={{ fontFamily: MONO, fontSize: '0.75rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}
-                        >
-                          {linea.precioUsd !== null ? `$${formatAmount(linea.precioUsd, 'USD')}` : '—'}
-                        </p>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </>
+
+                    {/* Las dos monedas en la misma línea y con el mismo peso:
+                        ninguna es referencia de la otra, las dos se usan. */}
+                    <p className={`${COL_BS} ${CIFRA}`} style={CIFRA_STYLE}>
+                      {linea.precioBs !== null ? formatAmount(linea.precioBs, 'Bs') : '—'}
+                    </p>
+                    <p className={`${COL_USD} ${CIFRA}`} style={CIFRA_STYLE}>
+                      {linea.precioUsd !== null ? formatAmount(linea.precioUsd, 'USD') : '—'}
+                    </p>
+                  </div>
+                ))}
+              </div>
             )}
 
             {/* ─── Pie ─── */}
@@ -239,8 +261,8 @@ export function InvoicePriceSummary({ factura, onClose }: InvoicePriceSummaryPro
             >
               <p className="text-[10px] text-[#484f58] leading-snug">
                 {hayNoImportados
-                  ? 'Los renglones marcados en ámbar no se importaron: ese precio no está guardado.'
-                  : 'Precios calculados con la tasa del día de la factura.'}
+                  ? 'Los renglones en ámbar no se importaron: ese precio no está guardado.'
+                  : 'Ambos precios son el mismo producto, calculados con la tasa de la factura.'}
               </p>
               <button
                 type="button"
