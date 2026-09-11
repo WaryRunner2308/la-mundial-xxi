@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { convertirEntradaANumero } from '@/utilidades/decimales';
 import { useAlmacenProductos } from '@/almacen/almacenProductos';
 import { useAlmacenProveedores } from '@/almacen/almacenProveedores';
@@ -169,6 +169,19 @@ function normalizarBulto(precioIA: number, cantidadIA: number | null, nombre: st
     return { precio: precioIA, cantidadBulto: cantidadIAValida, precioTotal: precioIA * cantidadIAValida };
   }
   return { precio: precioIA, cantidadBulto: null, precioTotal: null };
+}
+
+// Suelta la URL temporal de la foto de una fila.
+//
+// fotoUrl es una direccion 'blob:' que apunta a la imagen viva en memoria. Se
+// usa en UN solo lugar: el <img> de la celda de foto. Lo que se sube a Supabase
+// al importar es fotoBlob, no esta URL, asi que soltarla nunca afecta la
+// importacion. Si no se suelta, la imagen queda retenida hasta recargar la
+// pagina, y al encadenar facturas se iban sumando.
+function soltarFotoDeFila(producto: ProductoFactura) {
+  if (producto.fotoUrl && producto.fotoUrl.startsWith('blob:')) {
+    URL.revokeObjectURL(producto.fotoUrl);
+  }
 }
 
 export function useEscanerFacturas() {
@@ -383,9 +396,12 @@ export function useEscanerFacturas() {
             fotoUrl: null,
             fotoBlob: null,
             ganancia: GANANCIA_POR_DEFECTO,
-            // La IA solo marca el IVA cuando la factura lo dice claro o cuando las
-            // notas lo piden; si no, queda sin definir para elegirlo a mano.
-            opcionIva: p.exento_iva === true ? 'no' : p.exento_iva === false ? 'yes' : null,
+            // Regla del negocio: TODO producto nace exento de IVA, venga de la
+            // factura o se escriba a mano. Por eso no se usa el exento_iva que
+            // detecto la IA: la fila arranca en 'no' (exento) y, si hace falta,
+            // se cambia a mano en esta misma tabla antes de importar, fila por
+            // fila o con el boton que aplica el IVA a todas.
+            opcionIva: 'no' as OpcionIva,
           };
         });
 
@@ -620,7 +636,15 @@ export function useEscanerFacturas() {
     setProductos((prev) => prev.map((p) => ({ ...p, opcionIva: opcion })));
   }, []);
 
+  // Al salir de la pantalla de facturas no queda ningun <img> apuntando a esas
+  // URLs, asi que es el momento seguro de soltar las que sigan vivas.
+  const refFilasVivas = useRef<ProductoFactura[]>([]);
+  refFilasVivas.current = productos;
+  useEffect(() => () => { refFilasVivas.current.forEach(soltarFotoDeFila); }, []);
+
   const reiniciar = useCallback(() => {
+    // Las filas se borran justo abajo, asi que estas URLs ya no las mira nadie.
+    productos.forEach(soltarFotoDeFila);
     fijarPaso('idle');
     setProductos([]);
     setProveedor(null);
@@ -631,7 +655,7 @@ export function useEscanerFacturas() {
     fijarResultadoImportacion(null);
     setConDescuento(false);
     setDescuentoStr('');
-  }, []);
+  }, [productos]);
 
   return {
     paso,

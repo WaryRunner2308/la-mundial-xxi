@@ -20,9 +20,11 @@ const usuarioACorreo = (username: string) =>
 
 const ContextoAuth = createContext<TipoContextoAuth | undefined>(undefined);
 
-const INACTIVIDAD_INVITADO = 4 * 60 * 1000; // 4 minutos
-const INACTIVIDAD_GERENCIA = 10 * 60 * 1000; // 10 minutos
-const AVISO_ANTES_DE_EXPIRAR = 30 * 1000; // aviso 30s antes de cerrar sesion
+// Tiempo sin tocar nada antes de cerrar la sesion sola. Igual para gerencia y
+// para invitado. La sesion sobrevive al refresco de la pagina, asi que este
+// contador es la unica proteccion si alguien deja el equipo abierto.
+const INACTIVIDAD_MAXIMA = 30 * 60 * 1000; // 30 minutos
+const AVISO_ANTES_DE_EXPIRAR = 60 * 1000; // aviso 1 min antes de cerrar sesion
 
 export function ProveedorAuth({ children }: { children: ReactNode }) {
   const [rolUsuario, fijarRolUsuario] = useState<RolUsuario>(null);
@@ -33,9 +35,6 @@ export function ProveedorAuth({ children }: { children: ReactNode }) {
 
   useEffect(() => { estaMontado.current = true; return () => { estaMontado.current = false; }; }, []);
   useEffect(() => { refRolUsuario.current = rolUsuario; }, [rolUsuario]);
-
-  const inactividadSegunRol = (role: 'gerencia' | 'invitado') =>
-    role === 'gerencia' ? INACTIVIDAD_GERENCIA : INACTIVIDAD_INVITADO;
 
   const limpiarTemporizador = () => {
     if (refTemporizador.current) {
@@ -58,10 +57,10 @@ export function ProveedorAuth({ children }: { children: ReactNode }) {
   };
 
   // Arranca el timer de cierre y, si alcanza el tiempo, uno de aviso previo.
-  // remainingMs permite retomar una sesion ya empezada (ej. al recargar la pagina).
-  const iniciarTemporizador = (role: 'gerencia' | 'invitado', remainingMs?: number) => {
+  // restanteMs permite retomar una sesion ya empezada (ej. al recargar la pagina).
+  const iniciarTemporizador = (restanteMs?: number) => {
     limpiarTemporizador();
-    const tiempoLimite = remainingMs ?? inactividadSegunRol(role);
+    const tiempoLimite = restanteMs ?? INACTIVIDAD_MAXIMA;
     refTemporizador.current = setTimeout(expirarSesion, tiempoLimite);
 
     const avisarEn = tiempoLimite - AVISO_ANTES_DE_EXPIRAR;
@@ -91,9 +90,12 @@ export function ProveedorAuth({ children }: { children: ReactNode }) {
 
       if (rolGuardado === 'gerencia' || rolGuardado === 'invitado') {
         const ahora = Date.now();
-        const ultimaActividad = actividadGuardada ? parseInt(actividadGuardada, 10) : ahora;
+        const guardada = actividadGuardada ? parseInt(actividadGuardada, 10) : NaN;
+        // Si la marca de tiempo esta corrupta o no existe, no se adivina: se
+        // trata como sesion vencida y se vuelve a pedir el acceso.
+        const ultimaActividad = Number.isFinite(guardada) ? guardada : 0;
         const transcurrido = ahora - ultimaActividad;
-        const inactividadMaxima = inactividadSegunRol(rolGuardado);
+        const inactividadMaxima = INACTIVIDAD_MAXIMA;
 
         if (transcurrido >= inactividadMaxima) {
           localStorage.removeItem('userRole');
@@ -101,7 +103,7 @@ export function ProveedorAuth({ children }: { children: ReactNode }) {
           supabase.auth.signOut().catch(() => {});
         } else if (estaMontado.current) {
           fijarRolUsuario(rolGuardado);
-          iniciarTemporizador(rolGuardado, inactividadMaxima - transcurrido);
+          iniciarTemporizador(inactividadMaxima - transcurrido);
         }
       }
     })();
@@ -129,7 +131,7 @@ export function ProveedorAuth({ children }: { children: ReactNode }) {
       ultimoRegistro = ahora;
 
       localStorage.setItem('lastActivity', ahora.toString());
-      iniciarTemporizador(rolActual);
+      iniciarTemporizador();
     };
 
     // passive: el navegador no tiene que esperar a ver si cancelamos el scroll
@@ -145,7 +147,7 @@ export function ProveedorAuth({ children }: { children: ReactNode }) {
       } else {
         const rolActual = refRolUsuario.current;
         if (rolActual) {
-          iniciarTemporizador(rolActual);
+          iniciarTemporizador();
         }
       }
     };
@@ -153,17 +155,13 @@ export function ProveedorAuth({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', alCambiarVisibilidad);
   }, []);
 
-  // Cierre de pestaña
-  useEffect(() => {
-    const alCerrarPestana = () => {
-      if (refRolUsuario.current) {
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('lastActivity');
-      }
-    };
-    window.addEventListener('beforeunload', alCerrarPestana);
-    return () => window.removeEventListener('beforeunload', alCerrarPestana);
-  }, []);
+  // NO se borra la sesion en 'beforeunload'. Antes si, y eso cerraba la sesion
+  // tambien al refrescar con F5, porque ese evento no distingue entre cerrar la
+  // pestana y recargarla. Encima el resultado cambiaba segun el aparato: en
+  // Safari de iPhone 'beforeunload' casi no dispara, asi que ahi la sesion
+  // sobrevivia y en la computadora no. Ahora la sesion aguanta el refresco en
+  // todos lados y lo que la cierra es el contador de INACTIVIDAD_MAXIMA, que se
+  // evalua tambien al volver a abrir usando la marca 'lastActivity'.
 
   // Sincronización entre pestañas
   useEffect(() => {
@@ -183,7 +181,7 @@ export function ProveedorAuth({ children }: { children: ReactNode }) {
       localStorage.setItem('userRole', 'invitado');
       localStorage.setItem('lastActivity', Date.now().toString());
       limpiarTemporizador();
-      iniciarTemporizador('invitado');
+      iniciarTemporizador();
       return true;
     }
 
@@ -206,7 +204,7 @@ export function ProveedorAuth({ children }: { children: ReactNode }) {
       localStorage.setItem('userRole', 'gerencia');
       localStorage.setItem('lastActivity', Date.now().toString());
       limpiarTemporizador();
-      iniciarTemporizador('gerencia');
+      iniciarTemporizador();
       return true;
     }
 
