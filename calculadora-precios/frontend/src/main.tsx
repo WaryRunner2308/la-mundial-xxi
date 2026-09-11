@@ -2,7 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
-import { AuthProvider } from './contexts/AuthContext'
+import { ProveedorAuth } from './contextos/ContextoAuth'
 
 // Global error handler
 window.addEventListener('error', (event) => {
@@ -13,19 +13,19 @@ window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason)
 })
 
-const container = document.getElementById('root')
-if (!container) {
+const contenedor = document.getElementById('root')
+if (!contenedor) {
   throw new Error('Root container not found')
 }
 
-const root = createRoot(container)
+const raiz = createRoot(contenedor)
 
-root.render(
+raiz.render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
+      <ProveedorAuth>
         <App />
-      </AuthProvider>
+      </ProveedorAuth>
     </BrowserRouter>
   </React.StrictMode>
 )

@@ -1,47 +1,47 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { API_URL, ANON_KEY } from './config';
+import { URL_SUPABASE, CLAVE_ANONIMA } from './configuracion';
 
-const supabaseUrl = API_URL;
-const supabaseAnonKey = ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase credentials not found. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+if (!URL_SUPABASE || !CLAVE_ANONIMA) {
+  throw new Error('Faltan las credenciales de Supabase. Define VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY');
 }
 
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase: SupabaseClient = createClient(URL_SUPABASE, CLAVE_ANONIMA);
 
 /**
- * Upload image to Supabase Storage bucket 'product-images'
- * Note: Bucket must exist and be set to 'public' in Supabase Dashboard
+ * Sube una imagen al bucket 'product-images' de Supabase Storage.
+ * Nota: el bucket debe existir y estar marcado como 'public' en el panel de Supabase.
+ *
+ * OJO: el nombre del bucket y la ruta del archivo son identificadores remotos.
+ * No se traducen: las imágenes ya subidas viven en esas rutas exactas.
  */
-export async function uploadProductImage(file: File, productId: number): Promise<string> {
-  const fileExt = file.name.split('.').pop() || 'png';
-  const filePath = `products/product_${productId}.${fileExt}`;
+export async function subirImagenProducto(archivo: File, idProducto: number): Promise<string> {
+  const extension = archivo.name.split('.').pop() || 'png';
+  const ruta = `products/product_${idProducto}.${extension}`;
 
   const { error } = await supabase.storage
     .from('product-images')
-    .upload(filePath, file, {
+    .upload(ruta, archivo, {
       cacheControl: '3600',
       upsert: true,
-      contentType: file.type
+      contentType: archivo.type
     });
 
   if (error) {
-    throw new Error(`Failed to upload image: ${error.message}`);
+    throw new Error(`No se pudo subir la imagen: ${error.message}`);
   }
 
-  const { data: urlData } = supabase.storage
+  const { data: datosUrl } = supabase.storage
     .from('product-images')
-    .getPublicUrl(filePath);
+    .getPublicUrl(ruta);
 
-  return urlData.publicUrl;
+  return datosUrl.publicUrl;
 }
 
 /**
- * Delete product image from Supabase Storage
+ * Elimina la imagen de un producto de Supabase Storage.
  */
-export async function deleteProductImage(productId: number): Promise<void> {
-  const exts = ['png', 'jpg', 'jpeg', 'webp'];
-  const paths = exts.map(ext => `products/product_${productId}.${ext}`);
-  await supabase.storage.from('product-images').remove(paths);
+export async function eliminarImagenProducto(idProducto: number): Promise<void> {
+  const extensiones = ['png', 'jpg', 'jpeg', 'webp'];
+  const rutas = extensiones.map(ext => `products/product_${idProducto}.${ext}`);
+  await supabase.storage.from('product-images').remove(rutas);
 }
