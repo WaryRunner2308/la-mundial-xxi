@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
 import { useAlmacenMoneda } from '@/almacen/almacenMoneda';
+import { FACTOR_IVA, IVA_PORCENTAJE } from '@/utilidades/iva';
 import { convertirEntradaANumero } from '@/utilidades/decimales';
 import { CampoSeguro } from '@/componentes/ui/CampoSeguro';
 
@@ -64,7 +65,7 @@ function InterruptorIva({ checked, onToggle }: { checked: boolean; onToggle: () 
       <div>
         <span className="text-sm font-semibold text-[#e6edf3]">
           Aplicar IVA{' '}
-          <span className="text-[#8b949e] font-normal">(16%)</span>
+          <span className="text-[#8b949e] font-normal">({IVA_PORCENTAJE})</span>
         </span>
         <AnimatePresence mode="wait">
           {checked ? (
@@ -77,7 +78,7 @@ function InterruptorIva({ checked, onToggle }: { checked: boolean; onToggle: () 
               className="text-xs font-semibold"
               style={{ color: '#009A3A' }}
             >
-              Incluido (+16%)
+              Incluido (+{IVA_PORCENTAJE})
             </motion.div>
           ) : (
             <motion.div
@@ -111,7 +112,7 @@ export function PaginaCalculadora({ alEditarTasa }: PropsPaginaCalculadora) {
     const divisor = 1 - ganancia / 100;
     const precioBase = costo / divisor;
     const utilidad = precioBase - costo;
-    const precioConIva = datos.aplicarIva ? precioBase * 1.16 : precioBase;
+    const precioConIva = datos.aplicarIva ? precioBase * FACTOR_IVA : precioBase;
     let precioConIvaConvertido = precioConIva;
     let utilidadConvertida = utilidad;
     if (tasa > 0) {
@@ -371,7 +372,7 @@ export function PaginaCalculadora({ alEditarTasa }: PropsPaginaCalculadora) {
                           className="text-xs px-2 py-0.5 rounded-full font-black uppercase tracking-wider"
                           style={{ background: 'rgba(0,154,58,0.15)', color: '#009A3A', border: '1px solid rgba(0,154,58,0.25)' }}
                         >
-                          + IVA 16%
+                          + IVA {IVA_PORCENTAJE}
                         </motion.span>
                       )}
                     </AnimatePresence>

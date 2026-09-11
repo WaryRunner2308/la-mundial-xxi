@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, CheckCircle, AlertCircle, RotateCcw, Download, ChevronDown, Plus, Store, X, TrendingUp, TrendingDown } from 'lucide-react';
 import { CapturaCamara } from './CapturaCamara';
 import { TablaRevisionFactura } from './TablaRevisionFactura';
-import { useInvoiceScanner, MENSAJES_CARGA } from './useEscanerFacturas';
+import { useEscanerFacturas, MENSAJES_CARGA } from './useEscanerFacturas';
 import { useAlmacenProveedores } from '@/almacen/almacenProveedores';
 import { useAlmacenAvisos } from '@/almacen/almacenAvisos';
 import { ModalConfirmacion } from '@/componentes/ui/ModalConfirmacion';
@@ -333,7 +333,7 @@ export function PaginaFactura() {
     alternarTodos,
     fijarIvaTodos,
     reiniciar,
-  } = useInvoiceScanner();
+  } = useEscanerFacturas();
 
   const { cargarProveedores } = useAlmacenProveedores();
   useEffect(() => { cargarProveedores(); }, []);

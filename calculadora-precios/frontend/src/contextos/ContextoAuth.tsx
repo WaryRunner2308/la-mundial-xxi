@@ -108,16 +108,32 @@ export function ProveedorAuth({ children }: { children: ReactNode }) {
   }, []);
 
   // Eventos de actividad (registrados UNA SOLA VEZ, usan ref para evitar cierres)
+  //
+  // Van con freno de 1 segundo. Sin el, cada 'mousemove' y cada 'scroll'
+  // -cientos por segundo al mover el mouse o deslizar una lista- escribia en
+  // localStorage (que es sincrono y bloquea la pantalla) y rearmaba dos
+  // temporizadores. En el celular eso se sentia como tirones al hacer scroll.
+  // Un segundo de resolucion sobra: el cierre por inactividad son 4 o 10
+  // minutos, asi que perder hasta 1 segundo de precision no cambia nada.
   useEffect(() => {
     const eventos = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'] as const;
+    const ESPERA_MINIMA_MS = 1000;
+    let ultimoRegistro = 0;
+
     const manejador = () => {
       const rolActual = refRolUsuario.current;
-      if (rolActual) {
-        localStorage.setItem('lastActivity', Date.now().toString());
-        iniciarTemporizador(rolActual);
-      }
+      if (!rolActual) return;
+
+      const ahora = Date.now();
+      if (ahora - ultimoRegistro < ESPERA_MINIMA_MS) return;
+      ultimoRegistro = ahora;
+
+      localStorage.setItem('lastActivity', ahora.toString());
+      iniciarTemporizador(rolActual);
     };
-    eventos.forEach(ev => window.addEventListener(ev, manejador));
+
+    // passive: el navegador no tiene que esperar a ver si cancelamos el scroll
+    eventos.forEach(ev => window.addEventListener(ev, manejador, { passive: true }));
     return () => eventos.forEach(ev => window.removeEventListener(ev, manejador));
   }, []); // <-- SIN dependencias, se registra una vez
 

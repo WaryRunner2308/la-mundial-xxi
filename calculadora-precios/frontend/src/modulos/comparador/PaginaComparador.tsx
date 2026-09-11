@@ -180,7 +180,7 @@ export function PaginaComparador() {
                   onClick={() => { fijarTerminoBusqueda(nombreProducto); alSeleccionarProducto(nombreProducto); fijarIndiceResaltado(-1); }}
                   onMouseEnter={() => fijarIndiceResaltado(indice)}
                   role="option"
-                  aria-marcado={indice === indiceResaltado}
+                  aria-selected={indice === indiceResaltado}
                   className="px-4 py-3 cursor-pointer transition-colors text-sm"
                   style={{
                     background: indice === indiceResaltado ? 'rgba(0,154,58,0.1)' : 'transparent',

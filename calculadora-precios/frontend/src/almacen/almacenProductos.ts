@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { supabase, eliminarImagenProducto } from '../lib/supabase';
 import { useAlmacenMoneda } from './almacenMoneda';
 import { Moneda } from '../utilidades/formato';
 
@@ -164,6 +164,14 @@ export const useAlmacenProductos = create<EstadoProductos>((set, get) => ({
       throw error;
     }
     set((s) => ({ productos: s.productos.filter((p) => p.id !== id) }));
+
+    // La foto vive aparte, en Storage, y no se borra sola al borrar la fila.
+    // Sin esto cada producto eliminado dejaba su imagen ocupando espacio para
+    // siempre. Va despues de borrar la fila y sin throw: el producto ya se
+    // elimino, y si la limpieza de la imagen falla no hay que romper por eso.
+    eliminarImagenProducto(id).catch((err) => {
+      console.error('[Supabase] no se pudo borrar la imagen del producto:', err);
+    });
   },
 
   actualizarProducto: async (id: number, cambios: Partial<DatosProducto>) => {

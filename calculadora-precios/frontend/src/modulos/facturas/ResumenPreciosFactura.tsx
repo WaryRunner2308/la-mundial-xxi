@@ -157,7 +157,7 @@ export function ResumenPreciosFactura({ factura, onClose }: PropsResumenPreciosF
                   <button
                     type="button"
                     onClick={onClose}
-                    aria-etiqueta="Cerrar resumen"
+                    aria-label="Cerrar resumen"
                     className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-[#8b949e] transition-colors hover:text-[#e6edf3]"
                     style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
                   >

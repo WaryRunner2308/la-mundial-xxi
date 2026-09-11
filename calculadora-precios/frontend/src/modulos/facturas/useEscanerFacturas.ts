@@ -13,7 +13,20 @@ import { calcularFila } from './precioVenta';
 // guarda la clave de Gemini fuera del cliente. Se llama por URL absoluta
 // porque la app de escritorio (Electron) carga los archivos desde disco
 // (file://), no desde este dominio.
-const URL_ESCANEO_FACTURA = 'https://la-mundial-xxi.vercel.app/api/scan-invoice';
+//
+// El dominio sale de VITE_URL_API para poder apuntar a un despliegue de
+// prueba o al servidor local sin tocar el código. Si no está definida, cae en
+// producción, que es lo que hacía antes: así la app de escritorio ya compilada
+// sigue funcionando igual aunque nadie configure la variable.
+const URL_BASE_API = import.meta.env.VITE_URL_API || 'https://la-mundial-xxi.vercel.app';
+const URL_ESCANEO_FACTURA = `${URL_BASE_API.replace(/\/$/, '')}/api/scan-invoice`;
+
+/**
+ * Ganancia que se propone al importar una factura, mientras el usuario no
+ * escriba otra. Estaba escrita tres veces por separado: si alguien cambiaba
+ * una sola, la fila mostraba un porcentaje y guardaba otro.
+ */
+export const GANANCIA_POR_DEFECTO = 30;
 
 export type OpcionIva = 'yes' | 'no' | null;
 
@@ -124,6 +137,18 @@ function detectarBultoEnNombre(nombre: string): number | null {
   return null;
 }
 
+// El precio que devuelve la IA viene tipado como `number | string`, y a veces
+// llega como texto. `Number("11.154,34")` da NaN, y ese NaN se propagaba en
+// silencio: la fila quedaba marcada para importar, el costo se guardaba como
+// NaN y Supabase terminaba recibiendo null. Aqui se normaliza igual que
+// cualquier entrada del usuario (coma decimal incluida) y lo que no se pueda
+// leer cae en 0, que se ve en pantalla como 0.00 y el usuario puede corregir a
+// mano con el campo de precio de costo.
+function precioDeLaIA(crudo: number | string): number {
+  const n = typeof crudo === 'number' ? crudo : convertirEntradaANumero(String(crudo));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 // Normaliza precio/cantidad_bulto cruzando lo que dijo la IA con el patrón del nombre.
 // Si el nombre indica bulto y la IA no dividió (cantidad_bulto null/1), divide en código.
 function normalizarBulto(precioIA: number, cantidadIA: number | null, nombre: string): {
@@ -146,7 +171,7 @@ function normalizarBulto(precioIA: number, cantidadIA: number | null, nombre: st
   return { precio: precioIA, cantidadBulto: null, precioTotal: null };
 }
 
-export function useInvoiceScanner() {
+export function useEscanerFacturas() {
   const { productos: productosGuardados, agregarProducto, actualizarProducto } = useAlmacenProductos();
   const { proveedores } = useAlmacenProveedores();
   const { tasa } = useAlmacenMoneda();
@@ -159,7 +184,7 @@ export function useInvoiceScanner() {
   const [progresoImportacion, fijarProgresoImportacion] = useState(0);
   const [totalImportacion, fijarTotalImportacion] = useState(0);
   const [indiceMensajeCarga, fijarIndiceMensajeCarga] = useState(0);
-  const [gananciaGeneral, fijarGananciaGeneral] = useState('30');
+  const [gananciaGeneral, fijarGananciaGeneral] = useState(String(GANANCIA_POR_DEFECTO));
   const [modoGanancia, fijarModoGanancia] = useState<'global' | 'individual'>('global');
   const [resultadoImportacion, fijarResultadoImportacion] = useState<ResultadoImportacion | null>(null);
   const [conDescuento, setConDescuento] = useState(false);
@@ -213,7 +238,7 @@ export function useInvoiceScanner() {
     return {
       productos: data.productos.map((p) => ({
         ...p,
-        precio: Number(p.precio),
+        precio: precioDeLaIA(p.precio),
         cantidad_bulto: p.cantidad_bulto != null ? Number(p.cantidad_bulto) || null : null,
         exento_iva: p.exento_iva === true ? true : p.exento_iva === false ? false : null,
       })),
@@ -335,8 +360,10 @@ export function useInvoiceScanner() {
 
         const mapeados: ProductoFactura[] = resultado.productos.map((p) => {
           const moneda: 'USD' | 'Bs' = p.moneda === 'USD' ? 'USD' : 'Bs';
+          // p.precio ya paso por precioDeLaIA en llamarGeminiVision: es un
+          // numero finito, no hace falta volver a convertirlo.
           const { precio, cantidadBulto, precioTotal } = normalizarBulto(
-            Number(p.precio),
+            p.precio,
             p.cantidad_bulto ?? null,
             p.nombre
           );
@@ -355,7 +382,7 @@ export function useInvoiceScanner() {
             descuentoPv: 'mantener' as const,
             fotoUrl: null,
             fotoBlob: null,
-            ganancia: 30,
+            ganancia: GANANCIA_POR_DEFECTO,
             // La IA solo marca el IVA cuando la factura lo dice claro o cuando las
             // notas lo piden; si no, queda sin definir para elegirlo a mano.
             opcionIva: p.exento_iva === true ? 'no' : p.exento_iva === false ? 'yes' : null,
@@ -394,7 +421,7 @@ export function useInvoiceScanner() {
     const cambiosPrecio: CambioPrecio[] = [];
     // Costo final en USD por fila, para dejarlo grabado en el historial
     const costoFinalPorFila = new Map<ProductoFactura, number>();
-    const gananciaGlobal = parseFloat(gananciaGeneral) || 30;
+    const gananciaGlobal = parseFloat(gananciaGeneral) || GANANCIA_POR_DEFECTO;
     const pctDescuento = conDescuento ? parseFloat(descuento) || 0 : 0;
     const descuentoActivo = pctDescuento > 0 && pctDescuento < 100;
 

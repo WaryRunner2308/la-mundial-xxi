@@ -1,4 +1,5 @@
 import type { ProductoFactura, OpcionIva } from './useEscanerFacturas';
+import { IVA } from '@/utilidades/iva';
 
 // ============================================================================
 //  Cálculo de precio de venta de una fila de factura.
@@ -8,8 +9,6 @@ import type { ProductoFactura, OpcionIva } from './useEscanerFacturas';
 //  se duplicara, el historial mostraría números distintos a los que se vieron
 //  al momento de importar.
 // ============================================================================
-
-export const IVA = 0.16;
 
 // base = costo / (1 - ganancia/100)
 // opcionIva 'yes' → base * 1.16; 'no' o null → base

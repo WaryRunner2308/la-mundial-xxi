@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 // Prompt y reglas de lectura de facturas: copia exacta de la que vivía en
-// frontend/src/features/invoice/useInvoiceScanner.ts. No cambiar sin revisar
+// frontend/src/modulos/facturas/useEscanerFacturas.ts. No cambiar sin revisar
 // también el parseo que hace el cliente del resultado.
 const INVOICE_PROMPT = `Eres un lector de facturas para un negocio venezolano. Tu única tarea es extraer los datos de la factura con precisión absoluta.
 

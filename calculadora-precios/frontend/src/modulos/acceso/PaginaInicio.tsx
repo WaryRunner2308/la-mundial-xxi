@@ -291,7 +291,7 @@ export function PaginaInicio() {
                       type="button"
                       tabIndex={-1}
                       onClick={() => fijarMostrarClave(!mostrarClave)}
-                      aria-etiqueta={mostrarClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      aria-label={mostrarClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[#484f58] hover:text-[#e6edf3] transition"
                     >
                       {mostrarClave ? <EyeOff size={18} /> : <Eye size={18} />}

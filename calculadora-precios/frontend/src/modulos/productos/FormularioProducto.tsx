@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAlmacenProductos } from '../../almacen/almacenProductos';
 import { useAlmacenMoneda } from '../../almacen/almacenMoneda';
+import { FACTOR_IVA, IVA_PORCENTAJE } from '@/utilidades/iva';
 import { useAlmacenProveedores } from '../../almacen/almacenProveedores';
 import { ModalConfirmacion } from '../../componentes/ui/ModalConfirmacion';
 import { convertirEntradaANumero } from '../../utilidades/decimales';
@@ -76,7 +77,7 @@ function calcularEnVivo(
   const divisor = 1 - (profit / 100);
   const precioBase = costoUnitario / divisor;
   const utilidad = precioBase - costoUnitario;
-  const precioConIva = data.aplicarIVA ? precioBase * 1.16 : precioBase;
+  const precioConIva = data.aplicarIVA ? precioBase * FACTOR_IVA : precioBase;
 
   let precioConIvaConvertido = precioConIva;
   let utilidadConvertida = utilidad;
@@ -224,7 +225,7 @@ function TarjetaIva({ checked, onChange }: { checked: boolean; onChange: (v: boo
         {checked && <Check size={12} color="white" strokeWidth={3} />}
       </div>
       <span className="flex-1 text-left text-sm font-semibold" style={{ color: checked ? '#e6edf3' : '#8b949e' }}>
-        Aplicar IVA (16%)
+        Aplicar IVA ({IVA_PORCENTAJE})
       </span>
       <span
         className="text-[9px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full"

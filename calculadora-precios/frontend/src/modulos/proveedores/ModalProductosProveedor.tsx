@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAlmacenProductos } from '@/almacen/almacenProductos';
 import { useAlmacenMoneda } from '@/almacen/almacenMoneda';
+import { FACTOR_IVA } from '@/utilidades/iva';
 import { X, Pencil, Package } from 'lucide-react';
 import { useNavegacionTeclado } from '@/hooks/useNavegacionTeclado';
 import { FormularioProducto } from '../productos/FormularioProducto';
@@ -29,7 +30,7 @@ export function ModalProductosProveedor({ idProveedor, alCerrar }: PropsModalPro
   const productosConPrecios = productosDelProveedor.map((producto) => {
     const divisor = 1 - (producto.porcentajeGanancia / 100);
     const precioBaseUSD = divisor <= 0 ? producto.costoUSD : producto.costoUSD / divisor;
-    const precioConIvaUSD = producto.exentoIva ? precioBaseUSD : precioBaseUSD * 1.16;
+    const precioConIvaUSD = producto.exentoIva ? precioBaseUSD : precioBaseUSD * FACTOR_IVA;
     return {
       ...producto,
       precioConIvaUSD: Math.round(precioConIvaUSD * 100) / 100,
@@ -130,7 +131,7 @@ export function ModalProductosProveedor({ idProveedor, alCerrar }: PropsModalPro
                 tabIndex={0}
                 onKeyDown={alPresionarTecla}
                 onMouseLeave={() => fijarIndiceResaltado(-1)}
-                aria-etiqueta="Lista de productos del proveedor"
+                aria-label="Lista de productos del proveedor"
                 role="grid"
                 className="outline-none"
               >

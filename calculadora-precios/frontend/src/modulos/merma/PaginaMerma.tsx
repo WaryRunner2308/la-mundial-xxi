@@ -11,8 +11,14 @@ export function PaginaMerma() {
   const factura = convertirEntradaANumero(kilosFactura);
   const llegaron = convertirEntradaANumero(kilosLlegaron);
 
-  const kilosMerma = factura > 0 ? Math.max(0, factura - llegaron) : null;
-  const porcentajeMerma = factura > 0 ? ((factura - llegaron) / factura * 100).toFixed(2) : null;
+  // Los kilos que faltaron nunca son negativos: si llego MAS de lo facturado no
+  // hay merma, hay sobrante. El porcentaje se topa igual que los kilos porque
+  // antes solo se topaban los kilos: al recibir de mas, la pantalla mostraba un
+  // "-3.50%" enorme y al mismo tiempo escondia la linea de kilos (que exige
+  // > 0), asi que los dos numeros se contradecian.
+  const faltante = factura > 0 ? Math.max(0, factura - llegaron) : null;
+  const kilosMerma = faltante;
+  const porcentajeMerma = faltante !== null ? (faltante / factura * 100).toFixed(2) : null;
   const mermaNumerica = porcentajeMerma !== null ? parseFloat(porcentajeMerma) : 0;
 
   const severidadSegunMerma = (pct: number) => {

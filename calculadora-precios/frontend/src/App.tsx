@@ -128,7 +128,11 @@ function ModalTasa({ tasa, fijarTasa, alCerrar, obligatorio = false }: {
       exit={{ opacity: 0 }}
       className="fixed inset-0 flex items-center justify-center z-[100] p-4"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
-      onClick={obligatorio ? undefined : alConfirmar}
+      // Clic afuera = descartar, NO guardar. Antes llamaba a alConfirmar: si el
+      // usuario empezaba a escribir "36,50", alcanzaba a teclear "3" y hacia
+      // clic afuera para arrepentirse, la tasa quedaba en 3 y TODOS los precios
+      // de la app se calculaban con esa tasa.
+      onClick={obligatorio ? undefined : alCerrar}
     >
       <motion.div
         initial={{ scale: 0.82, opacity: 0, y: 24 }}

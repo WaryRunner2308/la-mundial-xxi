@@ -73,6 +73,16 @@ export function CapturaCamara({ alCapturar }: PropsCapturaCamara) {
     return () => detenerCamara();
   }, [detenerCamara]);
 
+  // La URL de la vista previa apunta a la foto completa en memoria. Hay que
+  // soltarla al reemplazarla y al cerrar: si no, cada foto que se toma o se
+  // elige queda retenida hasta recargar la pagina. Con fotos de celular
+  // (12MP) son varios MB por intento, y encima el navegador no las libera
+  // solo. Se suelta la URL, no el Blob: ese se sigue usando al confirmar.
+  useEffect(() => {
+    if (!vistaPrevia) return;
+    return () => URL.revokeObjectURL(vistaPrevia);
+  }, [vistaPrevia]);
+
   // Mientras la cámara está abierta se congela la escala de la app: se fija
   // maximum-scale en el viewport y se bloquea el scroll del fondo. Sin esto, en
   // el teléfono un pinch o un doble toque sobre la cámara hacía zoom de la

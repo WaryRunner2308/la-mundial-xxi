@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAlmacenProductos, Producto } from '../../almacen/almacenProductos';
 import { useAlmacenMoneda } from '../../almacen/almacenMoneda';
+import { FACTOR_IVA } from '@/utilidades/iva';
 import { useAlmacenProveedores } from '../../almacen/almacenProveedores';
 import { FormularioProducto } from './FormularioProducto';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -33,7 +34,7 @@ function useProductosConPrecios(productos: Producto[]) {
       const divisor = 1 - producto.porcentajeGanancia / 100;
       const precioBaseUSD = divisor <= 0 ? producto.costoUSD : producto.costoUSD / divisor;
       const utilidadUSD = precioBaseUSD - producto.costoUSD;
-      const precioConIvaUSD = producto.exentoIva ? precioBaseUSD : precioBaseUSD * 1.16;
+      const precioConIvaUSD = producto.exentoIva ? precioBaseUSD : precioBaseUSD * FACTOR_IVA;
       return {
         ...producto,
         precioConIvaUSD: Math.round(precioConIvaUSD * 100) / 100,
@@ -296,7 +297,7 @@ export function PaginaProductos({
           tabIndex={0}
           onKeyDown={alPresionarTecla}
           onMouseLeave={() => fijarIndiceResaltado(-1)}
-          aria-etiqueta="Lista de productos"
+          aria-label="Lista de productos"
           role="grid"
           className="outline-none"
         >
@@ -345,7 +346,7 @@ export function PaginaProductos({
                           borderBottom: '1px solid rgba(255,255,255,0.05)',
                         }}
                         role="row"
-                        aria-marcado={estaResaltado}
+                        aria-selected={estaResaltado}
                         onMouseEnter={() => fijarIndiceResaltado(indice)}
                       >
                         {/* Foto */}
