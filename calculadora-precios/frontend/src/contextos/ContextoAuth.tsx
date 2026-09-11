@@ -191,12 +191,23 @@ export function ProveedorAuth({ children }: { children: ReactNode }) {
       if (!usuarioEscrito || !claveEscrita) return false;
 
       // Autenticación REAL contra Supabase. Sin credenciales escritas en el código.
+      const correo = usuarioACorreo(usuarioEscrito);
       const { error } = await supabase.auth.signInWithPassword({
-        email: usuarioACorreo(usuarioEscrito),
+        email: correo,
         password: claveEscrita,
       });
 
       if (error) {
+        // Antes esto devolvia false y la pantalla decia "credenciales
+        // incorrectas" pasara lo que pasara. Si el correo no estaba confirmado
+        // en Supabase, o el usuario no existia, o la cuenta estaba bloqueada por
+        // intentos, el mensaje era el mismo y no habia por donde agarrar el
+        // problema. El motivo real queda en la consola del navegador.
+        console.error('[Auth] Supabase rechazo el login de gerencia:', {
+          correo,
+          motivo: error.message,
+          codigo: error.code ?? error.status,
+        });
         return false;
       }
 
