@@ -1,46 +1,46 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCurrencyStore } from '@/store/currencyStore';
+import { useAlmacenMoneda } from '@/almacen/almacenMoneda';
 import { supabase } from '@/lib/supabase';
-import { parseNumericInput } from '@/utils/validateDecimal';
-import { SecureInput } from '@/components/ui/SecureInput';
-import { useAuth } from '@/contexts/AuthContext';
-import { fetchBcvRate, formatBcvDate, type BcvRate } from '@/services/bcvRate';
+import { convertirEntradaANumero } from '@/utilidades/decimales';
+import { CampoSeguro } from '@/componentes/ui/CampoSeguro';
+import { useAuth } from '@/contextos/ContextoAuth';
+import { obtenerTasaBcv, formatearFechaBcv, type TasaBcv } from '@/servicios/tasaBcv';
 import {
   Package, Calculator, Truck, BarChart2, TrendingDown,
   Menu, X, DollarSign, ScanLine, Loader2, Landmark, FileText, LogOut,
 } from 'lucide-react';
 
-import { ProductsPage } from '@/features/products/ProductList';
-import { MermaPage } from '@/features/merma/MermaPage';
-import { useProductStore } from '@/store/productStore';
-import { CalculatorPage } from '@/features/calculator/CalculatorPage';
-import { ProvidersPage } from '@/features/providers/ProvidersPage';
-import { ComparatorPage } from '@/features/comparator/ComparatorPage';
-import { LandingPage } from '@/features/auth/LandingPage';
-import { DiagonalMarquee } from '@/features/auth/DiagonalMarquee';
-import { InvoicePage } from '@/features/invoice/InvoicePage';
-import { InvoiceHistoryPage } from '@/features/invoice/InvoiceHistoryPage';
-import { ToastHost } from '@/components/ui/Toast';
+import { PaginaProductos } from '@/modulos/productos/PaginaProductos';
+import { PaginaMerma } from '@/modulos/merma/PaginaMerma';
+import { useAlmacenProductos } from '@/almacen/almacenProductos';
+import { PaginaCalculadora } from '@/modulos/calculadora/PaginaCalculadora';
+import { PaginaProveedores } from '@/modulos/proveedores/PaginaProveedores';
+import { PaginaComparador } from '@/modulos/comparador/PaginaComparador';
+import { PaginaInicio } from '@/modulos/acceso/PaginaInicio';
+import { MarqueeDiagonal } from '@/modulos/acceso/MarqueeDiagonal';
+import { PaginaFactura } from '@/modulos/facturas/PaginaFactura';
+import { PaginaHistorialFacturas } from '@/modulos/facturas/PaginaHistorialFacturas';
+import { ContenedorAvisos } from '@/componentes/ui/Avisos';
 
 /* ─── Error Boundary ─── */
-class ErrorBoundary extends React.Component<
+class BarreraDeErrores extends React.Component<
   { children: React.ReactNode },
-  { hasError: boolean; error: Error | null }
+  { huboError: boolean; error: Error | null }
 > {
   constructor(props: { children: React.ReactNode }) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { huboError: false, error: null };
   }
   static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
+    return { huboError: true, error };
   }
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('ErrorBoundary:', error, info);
   }
   render() {
-    if (this.state.hasError) {
+    if (this.state.huboError) {
       return (
         <div className="flex items-center justify-center min-h-screen bg-[#0d1117]">
           <div
@@ -75,50 +75,50 @@ class ErrorBoundary extends React.Component<
 }
 
 /* ─── Rate Modal ─── */
-function RateModal({ rate, setRate, onClose, mandatory = false }: {
-  rate: number;
-  setRate: (r: number) => void;
-  onClose: () => void;
-  mandatory?: boolean;
+function ModalTasa({ tasa, fijarTasa, alCerrar, obligatorio = false }: {
+  tasa: number;
+  fijarTasa: (r: number) => void;
+  alCerrar: () => void;
+  obligatorio?: boolean;
 }) {
-  const [inputValue, setInputValue] = useState(rate > 0 ? rate.toString() : '');
-  const [rateError, setRateError] = useState('');
-  const [bcv, setBcv] = useState<BcvRate | null>(null);
-  const [bcvStatus, setBcvStatus] = useState<'loading' | 'ok' | 'error'>('loading');
-  const userTouched = useRef(false);
+  const [valorCampo, fijarValorCampo] = useState(tasa > 0 ? tasa.toString() : '');
+  const [errorTasa, fijarErrorTasa] = useState('');
+  const [bcv, fijarBcv] = useState<TasaBcv | null>(null);
+  const [estadoBcv, fijarEstadoBcv] = useState<'loading' | 'ok' | 'error'>('loading');
+  const usuarioEscribio = useRef(false);
 
   // Al abrir, consulta la tasa oficial BCV y pre-llena el campo si está vacío.
   // Si la API falla o no hay internet, el modal sigue funcionando en modo manual.
   useEffect(() => {
-    let active = true;
-    fetchBcvRate().then((result) => {
-      if (!active) return;
-      if (result) {
-        setBcv(result);
-        setBcvStatus('ok');
-        if (!userTouched.current) {
-          setInputValue((prev) => (prev === '' ? result.rate.toFixed(2) : prev));
+    let activo = true;
+    obtenerTasaBcv().then((resultado) => {
+      if (!activo) return;
+      if (resultado) {
+        fijarBcv(resultado);
+        fijarEstadoBcv('ok');
+        if (!usuarioEscribio.current) {
+          fijarValorCampo((prev) => (prev === '' ? resultado.tasa.toFixed(2) : prev));
         }
       } else {
-        setBcvStatus('error');
+        fijarEstadoBcv('error');
       }
     });
-    return () => { active = false; };
+    return () => { activo = false; };
   }, []);
 
-  const handleSubmit = () => {
-    const parsed = parseNumericInput(inputValue);
-    if (parsed > 0) {
-      setRate(parsed);
-      onClose();
+  const alConfirmar = () => {
+    const valorNumerico = convertirEntradaANumero(valorCampo);
+    if (valorNumerico > 0) {
+      fijarTasa(valorNumerico);
+      alCerrar();
       return;
     }
     // Obligatorio: sin tasa válida no se cierra ni se puede usar la app
-    if (mandatory) {
-      setRateError('Debes ingresar la tasa del día para continuar.');
+    if (obligatorio) {
+      fijarErrorTasa('Debes ingresar la tasa del día para continuar.');
       return;
     }
-    onClose();
+    alCerrar();
   };
 
   return (
@@ -128,7 +128,7 @@ function RateModal({ rate, setRate, onClose, mandatory = false }: {
       exit={{ opacity: 0 }}
       className="fixed inset-0 flex items-center justify-center z-[100] p-4"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
-      onClick={mandatory ? undefined : handleSubmit}
+      onClick={obligatorio ? undefined : alConfirmar}
     >
       <motion.div
         initial={{ scale: 0.82, opacity: 0, y: 24 }}
@@ -166,41 +166,41 @@ function RateModal({ rate, setRate, onClose, mandatory = false }: {
             <span className="block text-xs font-black text-[#009A3A] mb-2 uppercase tracking-wider">
               Tasa de Cambio
             </span>
-            <SecureInput
-              value={inputValue}
-              onChange={(v) => { userTouched.current = true; setInputValue(v); setRateError(''); }}
-              onSubmit={handleSubmit}
+            <CampoSeguro
+              value={valorCampo}
+              onChange={(v) => { usuarioEscribio.current = true; fijarValorCampo(v); fijarErrorTasa(''); }}
+              alEnviar={alConfirmar}
               placeholder="Ej: 582.69"
               inputMode="decimal"
               editable
-              noRing
-              displayClassName="!border-white/10 !rounded-xl !bg-[#1c2128] !text-[#e6edf3]"
+              sinAnillo
+              claseTextoVisible="!border-white/10 !rounded-xl !bg-[#1c2128] !text-[#e6edf3]"
             />
           </div>
 
           {/* Tasa oficial BCV (DolarApi) — informativa, siempre editable a mano */}
-          {bcvStatus === 'loading' && (
+          {estadoBcv === 'loading' && (
             <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs text-[#8b949e]"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <Loader2 size={13} className="animate-spin text-[#009A3A]" />
               Consultando tasa oficial BCV…
             </div>
           )}
-          {bcvStatus === 'ok' && bcv && (
+          {estadoBcv === 'ok' && bcv && (
             <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl"
               style={{ background: 'rgba(0,154,58,0.07)', border: '1px solid rgba(0,154,58,0.2)' }}>
               <div className="flex items-center gap-2 min-w-0">
                 <Landmark size={13} className="text-[#009A3A] flex-shrink-0" />
                 <span className="text-xs text-[#8b949e] truncate">
-                  BCV{formatBcvDate(bcv.updatedAt) ? ` (${formatBcvDate(bcv.updatedAt)})` : ''}:{' '}
+                  BCV{formatearFechaBcv(bcv.actualizadoEn) ? ` (${formatearFechaBcv(bcv.actualizadoEn)})` : ''}:{' '}
                   <span className="font-bold text-[#009A3A]" style={{ fontFamily: '"JetBrains Mono", monospace' }}>
-                    {bcv.rate.toFixed(2)} Bs
+                    {bcv.tasa.toFixed(2)} Bs
                   </span>
                 </span>
               </div>
               <button
                 type="button"
-                onClick={() => { setRate(bcv.rate); onClose(); }}
+                onClick={() => { fijarTasa(bcv.tasa); alCerrar(); }}
                 className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg text-[#009A3A] transition hover:text-white flex-shrink-0"
                 style={{ background: 'rgba(0,154,58,0.12)', border: '1px solid rgba(0,154,58,0.3)' }}
               >
@@ -208,21 +208,21 @@ function RateModal({ rate, setRate, onClose, mandatory = false }: {
               </button>
             </div>
           )}
-          {bcvStatus === 'error' && (
+          {estadoBcv === 'error' && (
             <p className="text-[11px] text-[#484f58] px-1">
               No se pudo consultar la tasa BCV automáticamente. Ingrésala manualmente.
             </p>
           )}
 
-          {rateError && (
+          {errorTasa && (
             <div className="p-3 rounded-xl text-sm flex items-center gap-2 text-[#C8102E]"
               style={{ background: 'rgba(200,16,46,0.08)', border: '1px solid rgba(200,16,46,0.2)' }}>
-              <span>⚠️</span> {rateError}
+              <span>⚠️</span> {errorTasa}
             </div>
           )}
           <button
             type="button"
-            onClick={handleSubmit}
+            onClick={alConfirmar}
             className="w-full py-3 font-bold rounded-xl text-white transition"
             style={{
               fontFamily: '"Barlow Condensed", sans-serif',
@@ -240,65 +240,65 @@ function RateModal({ rate, setRate, onClose, mandatory = false }: {
   );
 }
 
-/* ─── Nav items ─── */
-const NAV_ITEMS = [
-  { path: '/products',        icon: Package,     label: 'Productos',      managerOnly: false },
-  { path: '/calculator',      icon: Calculator,  label: 'Calculadora',    managerOnly: false },
-  { path: '/providers',       icon: Truck,       label: 'Proveedores',    managerOnly: true  },
-  { path: '/comparator',      icon: BarChart2,   label: 'Comparador',     managerOnly: true  },
-  { path: '/merma',           icon: TrendingDown,label: 'Merma',          managerOnly: true  },
-  { path: '/import-invoice',  icon: ScanLine,    label: 'Import. Factura',managerOnly: true  },
-  { path: '/invoices',        icon: FileText,    label: 'Facturas Import.',managerOnly: true },
+/* ─── Nav elementos ─── */
+const ENLACES_MENU = [
+  { path: '/products',        icon: Package,     etiqueta: 'Productos',      soloGerencia: false },
+  { path: '/calculator',      icon: Calculator,  etiqueta: 'Calculadora',    soloGerencia: false },
+  { path: '/providers',       icon: Truck,       etiqueta: 'Proveedores',    soloGerencia: true  },
+  { path: '/comparator',      icon: BarChart2,   etiqueta: 'Comparador',     soloGerencia: true  },
+  { path: '/merma',           icon: TrendingDown,etiqueta: 'Merma',          soloGerencia: true  },
+  { path: '/import-invoice',  icon: ScanLine,    etiqueta: 'Import. Factura',soloGerencia: true  },
+  { path: '/invoices',        icon: FileText,    etiqueta: 'Facturas Import.',soloGerencia: true },
 ];
 
 /* ─── App ─── */
 function App() {
-  const { rate, setRate } = useCurrencyStore();
-  const { loadFromSupabase } = useProductStore();
-  const { userRole, logout } = useAuth();
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [showEditRate, setShowEditRate] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [supabaseError, setSupabaseError] = useState<string | null>(null);
+  const { tasa, fijarTasa } = useAlmacenMoneda();
+  const { cargarDesdeSupabase } = useAlmacenProductos();
+  const { rolUsuario, cerrarSesion } = useAuth();
+  const [mostrarBienvenida, fijarMostrarBienvenida] = useState(false);
+  const [mostrarEditarTasa, fijarMostrarEditarTasa] = useState(false);
+  const [menuAbierto, fijarMenuAbierto] = useState(false);
+  const [errorSupabase, fijarErrorSupabase] = useState<string | null>(null);
   const location = useLocation();
 
-  const isGerencia = userRole === 'gerencia';
+  const esGerencia = rolUsuario === 'gerencia';
 
-  useEffect(() => { setSidebarOpen(false); }, [location]);
+  useEffect(() => { fijarMenuAbierto(false); }, [location]);
 
   // Al abrir el menú en móvil se suelta el foco de cualquier campo. Si no, el
   // buscador que quedó enfocado sigue con el caret parpadeando y el teclado del
   // teléfono abierto detrás del menú.
   useEffect(() => {
-    if (sidebarOpen && document.activeElement instanceof HTMLElement) {
+    if (menuAbierto && document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
-  }, [sidebarOpen]);
+  }, [menuAbierto]);
   // La tasa del día es obligatoria: el aviso sale al entrar a un modo (invitado
   // o gerencia) solo si todavia no se cargo una tasa hoy (currencyStore la
   // persiste con fecha), y no se puede cerrar sin ingresar una tasa válida.
-  useEffect(() => { if (userRole && rate === 0) setShowWelcome(true); }, [userRole, rate]);
+  useEffect(() => { if (rolUsuario && tasa === 0) fijarMostrarBienvenida(true); }, [rolUsuario, tasa]);
 
   useEffect(() => {
     supabase.from('products').select('count').limit(1).then(({ error }) => {
       if (error) {
         console.error('Supabase:', error);
-        setSupabaseError('Error de conexión a la base de datos.');
+        fijarErrorSupabase('Error de conexión a la base de datos.');
       } else {
-        loadFromSupabase().catch(() => setSupabaseError('No se pudieron cargar los productos.'));
+        cargarDesdeSupabase().catch(() => fijarErrorSupabase('No se pudieron cargar los productos.'));
       }
     });
-  }, [loadFromSupabase]);
+  }, [cargarDesdeSupabase]);
 
-  if (!userRole) return <LandingPage />;
+  if (!rolUsuario) return <PaginaInicio />;
 
-  const visibleNav = NAV_ITEMS.filter(item => !item.managerOnly || isGerencia);
+  const enlacesVisibles = ENLACES_MENU.filter(enlace => !enlace.soloGerencia || esGerencia);
 
   return (
     <div className="flex min-h-screen bg-[#0d1117] overflow-x-hidden">
 
       {/* Fondo animado: la palabra del modo activo en marquee horizontal */}
-      <DiagonalMarquee word={isGerencia ? 'GERENCIA' : 'INVITADO'} angle={0} fixed />
+      <MarqueeDiagonal palabra={esGerencia ? 'GERENCIA' : 'INVITADO'} angulo={0} fijo />
 
       {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center"
@@ -308,11 +308,11 @@ function App() {
           <div style={{ flex: 3, background: '#C8102E' }} />
         </div>
         <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
+          onClick={() => fijarMenuAbierto(!menuAbierto)}
           className="p-2 rounded-lg text-[#8b949e] hover:text-[#e6edf3] transition"
-          style={{ background: sidebarOpen ? 'rgba(255,255,255,0.05)' : 'transparent' }}
+          style={{ background: menuAbierto ? 'rgba(255,255,255,0.05)' : 'transparent' }}
         >
-          {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          {menuAbierto ? <X size={20} /> : <Menu size={20} />}
         </button>
         <span className="ml-3 font-black text-[#e6edf3] uppercase tracking-widest"
           style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.1rem' }}>
@@ -322,14 +322,14 @@ function App() {
 
       {/* Mobile overlay */}
       <AnimatePresence>
-        {sidebarOpen && (
+        {menuAbierto && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="lg:hidden fixed inset-0 z-40"
             style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
-            onClick={() => setSidebarOpen(false)}
+            onClick={() => fijarMenuAbierto(false)}
           />
         )}
       </AnimatePresence>
@@ -341,7 +341,7 @@ function App() {
           w-[200px] flex-shrink-0 self-start mt-3
           rounded-r-2xl overflow-hidden
           transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${menuAbierto ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
         style={{
           background: '#161b22',
@@ -377,13 +377,13 @@ function App() {
         <div className="px-3 pt-4 pb-2">
           <p className="text-[9px] font-black text-[#484f58] uppercase tracking-[0.16em] mb-2 px-2">Menú</p>
           <nav className="space-y-0.5">
-            {visibleNav.map((item) => {
-              const Icon = item.icon;
+            {enlacesVisibles.map((enlace) => {
+              const Icono = enlace.icon;
               const isActive =
-                location.pathname === item.path ||
-                (item.path === '/products' && location.pathname === '/');
+                location.pathname === enlace.path ||
+                (enlace.path === '/products' && location.pathname === '/');
               return (
-                <NavLink key={item.path} to={item.path} className="block">
+                <NavLink key={enlace.path} to={enlace.path} className="block">
                   <div
                     className="relative flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors duration-150 group"
                     style={{ color: isActive ? '#009A3A' : '#8b949e' }}
@@ -412,7 +412,7 @@ function App() {
                       className="relative z-10 flex-shrink-0"
                       style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(0,154,58,0.55))' } : {}}
                     >
-                      <Icon size={15} strokeWidth={2.2} />
+                      <Icono size={15} strokeWidth={2.2} />
                     </span>
                     <span
                       className="relative z-10 font-semibold flex-1 truncate"
@@ -423,7 +423,7 @@ function App() {
                         color: isActive ? '#009A3A' : 'inherit',
                       }}
                     >
-                      {item.label}
+                      {enlace.etiqueta}
                     </span>
                     {isActive && (
                       <motion.span
@@ -441,10 +441,10 @@ function App() {
         </div>
 
         {/* Tasa hoy — pegado debajo del menú */}
-        {rate > 0 && (
+        {tasa > 0 && (
           <div className="px-3 pt-1 pb-3">
             <button
-              onClick={() => setShowEditRate(true)}
+              onClick={() => fijarMostrarEditarTasa(true)}
               className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group"
               style={{ background: '#1c2128', border: '1px solid rgba(255,255,255,0.07)' }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,154,58,0.25)'; }}
@@ -461,7 +461,7 @@ function App() {
                     className="font-bold text-[#009A3A] group-hover:text-[#1ebb60] transition leading-none mt-0.5"
                     style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.72rem' }}
                   >
-                    {rate.toFixed(2)} Bs
+                    {tasa.toFixed(2)} Bs
                   </div>
                 </div>
               </div>
@@ -488,7 +488,7 @@ function App() {
         <div className="px-3 pb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
           <button
             type="button"
-            onClick={logout}
+            onClick={cerrarSesion}
             className="w-full flex items-center justify-center gap-2 py-2 rounded-xl transition-colors"
             style={{
               color: '#C8102E',
@@ -519,24 +519,24 @@ function App() {
 
       {/* ─── Main ─── */}
       <main className="relative flex-1 min-w-0 p-4 md:p-6 overflow-y-auto lg:pt-6 pt-16">
-        {supabaseError && (
+        {errorSupabase && (
           <div className="mb-4 p-4 rounded-xl text-sm text-[#C8102E]"
             style={{ background: 'rgba(200,16,46,0.08)', border: '1px solid rgba(200,16,46,0.2)' }}>
-            ⚠️ {supabaseError}
+            ⚠️ {errorSupabase}
           </div>
         )}
-        <ErrorBoundary>
+        <BarreraDeErrores>
           <Routes>
-            <Route path="/" element={<ProductsPage onEditRate={() => setShowEditRate(true)} userRole={userRole} />} />
-            <Route path="/products" element={<ProductsPage onEditRate={() => setShowEditRate(true)} userRole={userRole} />} />
-            <Route path="/calculator" element={<CalculatorPage onEditRate={() => setShowEditRate(true)} />} />
-            {isGerencia ? (
+            <Route path="/" element={<PaginaProductos alEditarTasa={() => fijarMostrarEditarTasa(true)} rolUsuario={rolUsuario} />} />
+            <Route path="/products" element={<PaginaProductos alEditarTasa={() => fijarMostrarEditarTasa(true)} rolUsuario={rolUsuario} />} />
+            <Route path="/calculator" element={<PaginaCalculadora alEditarTasa={() => fijarMostrarEditarTasa(true)} />} />
+            {esGerencia ? (
               <>
-                <Route path="/providers"       element={<ProvidersPage />} />
-                <Route path="/comparator"      element={<ComparatorPage />} />
-                <Route path="/merma"           element={<MermaPage />} />
-                <Route path="/import-invoice"  element={<InvoicePage />} />
-                <Route path="/invoices"        element={<InvoiceHistoryPage />} />
+                <Route path="/providers"       element={<PaginaProveedores />} />
+                <Route path="/comparator"      element={<PaginaComparador />} />
+                <Route path="/merma"           element={<PaginaMerma />} />
+                <Route path="/import-invoice"  element={<PaginaFactura />} />
+                <Route path="/invoices"        element={<PaginaHistorialFacturas />} />
               </>
             ) : (
               <>
@@ -559,21 +559,21 @@ function App() {
             } />
             <Route path="*" element={<Navigate to="/products" replace />} />
           </Routes>
-        </ErrorBoundary>
+        </BarreraDeErrores>
       </main>
 
       {/* Modals */}
       <AnimatePresence>
-        {showWelcome && (
-          <RateModal key="welcome" rate={rate} setRate={setRate} mandatory onClose={() => setShowWelcome(false)} />
+        {mostrarBienvenida && (
+          <ModalTasa key="welcome" tasa={tasa} fijarTasa={fijarTasa} obligatorio alCerrar={() => fijarMostrarBienvenida(false)} />
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {showEditRate && (
-          <RateModal key="edit" rate={rate} setRate={setRate} onClose={() => setShowEditRate(false)} />
+        {mostrarEditarTasa && (
+          <ModalTasa key="edit" tasa={tasa} fijarTasa={fijarTasa} alCerrar={() => fijarMostrarEditarTasa(false)} />
         )}
       </AnimatePresence>
-      <ToastHost />
+      <ContenedorAvisos />
     </div>
   );
 }
